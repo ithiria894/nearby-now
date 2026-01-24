@@ -11,14 +11,15 @@ type ActivityRow = {
   place_text: string | null;
   start_time: string | null;
   end_time: string | null;
-  expires_at: string;
+  expires_at: string | null;
   gender_pref: string;
   capacity: number | null;
   status: string;
   created_at: string;
 };
 
-function formatTimeLeft(expiresAtIso: string): string {
+function formatTimeLeft(expiresAtIso: string | null): string {
+  if (!expiresAtIso) return "never";
   const ms = new Date(expiresAtIso).getTime() - Date.now();
   if (ms <= 0) return "expired";
   const mins = Math.floor(ms / 60000);
@@ -48,11 +49,13 @@ export default function IndexScreen() {
 
   async function fetchActivities() {
     setLoading(true);
+    const nowIso = new Date().toISOString();
     const { data, error } = await supabase
       .from("activities")
       .select("*")
       .eq("status", "open")
-      .gt("expires_at", new Date().toISOString())
+      // :zap: CHANGE 5: Include never-expire rows (expires_at is null).
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -163,7 +166,7 @@ export default function IndexScreen() {
                   </Text>
 
                   <Text>
-                    {a.place_text ? a.place_text : "No place"} • expires in{" "}
+                    {a.place_text ? a.place_text : "No place"} • expires{" "}
                     {formatTimeLeft(a.expires_at)}
                   </Text>
 

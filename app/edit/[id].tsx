@@ -11,6 +11,7 @@ type ActivityRow = {
   place_text: string | null;
   gender_pref: string;
   capacity: number | null;
+  expires_at: string | null;
 };
 
 export default function EditActivityScreen() {
@@ -27,6 +28,8 @@ export default function EditActivityScreen() {
     "any"
   );
   const [capacity, setCapacity] = useState<string>("");
+  const [expiryMinutes, setExpiryMinutes] = useState<number | null>(null);
+  const [neverExpire, setNeverExpire] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const isCreator = useMemo(() => {
@@ -44,7 +47,7 @@ export default function EditActivityScreen() {
         const { data, error } = await supabase
           .from("activities")
           .select(
-            "id, creator_id, title_text, place_text, gender_pref, capacity"
+            "id, creator_id, title_text, place_text, gender_pref, capacity, expires_at"
           )
           .eq("id", activityId)
           .single();
@@ -73,7 +76,19 @@ export default function EditActivityScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityId]);
 
-  // :zap: CHANGE 2: Save edit + system broadcast.
+  // :zap: CHANGE 2: Prefill expiry editor.
+  useEffect(() => {
+    if (!activity) return;
+    if (!activity.expires_at) {
+      setNeverExpire(true);
+      setExpiryMinutes(null);
+    } else {
+      setNeverExpire(false);
+      setExpiryMinutes(null);
+    }
+  }, [activity]);
+
+  // :zap: CHANGE 4: Save edit + system broadcast.
   async function onSave() {
     if (!userId || !activity) return;
     if (!isCreator) {
@@ -102,6 +117,16 @@ export default function EditActivityScreen() {
           ? capacityNumRaw
           : null;
 
+    // :zap: CHANGE 5: Compute next expires_at from presets.
+    let nextExpiresAt: string | null = activity.expires_at ?? null;
+    if (neverExpire) {
+      nextExpiresAt = null;
+    } else if (expiryMinutes != null) {
+      nextExpiresAt = new Date(
+        Date.now() + expiryMinutes * 60 * 1000
+      ).toISOString();
+    }
+
     const changes: string[] = [];
     if ((activity.place_text ?? null) !== nextPlace) {
       changes.push(
@@ -118,6 +143,15 @@ export default function EditActivityScreen() {
         }`
       );
     }
+    if (neverExpire && activity.expires_at !== null) {
+      changes.push("expires: set -> never");
+    } else if (expiryMinutes != null) {
+      const pretty =
+        expiryMinutes < 60
+          ? `in ${expiryMinutes}m`
+          : `in ${Math.round(expiryMinutes / 60)}h`;
+      changes.push(`expires: -> ${pretty}`);
+    }
 
     if (changes.length === 0) {
       router.replace("/");
@@ -132,6 +166,7 @@ export default function EditActivityScreen() {
           place_text: nextPlace,
           gender_pref: nextGender,
           capacity: nextCapacity,
+          expires_at: nextExpiresAt,
         })
         .eq("id", activityId);
 
@@ -196,6 +231,60 @@ export default function EditActivityScreen() {
           </Pressable>
         ))}
       </View>
+
+      {/* :zap: CHANGE 3: Expiry presets + never option. */}
+      <Text style={{ fontWeight: "800" }}>Expiry</Text>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {[
+          { label: "30m", minutes: 30 },
+          { label: "1h", minutes: 60 },
+          { label: "2h", minutes: 120 },
+          { label: "4h", minutes: 240 },
+          { label: "8h", minutes: 480 },
+        ].map((p) => (
+          <Pressable
+            key={p.label}
+            onPress={() => {
+              setNeverExpire(false);
+              setExpiryMinutes(p.minutes);
+            }}
+            style={{
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+              borderRadius: 10,
+              borderWidth: 1,
+              opacity: !neverExpire && expiryMinutes === p.minutes ? 1 : 0.6,
+            }}
+          >
+            <Text style={{ fontWeight: "600" }}>{p.label}</Text>
+          </Pressable>
+        ))}
+
+        <Pressable
+          onPress={() => {
+            setNeverExpire(true);
+            setExpiryMinutes(null);
+          }}
+          style={{
+            paddingVertical: 10,
+            paddingHorizontal: 12,
+            borderRadius: 10,
+            borderWidth: 1,
+            opacity: neverExpire ? 1 : 0.6,
+          }}
+        >
+          <Text style={{ fontWeight: "600" }}>Never</Text>
+        </Pressable>
+      </View>
+      {neverExpire ? (
+        <Text style={{ opacity: 0.7 }}>This invite will not expire.</Text>
+      ) : expiryMinutes != null ? (
+        <Text style={{ opacity: 0.7 }}>
+          Expires in {expiryMinutes} minutes.
+        </Text>
+      ) : (
+        <Text style={{ opacity: 0.7 }}>No change to expiry.</Text>
+      )}
 
       <TextInput
         value={capacity}
