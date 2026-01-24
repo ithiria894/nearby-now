@@ -8,7 +8,6 @@ export default function RootLayout() {
   const segments = useSegments();
 
   useEffect(() => {
-    if (!segments.length) return;
     let isMounted = true;
 
     async function guard() {
