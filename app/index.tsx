@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
-import { Link, useRouter } from "expo-router";
+import { Pressable, ScrollView, Text, View, Alert } from "react-native";
 import { supabase } from "../lib/supabase";
-import { getOrCreateUserId } from "../lib/identity";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useRouter, useFocusEffect } from "expo-router";
 
 type ActivityRow = {
   id: string;
@@ -29,17 +28,8 @@ function formatTimeLeft(expiresAtIso: string): string {
 
 export default function IndexScreen() {
   const router = useRouter();
-  const [userId, setUserId] = useState<string | null>(null);
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // :zap: CHANGE 1: Ensure anonymous user exists before any write operations
-  useEffect(() => {
-    (async () => {
-      const uid = await getOrCreateUserId();
-      setUserId(uid);
-    })();
-  }, []);
 
   async function fetchActivities() {
     setLoading(true);
@@ -54,17 +44,23 @@ export default function IndexScreen() {
     setLoading(false);
     if (error) {
       console.error(error);
+      Alert.alert("Load failed", error.message);
       return;
     }
     setActivities((data ?? []) as ActivityRow[]);
   }
 
-  // :zap: CHANGE 2: Initial load
+  // :zap: CHANGE 1: Initial load
   useEffect(() => {
     fetchActivities();
   }, []);
-
-  // :zap: CHANGE 3: Realtime subscription to refresh list on any activity/member change
+  // :zap: CHANGE 3: Refresh when screen is focused again (e.g. after create)
+  useFocusEffect(
+    useCallback(() => {
+      fetchActivities();
+    }, [])
+  );
+  // :zap: CHANGE 2: Realtime refresh
   useEffect(() => {
     const channel = supabase
       .channel("nearby-now-activity-feed")
@@ -86,25 +82,44 @@ export default function IndexScreen() {
   }, []);
 
   const header = useMemo(() => {
-    if (!userId) return "Setting up...";
-    return "Post something and people nearby can join";
-  }, [userId]);
+    return "Browse invites or post your own";
+  }, []);
+
+  async function onLogout() {
+    const { error } = await supabase.auth.signOut();
+    if (error) Alert.alert("Logout failed", error.message);
+  }
 
   return (
     <View style={{ flex: 1, padding: 16, gap: 12 }}>
       <Text style={{ fontSize: 18, fontWeight: "700" }}>{header}</Text>
 
-      <Pressable
-        onPress={() => router.push("/create")}
-        style={{
-          padding: 12,
-          borderRadius: 10,
-          borderWidth: 1,
-          alignItems: "center",
-        }}
-      >
-        <Text style={{ fontWeight: "600" }}>+ Create an invite</Text>
-      </Pressable>
+      <View style={{ flexDirection: "row", gap: 10 }}>
+        <Pressable
+          onPress={() => router.push("/create")}
+          style={{
+            flex: 1,
+            padding: 12,
+            borderRadius: 10,
+            borderWidth: 1,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontWeight: "600" }}>+ Create an invite</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={onLogout}
+          style={{
+            padding: 12,
+            borderRadius: 10,
+            borderWidth: 1,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontWeight: "600" }}>Logout</Text>
+        </Pressable>
+      </View>
 
       {loading ? (
         <Text>Loading…</Text>

@@ -2,23 +2,24 @@ import { useState } from "react";
 import { Alert, Pressable, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
-import { getOrCreateUserId } from "../lib/identity";
+import { requireUserId } from "../lib/auth";
 
-// :zap: CHANGE 1: MVP create flow - minimal required fields (title_text), rest optional
 export default function CreateScreen() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [place, setPlace] = useState("");
-  const [genderPref, setGenderPref] = useState<"any" | "female" | "male">("any");
-  const [capacity, setCapacity] = useState<string>(""); // keep as string for input
+  const [genderPref, setGenderPref] = useState<"any" | "female" | "male">(
+    "any"
+  );
+  const [capacity, setCapacity] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   function computeExpiresAtIso(endTimeIso?: string | null) {
-  if (endTimeIso) return endTimeIso;
-  const twoHoursMs = 2 * 60 * 60 * 1000;
-  return new Date(Date.now() + twoHoursMs).toISOString();
+    if (endTimeIso) return endTimeIso;
+    const twoHoursMs = 2 * 60 * 60 * 1000;
+    return new Date(Date.now() + twoHoursMs).toISOString();
   }
-  
+
   async function onCreate() {
     if (!title.trim()) {
       Alert.alert("Missing", "Please type what you want to do.");
@@ -27,10 +28,12 @@ export default function CreateScreen() {
 
     setSubmitting(true);
     try {
-      const userId = await getOrCreateUserId();
+      const userId = await requireUserId();
+
       const capacityNum =
         capacity.trim() === "" ? null : Math.max(1, Number(capacity));
       const expiresAt = computeExpiresAtIso(null);
+
       const { data, error } = await supabase
         .from("activities")
         .insert({
@@ -47,18 +50,23 @@ export default function CreateScreen() {
 
       if (error) throw error;
 
-      // :zap: CHANGE 2: Auto-join creator as member
-      await supabase.from("activity_members").upsert({
-        activity_id: data.id,
-        user_id: userId,
-        role: "creator",
-        state: "joined",
-      });
+      // :zap: CHANGE 1: Auto-join creator as member
+      const { error: joinErr } = await supabase
+        .from("activity_members")
+        .upsert({
+          activity_id: data.id,
+          user_id: userId,
+          role: "creator",
+          state: "joined",
+        });
 
-      router.replace(`/room/${data.id}`);
-    } catch (e: any) {
-      console.error(e);
-      Alert.alert("Create failed", e?.message ?? "Unknown error");
+      if (joinErr) throw joinErr;
+
+      // :zap: CHANGE 2: Create -> go back to list (not room)
+      router.replace("/");
+    } catch (_e: any) {
+      console.error(_e);
+      Alert.alert("Create failed", _e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }
