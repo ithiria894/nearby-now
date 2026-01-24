@@ -312,8 +312,8 @@ export default function RoomScreen() {
             events.map((e) => (
               <View key={e.id} style={{ gap: 2 }}>
                 <Text style={{ fontWeight: "700" }}>
-                  {e.type === "chat" ? "chat" : "quick"} •{" "}
-                  {timeAgo(e.created_at)}
+                  {/* :zap: CHANGE 1: Show system type explicitly. */}
+                  {e.type} • {timeAgo(e.created_at)}
                 </Text>
                 <Text>{e.content}</Text>
               </View>

@@ -50,6 +50,8 @@ export default function RootLayout() {
       <Stack.Screen name="register" options={{ title: "Register" }} />
       <Stack.Screen name="index" options={{ title: "Nearby Now" }} />
       <Stack.Screen name="create" options={{ title: "Create" }} />
+      {/* :zap: CHANGE 1: Register edit route. */}
+      <Stack.Screen name="edit/[id]" options={{ title: "Edit Invite" }} />
       <Stack.Screen name="room/[id]" options={{ title: "Room" }} />
     </Stack>
   );
