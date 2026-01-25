@@ -12,7 +12,9 @@ CREATE TABLE public.activities (
     capacity integer,
     status text DEFAULT 'open'::text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    closed_at timestamp with time zone,
+    closed_by uuid
 );
 
 CREATE TABLE public.activity_members (
@@ -38,6 +40,9 @@ CREATE TABLE public.room_events (
     content text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
+ALTER TABLE ONLY public.activities
+    ADD CONSTRAINT activities_closed_by_fkey FOREIGN KEY (closed_by) REFERENCES public.profiles(id) ON DELETE SET NULL;
 
 ALTER TABLE ONLY public.activities
     ADD CONSTRAINT activities_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES auth.users(id) ON DELETE CASCADE;

@@ -132,7 +132,12 @@ export default function IndexScreen() {
       router.push(`/room/${activityId}`);
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Join failed", e?.message ?? "Unknown error");
+      const msg = String(e?.message ?? "Unknown error");
+      const lower = msg.toLowerCase();
+      const friendly = lower.includes("row-level security")
+        ? "This invite is closed or expired."
+        : msg;
+      Alert.alert("Join failed", friendly);
     } finally {
       setJoiningActivityId(null);
     }
