@@ -1,0 +1,38 @@
+# ============================================================
+# AUTO-GENERATED: Supabase client init (repo-side)
+# Generated at: 2026-01-25T08:49:43Z
+# NOTE: This may contain keys. Local use only.
+# ============================================================
+
+## FILE: lib/supabase.ts
+------------------------------------------------------------
+// lib/supabase.ts
+import "react-native-url-polyfill/auto";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createClient } from "@supabase/supabase-js";
+
+// :zap: CHANGE 1: Enable hint-safe auth session persistence for React Native
+const SUPABASE_URL = "https://vvpkrbrirnfzdvyndmet.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_cCqlyybzIrDwrE8EtuJ00g_2m5o4YGp";
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    storage: AsyncStorage,
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: false,
+  },
+});
+
+## GREP: createClient/supabaseUrl/supabaseAnonKey
+------------------------------------------------------------
+./lib/supabase.ts:7:const SUPABASE_URL = "https://vvpkrbrirnfzdvyndmet.supabase.co";
+./lib/supabase.ts:8:const SUPABASE_ANON_KEY = "sb_publishable_cCqlyybzIrDwrE8EtuJ00g_2m5o4YGp";
+./lib/supabase.ts:10:export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+./scripts/dump_supabase_schema.sh:329:# :zap: CHANGE 4: Dump Supabase client init from repo files (may include anon key)
+./scripts/dump_supabase_schema.sh:357:  echo "## GREP: createClient/supabaseUrl/supabaseAnonKey"
+./scripts/dump_supabase_schema.sh:361:    -E "createClient\\(|supabaseUrl|supabaseAnonKey|SUPABASE_URL|SUPABASE_ANON_KEY|anon key" \
+./supabase/migrations/project_client_init.txt:15:const SUPABASE_URL = "https://vvpkrbrirnfzdvyndmet.supabase.co";
+./supabase/migrations/project_client_init.txt:16:const SUPABASE_ANON_KEY = "sb_publishable_cCqlyybzIrDwrE8EtuJ00g_2m5o4YGp";
+./supabase/migrations/project_client_init.txt:18:export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+./supabase/migrations/project_client_init.txt:27:## GREP: createClient/supabaseUrl/supabaseAnonKey

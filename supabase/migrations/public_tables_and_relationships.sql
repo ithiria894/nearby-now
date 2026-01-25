@@ -14,6 +14,7 @@ CREATE TABLE public.activities (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
 CREATE TABLE public.activity_members (
     activity_id uuid NOT NULL,
     user_id uuid NOT NULL,
@@ -21,12 +22,14 @@ CREATE TABLE public.activity_members (
     state text DEFAULT 'joined'::text NOT NULL,
     joined_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
 CREATE TABLE public.profiles (
     id uuid NOT NULL,
     display_name text,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
 CREATE TABLE public.room_events (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     activity_id uuid NOT NULL,
@@ -35,6 +38,7 @@ CREATE TABLE public.room_events (
     content text NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL
 );
+
 ALTER TABLE ONLY public.activities
     ADD CONSTRAINT activities_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
@@ -42,7 +46,7 @@ ALTER TABLE ONLY public.activity_members
     ADD CONSTRAINT activity_members_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activities(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY public.activity_members
-    ADD CONSTRAINT activity_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+    ADD CONSTRAINT activity_members_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY public.profiles
     ADD CONSTRAINT profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
@@ -51,5 +55,5 @@ ALTER TABLE ONLY public.room_events
     ADD CONSTRAINT room_events_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activities(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY public.room_events
-    ADD CONSTRAINT room_events_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+    ADD CONSTRAINT room_events_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
 
