@@ -4,7 +4,7 @@ CREATE TABLE public.activities (
     title_text text NOT NULL,
     start_time timestamp with time zone,
     end_time timestamp with time zone,
-    expires_at timestamp with time zone NOT NULL,
+    expires_at timestamp with time zone,
     place_text text,
     lat double precision,
     lng double precision,
