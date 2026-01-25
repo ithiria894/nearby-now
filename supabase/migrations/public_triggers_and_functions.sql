@@ -1,6 +1,6 @@
 -- ============================================================
 -- AUTO-GENERATED: public triggers + functions
--- Generated at: 2026-01-25T11:04:19Z
+-- Generated at: 2026-01-25T12:25:44Z
 -- ============================================================
 
 -- ---- Functions (public) ----
@@ -104,6 +104,50 @@ $function$
 
 
 
+-- Function: public.sync_member_left_at()
+
+CREATE OR REPLACE FUNCTION public.sync_member_left_at()
+
+ RETURNS trigger
+
+ LANGUAGE plpgsql
+
+AS $function$
+
+begin
+
+  -- When switching to left, set left_at if not already set
+
+  if new.state = 'left' then
+
+    if new.left_at is null then
+
+      new.left_at := now();
+
+    end if;
+
+  end if;
+
+
+
+  -- When switching to joined, clear left_at (so joined sees all)
+
+  if new.state = 'joined' then
+
+    new.left_at := null;
+
+  end if;
+
+
+
+  return new;
+
+end;
+
+$function$
+
+
+
 
 -- ---- Triggers (public tables) ----
 -- Trigger: trg_activities_updated_at on public.activities
@@ -113,6 +157,10 @@ CREATE TRIGGER trg_activities_updated_at BEFORE UPDATE ON activities FOR EACH RO
 -- Trigger: trg_enforce_activity_expires_at on public.activities
 
 CREATE TRIGGER trg_enforce_activity_expires_at BEFORE INSERT OR UPDATE ON activities FOR EACH ROW EXECUTE FUNCTION enforce_activity_expires_at();
+
+-- Trigger: trg_sync_member_left_at on public.activity_members
+
+CREATE TRIGGER trg_sync_member_left_at BEFORE INSERT OR UPDATE OF state ON activity_members FOR EACH ROW EXECUTE FUNCTION sync_member_left_at();
 
 -- Trigger: trg_profiles_updated_at on public.profiles
 

@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-01-25T11:04:25Z",
+  "generated_at_utc": "2026-01-25T12:25:51Z",
   "notes": [
     "Auth settings (e.g. email confirmation on/off) are Supabase project-level settings (GoTrue), not stored in Postgres public schema.",
     "Fill these fields manually from Supabase Dashboard > Authentication > Providers / Settings."
