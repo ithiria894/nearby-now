@@ -1,22 +1,25 @@
 import { Pressable, ScrollView, Text, View, Alert } from "react-native";
-import { supabase } from "../lib/supabase";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { supabase } from "../lib/supabase";
+import { requireUserId } from "../lib/auth";
 
 type ActivityRow = {
   id: string;
+  creator_id: string;
   title_text: string;
   place_text: string | null;
   start_time: string | null;
   end_time: string | null;
-  expires_at: string;
+  expires_at: string | null;
   gender_pref: string;
   capacity: number | null;
   status: string;
   created_at: string;
 };
 
-function formatTimeLeft(expiresAtIso: string): string {
+function formatTimeLeft(expiresAtIso: string | null): string {
+  if (!expiresAtIso) return "never";
   const ms = new Date(expiresAtIso).getTime() - Date.now();
   if (ms <= 0) return "expired";
   const mins = Math.floor(ms / 60000);
@@ -30,14 +33,29 @@ export default function IndexScreen() {
   const router = useRouter();
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // :zap: CHANGE 1: Load current user id for creator-only UI.
+  useEffect(() => {
+    (async () => {
+      try {
+        const uid = await requireUserId();
+        setUserId(uid);
+      } catch {
+        setUserId(null);
+      }
+    })();
+  }, []);
 
   async function fetchActivities() {
     setLoading(true);
+    const nowIso = new Date().toISOString();
     const { data, error } = await supabase
       .from("activities")
       .select("*")
       .eq("status", "open")
-      .gt("expires_at", new Date().toISOString())
+      // :zap: CHANGE 5: Include never-expire rows (expires_at is null).
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
       .order("created_at", { ascending: false })
       .limit(100);
 
@@ -50,17 +68,17 @@ export default function IndexScreen() {
     setActivities((data ?? []) as ActivityRow[]);
   }
 
-  // :zap: CHANGE 1: Initial load
+  // :zap: CHANGE 2: Initial load
   useEffect(() => {
     fetchActivities();
   }, []);
-  // :zap: CHANGE 3: Refresh when screen is focused again (e.g. after create)
+  // :zap: CHANGE 3: Refresh when screen is focused again (e.g. after edit).
   useFocusEffect(
     useCallback(() => {
       fetchActivities();
     }, [])
   );
-  // :zap: CHANGE 2: Realtime refresh
+  // :zap: CHANGE 4: Realtime refresh
   useEffect(() => {
     const channel = supabase
       .channel("nearby-now-activity-feed")
@@ -126,30 +144,55 @@ export default function IndexScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ gap: 10 }}>
           {activities.map((a) => (
-            <Link key={a.id} href={`/room/${a.id}`} asChild>
-              <Pressable
+            <Pressable
+              key={a.id}
+              onPress={() => router.push(`/room/${a.id}`)}
+              style={{
+                padding: 12,
+                borderRadius: 12,
+                borderWidth: 1,
+              }}
+            >
+              <View
                 style={{
-                  padding: 12,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  gap: 6,
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  gap: 12,
                 }}
               >
-                <Text style={{ fontSize: 16, fontWeight: "700" }}>
-                  {a.title_text}
-                </Text>
+                <View style={{ flex: 1, gap: 6 }}>
+                  <Text style={{ fontSize: 16, fontWeight: "700" }}>
+                    {a.title_text}
+                  </Text>
 
-                <Text>
-                  {a.place_text ? a.place_text : "No place"} • expires in{" "}
-                  {formatTimeLeft(a.expires_at)}
-                </Text>
+                  <Text>
+                    {a.place_text ? a.place_text : "No place"} • expires{" "}
+                    {formatTimeLeft(a.expires_at)}
+                  </Text>
 
-                <Text>
-                  gender: {a.gender_pref} • capacity:{" "}
-                  {a.capacity ?? "unlimited"}
-                </Text>
-              </Pressable>
-            </Link>
+                  <Text>
+                    gender: {a.gender_pref} • capacity:{" "}
+                    {a.capacity ?? "unlimited"}
+                  </Text>
+                </View>
+
+                {userId && a.creator_id === userId ? (
+                  <Pressable
+                    onPress={() => router.push(`/edit/${a.id}`)}
+                    // Keep edit separate from card navigation.
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 10,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      alignSelf: "flex-start",
+                    }}
+                  >
+                    <Text style={{ fontWeight: "700" }}>Edit</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </Pressable>
           ))}
           {activities.length === 0 ? <Text>No active invites yet.</Text> : null}
         </ScrollView>
