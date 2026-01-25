@@ -38,10 +38,6 @@ export default function TabsLayout() {
 
       {/* :zap: CHANGE 3: Hide Create button on History/Settings */}
       <Tabs.Screen
-        name="history"
-        options={{ title: "History", headerRight: () => null }}
-      />
-      <Tabs.Screen
         name="settings"
         options={{ title: "Settings", headerRight: () => null }}
       />
