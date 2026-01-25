@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Text, View } from "react-native";
+import { Alert, FlatList, Switch, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import ActivityCard, {
@@ -9,12 +9,23 @@ import { requireUserId } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { fetchMembershipRowsForUser } from "../../lib/activities";
 
+// :zap: CHANGE 1: Helper to decide "active" activities.
+function isActiveActivity(a: ActivityCardActivity): boolean {
+  if (a.status && a.status !== "open") return false;
+  if (a.expires_at) {
+    const ts = new Date(a.expires_at).getTime();
+    if (!Number.isNaN(ts) && ts <= Date.now()) return false;
+  }
+  return true;
+}
+
 // :zap: CHANGE 1: Created = activities.creator_id = me
 export default function CreatedScreen() {
   const router = useRouter();
 
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
+  const [activeOnly, setActiveOnly] = useState(true);
   const [joinedSet, setJoinedSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -71,16 +82,32 @@ export default function CreatedScreen() {
     }
   }, [load]);
 
+  const filteredItems = useMemo(() => {
+    return activeOnly ? items.filter(isActiveActivity) : items;
+  }, [items, activeOnly]);
+
   const header = useMemo(() => {
     return (
-      <View style={{ padding: 16, gap: 6 }}>
+      <View style={{ padding: 16, gap: 10 }}>
         <Text style={{ fontSize: 18, fontWeight: "800" }}>Created</Text>
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text style={{ fontWeight: "700" }}>Active only</Text>
+          <Switch value={activeOnly} onValueChange={setActiveOnly} />
+        </View>
+
         <Text style={{ opacity: 0.7 }}>
-          Invites you posted (you can edit them).
+          {activeOnly ? "Showing active invites only." : "Showing all invites."}
         </Text>
       </View>
     );
-  }, []);
+  }, [activeOnly]);
 
   if (loading) {
     return (
@@ -92,7 +119,7 @@ export default function CreatedScreen() {
 
   return (
     <FlatList
-      data={items}
+      data={filteredItems}
       keyExtractor={(x) => x.id}
       ListHeaderComponent={header}
       contentContainerStyle={{ paddingBottom: 16 }}
