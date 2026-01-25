@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { requireUserId } from "../lib/auth";
+import ActivityCard from "../components/ActivityCard";
 
 type ActivityRow = {
   id: string;
@@ -24,17 +25,6 @@ type ActivityRow = {
   status: string;
   created_at: string;
 };
-
-function formatTimeLeft(expiresAtIso: string | null): string {
-  if (!expiresAtIso) return "never";
-  const ms = new Date(expiresAtIso).getTime() - Date.now();
-  if (ms <= 0) return "expired";
-  const mins = Math.floor(ms / 60000);
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  const rem = mins % 60;
-  return `${hrs}h ${rem}m`;
-}
 
 export default function IndexScreen() {
   const router = useRouter();
@@ -274,9 +264,13 @@ export default function IndexScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ gap: 10 }}>
           {activities.map((a) => (
-            <Pressable
+            <ActivityCard
               key={a.id}
-              onPress={() => {
+              activity={a}
+              currentUserId={userId}
+              isJoined={joinedIds.has(a.id)}
+              isJoining={joiningActivityId === a.id}
+              onPressCard={() => {
                 if (
                   joinedIds.has(a.id) ||
                   (userId && a.creator_id === userId)
@@ -286,57 +280,12 @@ export default function IndexScreen() {
                 }
                 confirmJoin(a.id);
               }}
-              disabled={joiningActivityId === a.id}
-              style={{
-                padding: 12,
-                borderRadius: 12,
-                borderWidth: 1,
-                opacity: joiningActivityId === a.id ? 0.6 : 1,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
-                  gap: 12,
-                }}
-              >
-                <View style={{ flex: 1, gap: 6 }}>
-                  <Text style={{ fontSize: 16, fontWeight: "700" }}>
-                    {a.title_text}
-                  </Text>
-
-                  <Text>
-                    {a.place_text ? a.place_text : "No place"} • expires{" "}
-                    {formatTimeLeft(a.expires_at)}
-                  </Text>
-
-                  <Text>
-                    gender: {a.gender_pref} • capacity:{" "}
-                    {a.capacity ?? "unlimited"}
-                  </Text>
-                </View>
-
-                {userId && a.creator_id === userId ? (
-                  <Pressable
-                    onPress={(event: any) => {
-                      event?.stopPropagation?.();
-                      router.push(`/edit/${a.id}`);
-                    }}
-                    // Keep edit separate from card navigation.
-                    style={{
-                      paddingVertical: 8,
-                      paddingHorizontal: 10,
-                      borderRadius: 10,
-                      borderWidth: 1,
-                      alignSelf: "flex-start",
-                    }}
-                  >
-                    <Text style={{ fontWeight: "700" }}>Edit</Text>
-                  </Pressable>
-                ) : null}
-              </View>
-            </Pressable>
+              onPressEdit={
+                userId && a.creator_id === userId
+                  ? () => router.push(`/edit/${a.id}`)
+                  : undefined
+              }
+            />
           ))}
           {activities.length === 0 ? <Text>No active invites yet.</Text> : null}
         </ScrollView>
