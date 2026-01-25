@@ -6,6 +6,7 @@ import {
   Text,
   TextInput,
   View,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
@@ -178,21 +179,60 @@ export default function RoomScreen() {
     }
   }
 
-  async function leave() {
+  // :zap: CHANGE 8: Actual leave execution (DB update) + system event + navigate back.
+  async function doLeave() {
     if (!userId) return;
 
-    const { error } = await supabase
-      .from("activity_members")
-      .update({ state: "left" })
-      .eq("activity_id", activityId)
-      .eq("user_id", userId);
+    try {
+      const { error } = await supabase
+        .from("activity_members")
+        .update({ state: "left" })
+        .eq("activity_id", activityId)
+        .eq("user_id", userId);
 
-    if (error) Alert.alert("Leave failed", error.message);
-    else {
-      // :zap: CHANGE 5: Refresh before navigating away (optional)
+      if (error) throw error;
+
+      // :zap: CHANGE 10: Insert a system event so others see the leave action.
+      const { error: evtErr } = await supabase.from("room_events").insert({
+        activity_id: activityId,
+        user_id: userId,
+        type: "system",
+        content: "Left the invite",
+      });
+
+      if (evtErr) {
+        console.error("leave system event insert failed:", evtErr);
+      }
+
+      // :zap: CHANGE 11: Refresh local state once then navigate back to list.
       await loadAll(userId);
       router.back();
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Leave failed", e?.message ?? "Unknown error");
     }
+  }
+
+  // :zap: CHANGE 12: Cross-platform leave confirm (web uses window.confirm).
+  function confirmLeave() {
+    console.log("[Room] leave pressed", { activityId, userId });
+
+    if (Platform.OS === "web") {
+      const ok = globalThis.confirm?.(
+        "Leave this invite?\n\nYou will stop receiving updates from this room."
+      );
+      if (ok) doLeave();
+      return;
+    }
+
+    Alert.alert(
+      "Leave this invite?",
+      "You will stop receiving updates from this room.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Leave", style: "destructive", onPress: () => doLeave() },
+      ]
+    );
   }
 
   async function sendChat(text: string) {
@@ -253,7 +293,7 @@ export default function RoomScreen() {
           </Pressable>
         ) : (
           <Pressable
-            onPress={leave}
+            onPress={confirmLeave}
             style={{ padding: 10, borderWidth: 1, borderRadius: 10 }}
           >
             <Text style={{ fontWeight: "700" }}>Leave</Text>
