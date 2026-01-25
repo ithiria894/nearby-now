@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Switch, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import ActivityCard, {
@@ -20,19 +20,12 @@ function isActive(a: ActivityCardActivity): boolean {
   return true;
 }
 
-type RowItem =
-  | { kind: "header"; title: string }
-  | {
-      kind: "card";
-      activity: ActivityCardActivity;
-      membershipState: MembershipState;
-    };
-
 export default function JoinedScreen() {
   const router = useRouter();
 
   const [userId, setUserId] = useState<string | null>(null);
-  const [activeOnly, setActiveOnly] = useState(true);
+  // :zap: CHANGE 1: Tabs instead of Active-only switch.
+  const [tab, setTab] = useState<"active" | "inactive" | "left">("active");
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
   const [membershipById, setMembershipById] = useState<
     Map<string, MembershipState>
@@ -114,90 +107,82 @@ export default function JoinedScreen() {
     };
   }, [userId, load]);
 
-  const viewModel = useMemo<RowItem[]>(() => {
+  // :zap: CHANGE 2: Split joined into Active / Inactive / Left lists.
+  const { activeJoined, inactiveJoined, leftRooms } = useMemo(() => {
     const withState = items.map((a) => ({
       activity: a,
       state: membershipById.get(a.id) ?? "none",
     }));
 
-    const activeJoined = withState
+    const active = withState
       .filter((x) => x.state === "joined" && isActive(x.activity))
       .map((x) => x.activity);
 
-    if (activeOnly) {
-      return [
-        { kind: "header", title: "Active" },
-        ...activeJoined.map((a) => ({
-          kind: "card",
-          activity: a,
-          membershipState: "joined" as const,
-        })),
-      ];
-    }
-
-    const inactiveJoined = withState
+    const inactive = withState
       .filter((x) => x.state === "joined" && !isActive(x.activity))
       .map((x) => x.activity);
 
-    const leftRooms = withState
+    const left = withState
       .filter((x) => x.state === "left")
       .map((x) => x.activity);
 
-    const rows: RowItem[] = [];
-    rows.push({ kind: "header", title: "Active" });
-    rows.push(
-      ...activeJoined.map((a) => ({
-        kind: "card",
-        activity: a,
-        membershipState: "joined" as const,
-      }))
-    );
+    return { activeJoined: active, inactiveJoined: inactive, leftRooms: left };
+  }, [items, membershipById]);
 
-    rows.push({ kind: "header", title: "Inactive (closed/expired)" });
-    rows.push(
-      ...inactiveJoined.map((a) => ({
-        kind: "card",
-        activity: a,
-        membershipState: "joined" as const,
-      }))
-    );
+  // :zap: CHANGE 3: The list to show depends on the selected tab.
+  const dataToShow = useMemo(() => {
+    if (tab === "active") return activeJoined;
+    if (tab === "inactive") return inactiveJoined;
+    return leftRooms;
+  }, [tab, activeJoined, inactiveJoined, leftRooms]);
 
-    rows.push({ kind: "header", title: "Left rooms" });
-    rows.push(
-      ...leftRooms.map((a) => ({
-        kind: "card",
-        activity: a,
-        membershipState: "left" as const,
-      }))
-    );
-
-    return rows;
-  }, [items, membershipById, activeOnly]);
-
+  // :zap: CHANGE 4: Header tabs UI (Active / Inactive / Left).
   const header = useMemo(() => {
-    return (
-      <View style={{ padding: 16, gap: 10 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>Joined</Text>
-
-        <View
+    const TabButton = ({
+      value,
+      label,
+    }: {
+      value: "active" | "inactive" | "left";
+      label: string;
+    }) => {
+      const selected = tab === value;
+      return (
+        <Pressable
+          onPress={() => setTab(value)}
           style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            borderRadius: 999,
+            borderWidth: 1,
+            opacity: selected ? 1 : 0.6,
           }}
         >
-          <Text style={{ fontWeight: "700" }}>Active only</Text>
-          <Switch value={activeOnly} onValueChange={setActiveOnly} />
+          <Text style={{ fontWeight: "800" }}>{label}</Text>
+        </Pressable>
+      );
+    };
+
+    return (
+      <View style={{ padding: 16, gap: 12 }}>
+        <Text style={{ fontSize: 18, fontWeight: "800" }}>Joined</Text>
+
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <TabButton value="active" label={`Active (${activeJoined.length})`} />
+          <TabButton
+            value="inactive"
+            label={`Inactive (${inactiveJoined.length})`}
+          />
+          <TabButton value="left" label={`Left (${leftRooms.length})`} />
         </View>
 
         <Text style={{ opacity: 0.7 }}>
-          {activeOnly
-            ? "Showing active rooms only."
-            : "Showing active + inactive + left rooms."}
+          {tab === "active" && "Showing active rooms you joined."}
+          {tab === "inactive" && "Showing closed/expired rooms you joined."}
+          {tab === "left" && "Showing rooms you left (history view only)."}
         </Text>
       </View>
     );
-  }, [activeOnly]);
+  }, [tab, activeJoined.length, inactiveJoined.length, leftRooms.length]);
 
   if (loading) {
     return (
@@ -209,33 +194,15 @@ export default function JoinedScreen() {
 
   return (
     <FlatList
-      data={viewModel}
-      keyExtractor={(x, idx) =>
-        x.kind === "header" ? `h-${x.title}-${idx}` : x.activity.id
-      }
+      data={dataToShow}
+      keyExtractor={(a) => a.id}
       ListHeaderComponent={header}
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
       onRefresh={onRefresh}
-      renderItem={({ item }) => {
-        if (item.kind === "header") {
-          return (
-            <View
-              style={{
-                paddingHorizontal: 16,
-                paddingTop: 10,
-                paddingBottom: 6,
-              }}
-            >
-              <Text style={{ fontWeight: "800", opacity: 0.8 }}>
-                {item.title}
-              </Text>
-            </View>
-          );
-        }
-
-        const a = item.activity;
-        const membershipState = item.membershipState;
+      renderItem={({ item: a }) => {
+        const membershipState: MembershipState =
+          tab === "left" ? "left" : "joined";
 
         return (
           <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
@@ -244,7 +211,6 @@ export default function JoinedScreen() {
               currentUserId={userId}
               membershipState={membershipState}
               isJoining={false}
-              // :zap: CHANGE 4: left rooms click = view history only.
               onPressCard={() => router.push(`/room/${a.id}`)}
               onPressEdit={
                 a.creator_id === userId
@@ -258,7 +224,9 @@ export default function JoinedScreen() {
       ListEmptyComponent={
         <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
           <Text style={{ opacity: 0.8 }}>
-            {activeOnly ? "No active joined rooms." : "No rooms."}
+            {tab === "active" && "No active joined rooms."}
+            {tab === "inactive" && "No inactive joined rooms."}
+            {tab === "left" && "No left rooms."}
           </Text>
         </View>
       }
