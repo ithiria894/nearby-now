@@ -36,6 +36,7 @@ type RoomEventRow = {
   type: string;
   content: string;
   created_at: string;
+  profiles?: { display_name: string | null } | null;
 };
 
 function timeAgo(iso: string): string {
@@ -45,6 +46,29 @@ function timeAgo(iso: string): string {
   if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
   return `${hrs}h`;
+}
+
+// :zap: CHANGE 6: Render quick event codes as friendly text (without showing type).
+function renderEventContent(e: RoomEventRow): string {
+  if (e.type === "quick") {
+    switch (e.content) {
+      case "IM_HERE":
+        return "✅ I'm here";
+      case "LATE_10":
+        return "⏱️ 10 min late";
+      case "CANCEL":
+        return "❌ Cancel";
+      default:
+        return e.content;
+    }
+  }
+  return e.content;
+}
+
+function getEventDisplayName(e: RoomEventRow): string {
+  if (!e.user_id) return "System";
+  const name = (e.profiles?.display_name ?? "").trim();
+  return name || "Unknown";
 }
 
 export default function RoomScreen() {
@@ -89,9 +113,12 @@ export default function RoomScreen() {
       return;
     }
 
+    // :zap: CHANGE 5: Join profiles so we can show display_name instead of event.type.
     const { data: e, error: eErr } = await supabase
       .from("room_events")
-      .select("*")
+      .select(
+        "id, activity_id, user_id, type, content, created_at, profiles(display_name)"
+      )
       .eq("activity_id", activityId)
       .order("created_at", { ascending: true })
       .limit(200);
@@ -351,11 +378,11 @@ export default function RoomScreen() {
           ) : (
             events.map((e) => (
               <View key={e.id} style={{ gap: 2 }}>
+                {/* :zap: CHANGE 7: Show sender display_name instead of event.type. */}
                 <Text style={{ fontWeight: "700" }}>
-                  {/* :zap: CHANGE 1: Show system type explicitly. */}
-                  {e.type} • {timeAgo(e.created_at)}
+                  {getEventDisplayName(e)} • {timeAgo(e.created_at)}
                 </Text>
-                <Text>{e.content}</Text>
+                <Text>{renderEventContent(e)}</Text>
               </View>
             ))
           )}
