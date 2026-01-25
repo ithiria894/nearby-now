@@ -55,7 +55,9 @@ export default function JoinedScreen() {
 
     const ids = relevant.map((m) => m.activity_id);
     const activities = await fetchActivitiesByIds(ids);
-    setItems(activities);
+    // :zap: CHANGE 2: hard-exclude anything I created (even if role is wrong).
+    const notMine = activities.filter((a) => a.creator_id !== uid);
+    setItems(notMine);
   }, []);
 
   useEffect(() => {
