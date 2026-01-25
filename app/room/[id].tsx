@@ -138,12 +138,13 @@ export default function RoomScreen() {
 
     const uid = currentUserId ?? userId;
 
-    // :zap: CHANGE 13: Load my membership state (joined/left/none).
+    // :zap: CHANGE 13: Load my membership state + left_at.
     let myState: "none" | "joined" | "left" = "none";
+    let leftAt: Date | null = null;
     if (uid) {
       const { data: me, error: meErr } = await supabase
         .from("activity_members")
-        .select("state")
+        .select("state,left_at")
         .eq("activity_id", activityId)
         .eq("user_id", uid)
         .maybeSingle();
@@ -151,6 +152,7 @@ export default function RoomScreen() {
       if (meErr) console.error(meErr);
       const st = (me as any)?.state;
       myState = st === "left" ? "left" : st === "joined" ? "joined" : "none";
+      leftAt = (me as any)?.left_at ? new Date((me as any).left_at) : null;
     }
 
     setMyMembershipState(myState);
@@ -163,7 +165,8 @@ export default function RoomScreen() {
     }
 
     // :zap: CHANGE 5: Join profiles so we can show display_name instead of event.type.
-    const { data: e, error: eErr } = await supabase
+    // :zap: CHANGE 5: Load events with cutoff when left.
+    let query = supabase
       .from("room_events")
       .select(
         "id, activity_id, user_id, type, content, created_at, profiles(display_name)"
@@ -171,6 +174,12 @@ export default function RoomScreen() {
       .eq("activity_id", activityId)
       .order("created_at", { ascending: true })
       .limit(200);
+
+    if (myState === "left" && leftAt) {
+      query = query.lte("created_at", leftAt.toISOString());
+    }
+
+    const { data: e, error: eErr } = await query;
 
     if (eErr) console.error(eErr);
     setEvents((e ?? []) as any);
@@ -191,8 +200,10 @@ export default function RoomScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityId]);
 
-  // :zap: CHANGE 3: Realtime refresh
+  // :zap: CHANGE 3: Realtime refresh (joined only).
   useEffect(() => {
+    if (myMembershipState !== "joined") return;
+
     const channel = supabase
       .channel(`nearby-now-room-${activityId}`)
       .on(
@@ -208,7 +219,7 @@ export default function RoomScreen() {
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "room_events",
           filter: `activity_id=eq.${activityId}`,
@@ -231,7 +242,7 @@ export default function RoomScreen() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId, userId]);
+  }, [activityId, myMembershipState]);
 
   const joined = useMemo(() => {
     if (!userId) return false;

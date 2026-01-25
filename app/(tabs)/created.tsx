@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Switch, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import ActivityCard, {
@@ -25,7 +25,8 @@ export default function CreatedScreen() {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
-  const [activeOnly, setActiveOnly] = useState(true);
+  // :zap: CHANGE 3: Simple tabs state.
+  const [tab, setTab] = useState<"active" | "inactive">("active");
   const [joinedSet, setJoinedSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -82,32 +83,65 @@ export default function CreatedScreen() {
     }
   }, [load]);
 
-  const filteredItems = useMemo(() => {
-    return activeOnly ? items.filter(isActiveActivity) : items;
-  }, [items, activeOnly]);
+  // :zap: CHANGE 2: Split items into active/inactive.
+  const { activeItems, inactiveItems } = useMemo(() => {
+    const active: ActivityCardActivity[] = [];
+    const inactive: ActivityCardActivity[] = [];
+
+    for (const a of items) {
+      (isActiveActivity(a) ? active : inactive).push(a);
+    }
+
+    return { activeItems: active, inactiveItems: inactive };
+  }, [items]);
+
+  const dataToShow = tab === "active" ? activeItems : inactiveItems;
 
   const header = useMemo(() => {
-    return (
-      <View style={{ padding: 16, gap: 10 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>Created</Text>
+    const activeCount = activeItems.length;
+    const inactiveCount = inactiveItems.length;
 
-        <View
+    const TabButton = ({
+      value,
+      label,
+    }: {
+      value: "active" | "inactive";
+      label: string;
+    }) => {
+      const selected = tab === value;
+      return (
+        <Pressable
+          onPress={() => setTab(value)}
           style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            borderRadius: 999,
+            borderWidth: 1,
+            opacity: selected ? 1 : 0.6,
           }}
         >
-          <Text style={{ fontWeight: "700" }}>Active only</Text>
-          <Switch value={activeOnly} onValueChange={setActiveOnly} />
+          <Text style={{ fontWeight: "800" }}>{label}</Text>
+        </Pressable>
+      );
+    };
+
+    return (
+      <View style={{ padding: 16, gap: 12 }}>
+        <Text style={{ fontSize: 18, fontWeight: "800" }}>Created</Text>
+
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <TabButton value="active" label={`Active (${activeCount})`} />
+          <TabButton value="inactive" label={`Inactive (${inactiveCount})`} />
         </View>
 
         <Text style={{ opacity: 0.7 }}>
-          {activeOnly ? "Showing active invites only." : "Showing all invites."}
+          {tab === "active"
+            ? "Showing active invites you created."
+            : "Showing expired/closed invites you created."}
         </Text>
       </View>
     );
-  }, [activeOnly]);
+  }, [tab, activeItems.length, inactiveItems.length]);
 
   if (loading) {
     return (
@@ -119,7 +153,7 @@ export default function CreatedScreen() {
 
   return (
     <FlatList
-      data={filteredItems}
+      data={dataToShow}
       keyExtractor={(x) => x.id}
       ListHeaderComponent={header}
       contentContainerStyle={{ paddingBottom: 16 }}
