@@ -1,6 +1,6 @@
 # ============================================================
 # AUTO-GENERATED: Supabase client init (repo-side)
-# Generated at: 2026-01-25T12:25:51Z
+# Generated at: 2026-01-25T13:25:34Z
 # NOTE: This may contain keys. Local use only.
 # ============================================================
 
@@ -36,3 +36,17 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 ./supabase/migrations/project_client_init.txt:16:const SUPABASE_ANON_KEY = "sb_publishable_cCqlyybzIrDwrE8EtuJ00g_2m5o4YGp";
 ./supabase/migrations/project_client_init.txt:18:export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 ./supabase/migrations/project_client_init.txt:27:## GREP: createClient/supabaseUrl/supabaseAnonKey
+./supabase/migrations/project_client_init.txt:29:./lib/supabase.ts:7:const SUPABASE_URL = "https://vvpkrbrirnfzdvyndmet.supabase.co";
+./supabase/migrations/project_client_init.txt:30:./lib/supabase.ts:8:const SUPABASE_ANON_KEY = "sb_publishable_cCqlyybzIrDwrE8EtuJ00g_2m5o4YGp";
+./supabase/migrations/project_client_init.txt:31:./lib/supabase.ts:10:export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+./supabase/migrations/project_client_init.txt:32:./scripts/dump_supabase_schema.sh:329:# :zap: CHANGE 4: Dump Supabase client init from repo files (may include anon key)
+./supabase/migrations/project_client_init.txt:33:./scripts/dump_supabase_schema.sh:357:  echo "## GREP: createClient/supabaseUrl/supabaseAnonKey"
+./supabase/migrations/project_client_init.txt:34:./scripts/dump_supabase_schema.sh:361:    -E "createClient\\(|supabaseUrl|supabaseAnonKey|SUPABASE_URL|SUPABASE_ANON_KEY|anon key" \
+./supabase/migrations/project_client_init.txt:35:./supabase/migrations/project_client_init.txt:15:const SUPABASE_URL = "https://vvpkrbrirnfzdvyndmet.supabase.co";
+./supabase/migrations/project_client_init.txt:36:./supabase/migrations/project_client_init.txt:16:const SUPABASE_ANON_KEY = "sb_publishable_cCqlyybzIrDwrE8EtuJ00g_2m5o4YGp";
+./supabase/migrations/project_client_init.txt:37:./supabase/migrations/project_client_init.txt:18:export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+./supabase/migrations/project_client_init.txt:38:./supabase/migrations/project_client_init.txt:27:## GREP: createClient/supabaseUrl/supabaseAnonKey
+./supabase/SchemaSnapshot/project_client_init.txt:15:const SUPABASE_URL = "https://vvpkrbrirnfzdvyndmet.supabase.co";
+./supabase/SchemaSnapshot/project_client_init.txt:16:const SUPABASE_ANON_KEY = "sb_publishable_cCqlyybzIrDwrE8EtuJ00g_2m5o4YGp";
+./supabase/SchemaSnapshot/project_client_init.txt:18:export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+./supabase/SchemaSnapshot/project_client_init.txt:27:## GREP: createClient/supabaseUrl/supabaseAnonKey

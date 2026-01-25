@@ -1,6 +1,6 @@
 -- ============================================================
 -- AUTO-GENERATED: public constraints + indexes
--- Generated at: 2026-01-25T12:25:42Z
+-- Generated at: 2026-01-25T13:25:26Z
 -- ============================================================
 
 -- ---- Constraints (PK / UNIQUE / CHECK) ----
