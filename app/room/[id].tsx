@@ -16,10 +16,13 @@ type ActivityRow = {
   id: string;
   title_text: string;
   place_text: string | null;
-  expires_at: string;
+  // :zap: CHANGE 1: allow null (never expire).
+  expires_at: string | null;
   gender_pref: string;
   capacity: number | null;
   status: string;
+  // :zap: CHANGE 2: needed to show creator-only UI.
+  creator_id?: string;
 };
 
 type MemberRow = {
@@ -71,6 +74,30 @@ function getEventDisplayName(e: RoomEventRow): string {
   return name || "Unknown";
 }
 
+function computeRoomState(activity: ActivityRow | null) {
+  const isClosed = !!activity && activity.status !== "open";
+  const expiresAtMs = activity?.expires_at
+    ? new Date(activity.expires_at).getTime()
+    : null;
+  const isExpired = expiresAtMs != null && expiresAtMs <= Date.now();
+  const isReadOnly = isClosed || isExpired;
+
+  let label: string | null = null;
+  if (isClosed) label = "Closed";
+  else if (isExpired) label = "Expired";
+
+  return { isClosed, isExpired, isReadOnly, label };
+}
+
+function friendlyDbError(message: string): string {
+  const lower = message.toLowerCase();
+  // :zap: CHANGE 3: common RLS error message mapping.
+  if (lower.includes("row-level security")) {
+    return "This invite is closed or expired. You can still read messages.";
+  }
+  return message;
+}
+
 export default function RoomScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -84,9 +111,12 @@ export default function RoomScreen() {
 
   // :zap: CHANGE 1: Load activity + members always, but only load events if joined (RLS)
   async function loadAll(currentUserId?: string | null) {
+    // :zap: CHANGE 4: select creator_id for creator-only UI.
     const { data: a, error: aErr } = await supabase
       .from("activities")
-      .select("*")
+      .select(
+        "id, title_text, place_text, expires_at, gender_pref, capacity, status, creator_id"
+      )
       .eq("id", activityId)
       .single();
 
@@ -189,8 +219,21 @@ export default function RoomScreen() {
     return members.some((m) => m.user_id === userId && m.state === "joined");
   }, [members, userId]);
 
+  const isCreator = useMemo(() => {
+    if (!userId || !activity?.creator_id) return false;
+    return activity.creator_id === userId;
+  }, [activity, userId]);
+
+  const roomState = useMemo(() => computeRoomState(activity), [activity]);
+  // :zap: CHANGE 5: only allow interaction when joined and not read-only.
+  const canInteract = joined && !roomState.isReadOnly;
+
   async function join() {
     if (!userId) return;
+    if (roomState.isReadOnly) {
+      Alert.alert("Not available", "This invite is closed or expired.");
+      return;
+    }
 
     const { error } = await supabase.from("activity_members").upsert({
       activity_id: activityId,
@@ -199,7 +242,7 @@ export default function RoomScreen() {
       state: "joined",
     });
 
-    if (error) Alert.alert("Join failed", error.message);
+    if (error) Alert.alert("Join failed", friendlyDbError(error.message));
     else {
       // :zap: CHANGE 4: Refresh local state immediately (do not rely on realtime)
       await loadAll(userId);
@@ -262,8 +305,75 @@ export default function RoomScreen() {
     );
   }
 
+  // :zap: CHANGE 6: Close invite action (creator only).
+  async function closeInvite() {
+    if (!userId || !activity) return;
+    if (!isCreator) {
+      Alert.alert("Not allowed", "Only the creator can close this invite.");
+      return;
+    }
+    if (roomState.isReadOnly) return;
+
+    const ok =
+      Platform.OS === "web"
+        ? globalThis.confirm?.(
+            "Close this invite?\n\nNo one can join or send messages anymore."
+          )
+        : await new Promise<boolean>((resolve) => {
+            Alert.alert(
+              "Close this invite?",
+              "No one can join or send messages anymore.",
+              [
+                {
+                  text: "Cancel",
+                  style: "cancel",
+                  onPress: () => resolve(false),
+                },
+                {
+                  text: "Close",
+                  style: "destructive",
+                  onPress: () => resolve(true),
+                },
+              ]
+            );
+          });
+
+    if (!ok) return;
+
+    try {
+      const { error: updErr } = await supabase
+        .from("activities")
+        .update({
+          status: "closed",
+          closed_at: new Date().toISOString(),
+          closed_by: userId,
+        })
+        .eq("id", activityId);
+
+      if (updErr) throw updErr;
+
+      const { error: evtErr } = await supabase.from("room_events").insert({
+        activity_id: activityId,
+        user_id: userId,
+        type: "system",
+        content: "Invite closed by creator",
+      });
+
+      if (evtErr) console.error("close system event insert failed:", evtErr);
+
+      await loadAll(userId);
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Close failed", e?.message ?? "Unknown error");
+    }
+  }
+
   async function sendChat(text: string) {
     if (!userId) return;
+    if (!canInteract) {
+      Alert.alert("Read-only", "This invite is closed or expired.");
+      return;
+    }
 
     const trimmed = text.trim();
     if (!trimmed) return;
@@ -275,7 +385,7 @@ export default function RoomScreen() {
       content: trimmed,
     });
 
-    if (error) Alert.alert("Send failed", error.message);
+    if (error) Alert.alert("Send failed", friendlyDbError(error.message));
     else {
       setMessage("");
       // :zap: CHANGE 6: Refresh events immediately
@@ -285,6 +395,10 @@ export default function RoomScreen() {
 
   async function sendQuick(code: string) {
     if (!userId) return;
+    if (!canInteract) {
+      Alert.alert("Read-only", "This invite is closed or expired.");
+      return;
+    }
 
     const { error } = await supabase.from("room_events").insert({
       activity_id: activityId,
@@ -293,7 +407,7 @@ export default function RoomScreen() {
       content: code,
     });
 
-    if (error) Alert.alert("Failed", error.message);
+    if (error) Alert.alert("Failed", friendlyDbError(error.message));
     else {
       // :zap: CHANGE 7: Refresh events immediately
       await loadAll(userId);
@@ -310,11 +424,27 @@ export default function RoomScreen() {
         {activity?.place_text ?? "No place"} • members: {members.length}
       </Text>
 
+      {/* :zap: CHANGE 7: Status banner */}
+      {roomState.label ? (
+        <View style={{ padding: 10, borderWidth: 1, borderRadius: 12 }}>
+          <Text style={{ fontWeight: "800" }}>{roomState.label}</Text>
+          <Text style={{ opacity: 0.8 }}>
+            This room is read-only. You can still view messages.
+          </Text>
+        </View>
+      ) : null}
+
       <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
         {!joined ? (
           <Pressable
             onPress={join}
-            style={{ padding: 10, borderWidth: 1, borderRadius: 10 }}
+            disabled={roomState.isReadOnly}
+            style={{
+              padding: 10,
+              borderWidth: 1,
+              borderRadius: 10,
+              opacity: roomState.isReadOnly ? 0.5 : 1,
+            }}
           >
             <Text style={{ fontWeight: "700" }}>Join</Text>
           </Pressable>
@@ -327,14 +457,30 @@ export default function RoomScreen() {
           </Pressable>
         )}
 
+        {/* :zap: CHANGE 8: Creator-only Close button */}
+        {isCreator ? (
+          <Pressable
+            onPress={closeInvite}
+            disabled={roomState.isReadOnly}
+            style={{
+              padding: 10,
+              borderWidth: 1,
+              borderRadius: 10,
+              opacity: roomState.isReadOnly ? 0.5 : 1,
+            }}
+          >
+            <Text style={{ fontWeight: "800" }}>Close invite</Text>
+          </Pressable>
+        ) : null}
+
         <Pressable
           onPress={() => sendQuick("IM_HERE")}
-          disabled={!joined}
+          disabled={!canInteract}
           style={{
             padding: 10,
             borderWidth: 1,
             borderRadius: 10,
-            opacity: joined ? 1 : 0.5,
+            opacity: canInteract ? 1 : 0.5,
           }}
         >
           <Text>✅ I'm here</Text>
@@ -342,12 +488,12 @@ export default function RoomScreen() {
 
         <Pressable
           onPress={() => sendQuick("LATE_10")}
-          disabled={!joined}
+          disabled={!canInteract}
           style={{
             padding: 10,
             borderWidth: 1,
             borderRadius: 10,
-            opacity: joined ? 1 : 0.5,
+            opacity: canInteract ? 1 : 0.5,
           }}
         >
           <Text>⏱️ 10 min late</Text>
@@ -355,12 +501,12 @@ export default function RoomScreen() {
 
         <Pressable
           onPress={() => sendQuick("CANCEL")}
-          disabled={!joined}
+          disabled={!canInteract}
           style={{
             padding: 10,
             borderWidth: 1,
             borderRadius: 10,
-            opacity: joined ? 1 : 0.5,
+            opacity: canInteract ? 1 : 0.5,
           }}
         >
           <Text>❌ Cancel</Text>
@@ -393,24 +539,30 @@ export default function RoomScreen() {
         <TextInput
           value={message}
           onChangeText={setMessage}
-          placeholder={joined ? "Say something…" : "Join to chat"}
-          editable={joined}
+          placeholder={
+            joined
+              ? roomState.isReadOnly
+                ? "Read-only"
+                : "Say something…"
+              : "Join to chat"
+          }
+          editable={canInteract}
           style={{
             flex: 1,
             borderWidth: 1,
             borderRadius: 10,
             padding: 12,
-            opacity: joined ? 1 : 0.6,
+            opacity: canInteract ? 1 : 0.6,
           }}
         />
         <Pressable
           onPress={() => sendChat(message)}
-          disabled={!joined}
+          disabled={!canInteract}
           style={{
             padding: 12,
             borderWidth: 1,
             borderRadius: 10,
-            opacity: joined ? 1 : 0.5,
+            opacity: canInteract ? 1 : 0.5,
           }}
         >
           <Text style={{ fontWeight: "800" }}>Send</Text>
