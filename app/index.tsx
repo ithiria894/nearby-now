@@ -1,4 +1,11 @@
-import { Pressable, ScrollView, Text, View, Alert } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+  Alert,
+  Platform,
+} from "react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useFocusEffect } from "expo-router";
 import { supabase } from "../lib/supabase";
@@ -34,6 +41,11 @@ export default function IndexScreen() {
   const [activities, setActivities] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [joiningActivityId, setJoiningActivityId] = useState<string | null>(
+    null
+  );
+  // :zap: CHANGE 8: Track which activities the current user already joined.
+  const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
 
   // :zap: CHANGE 1: Load current user id for creator-only UI.
   useEffect(() => {
@@ -41,8 +53,10 @@ export default function IndexScreen() {
       try {
         const uid = await requireUserId();
         setUserId(uid);
+        await fetchJoinedIds(uid);
       } catch {
         setUserId(null);
+        setJoinedIds(new Set());
       }
     })();
   }, []);
@@ -68,6 +82,84 @@ export default function IndexScreen() {
     setActivities((data ?? []) as ActivityRow[]);
   }
 
+  // :zap: CHANGE 9: Fetch joined activity ids for current user.
+  async function fetchJoinedIds(currentUserId?: string | null) {
+    const uid = currentUserId ?? userId;
+    if (!uid) {
+      setJoinedIds(new Set());
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("activity_members")
+      .select("activity_id")
+      .eq("user_id", uid)
+      .eq("state", "joined")
+      .limit(500);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    setJoinedIds(new Set((data ?? []).map((r: any) => String(r.activity_id))));
+  }
+
+  // :zap: CHANGE 6: Join from index (tap card -> confirm -> join -> navigate).
+  async function joinFromIndex(activityId: string) {
+    if (joiningActivityId) return;
+
+    setJoiningActivityId(activityId);
+    try {
+      const uid = await requireUserId();
+
+      const { error } = await supabase.from("activity_members").upsert({
+        activity_id: activityId,
+        user_id: uid,
+        role: "member",
+        state: "joined",
+      });
+
+      if (error) throw error;
+
+      setJoinedIds((prev) => {
+        const next = new Set(prev);
+        next.add(activityId);
+        return next;
+      });
+
+      await fetchActivities();
+      router.push(`/room/${activityId}`);
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Join failed", e?.message ?? "Unknown error");
+    } finally {
+      setJoiningActivityId(null);
+    }
+  }
+
+  // :zap: CHANGE 7: Cross-platform join confirm (web uses window.confirm).
+  function confirmJoin(activityId: string) {
+    console.log("[Index] card pressed:", activityId);
+
+    if (Platform.OS === "web") {
+      const ok = globalThis.confirm?.(
+        "Join this invite?\n\nYou’ll be added as a member and enter the room."
+      );
+      if (ok) joinFromIndex(activityId);
+      return;
+    }
+
+    Alert.alert(
+      "Join this invite?",
+      "You’ll be added as a member and enter the room.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Join", onPress: () => joinFromIndex(activityId) },
+      ]
+    );
+  }
+
   // :zap: CHANGE 2: Initial load
   useEffect(() => {
     fetchActivities();
@@ -76,7 +168,8 @@ export default function IndexScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchActivities();
-    }, [])
+      fetchJoinedIds();
+    }, [userId])
   );
   // :zap: CHANGE 4: Realtime refresh
   useEffect(() => {
@@ -85,19 +178,25 @@ export default function IndexScreen() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "activities" },
-        () => fetchActivities()
+        () => {
+          fetchActivities();
+          fetchJoinedIds();
+        }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "activity_members" },
-        () => fetchActivities()
+        () => {
+          fetchActivities();
+          fetchJoinedIds();
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [userId]);
 
   const header = useMemo(() => {
     return "Browse invites or post your own";
@@ -146,11 +245,19 @@ export default function IndexScreen() {
           {activities.map((a) => (
             <Pressable
               key={a.id}
-              onPress={() => router.push(`/room/${a.id}`)}
+              onPress={() => {
+                if (joinedIds.has(a.id)) {
+                  router.push(`/room/${a.id}`);
+                  return;
+                }
+                confirmJoin(a.id);
+              }}
+              disabled={joiningActivityId === a.id}
               style={{
                 padding: 12,
                 borderRadius: 12,
                 borderWidth: 1,
+                opacity: joiningActivityId === a.id ? 0.6 : 1,
               }}
             >
               <View
@@ -178,7 +285,10 @@ export default function IndexScreen() {
 
                 {userId && a.creator_id === userId ? (
                   <Pressable
-                    onPress={() => router.push(`/edit/${a.id}`)}
+                    onPress={(event: any) => {
+                      event?.stopPropagation?.();
+                      router.push(`/edit/${a.id}`);
+                    }}
                     // Keep edit separate from card navigation.
                     style={{
                       paddingVertical: 8,
