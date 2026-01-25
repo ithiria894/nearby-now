@@ -22,7 +22,8 @@ CREATE TABLE public.activity_members (
     user_id uuid NOT NULL,
     role text DEFAULT 'member'::text NOT NULL,
     state text DEFAULT 'joined'::text NOT NULL,
-    joined_at timestamp with time zone DEFAULT now() NOT NULL
+    joined_at timestamp with time zone DEFAULT now() NOT NULL,
+    left_at timestamp with time zone
 );
 
 CREATE TABLE public.profiles (
