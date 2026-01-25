@@ -108,6 +108,9 @@ export default function RoomScreen() {
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [events, setEvents] = useState<RoomEventRow[]>([]);
   const [message, setMessage] = useState("");
+  const [myMembershipState, setMyMembershipState] = useState<
+    "none" | "joined" | "left"
+  >("none");
 
   // :zap: CHANGE 1: Load activity + members always, but only load events if joined (RLS)
   async function loadAll(currentUserId?: string | null) {
@@ -134,17 +137,36 @@ export default function RoomScreen() {
     setMembers((m ?? []) as any);
 
     const uid = currentUserId ?? userId;
-    const isJoined = uid
-      ? (m ?? []).some((x: any) => x.user_id === uid)
-      : false;
 
-    if (!isJoined) {
+    // :zap: CHANGE 13: Load my membership state + left_at.
+    let myState: "none" | "joined" | "left" = "none";
+    let leftAt: Date | null = null;
+    if (uid) {
+      const { data: me, error: meErr } = await supabase
+        .from("activity_members")
+        .select("state,left_at")
+        .eq("activity_id", activityId)
+        .eq("user_id", uid)
+        .maybeSingle();
+
+      if (meErr) console.error(meErr);
+      const st = (me as any)?.state;
+      myState = st === "left" ? "left" : st === "joined" ? "joined" : "none";
+      leftAt = (me as any)?.left_at ? new Date((me as any).left_at) : null;
+    }
+
+    setMyMembershipState(myState);
+
+    // :zap: CHANGE 17: Allow viewing messages for joined OR left users.
+    const canReadEvents = myState === "joined" || myState === "left";
+    if (!canReadEvents) {
       setEvents([]);
       return;
     }
 
     // :zap: CHANGE 5: Join profiles so we can show display_name instead of event.type.
-    const { data: e, error: eErr } = await supabase
+    // :zap: CHANGE 5: Load events with cutoff when left.
+    let query = supabase
       .from("room_events")
       .select(
         "id, activity_id, user_id, type, content, created_at, profiles(display_name)"
@@ -152,6 +174,12 @@ export default function RoomScreen() {
       .eq("activity_id", activityId)
       .order("created_at", { ascending: true })
       .limit(200);
+
+    if (myState === "left" && leftAt) {
+      query = query.lte("created_at", leftAt.toISOString());
+    }
+
+    const { data: e, error: eErr } = await query;
 
     if (eErr) console.error(eErr);
     setEvents((e ?? []) as any);
@@ -172,8 +200,10 @@ export default function RoomScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityId]);
 
-  // :zap: CHANGE 3: Realtime refresh
+  // :zap: CHANGE 3: Realtime refresh (joined only).
   useEffect(() => {
+    if (myMembershipState !== "joined") return;
+
     const channel = supabase
       .channel(`nearby-now-room-${activityId}`)
       .on(
@@ -189,7 +219,7 @@ export default function RoomScreen() {
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "room_events",
           filter: `activity_id=eq.${activityId}`,
@@ -212,7 +242,7 @@ export default function RoomScreen() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId, userId]);
+  }, [activityId, myMembershipState]);
 
   const joined = useMemo(() => {
     if (!userId) return false;
@@ -226,7 +256,9 @@ export default function RoomScreen() {
 
   const roomState = useMemo(() => computeRoomState(activity), [activity]);
   // :zap: CHANGE 5: only allow interaction when joined and not read-only.
-  const canInteract = joined && !roomState.isReadOnly;
+  const canInteract = myMembershipState === "joined" && !roomState.isReadOnly;
+  const canReadEvents =
+    myMembershipState === "joined" || myMembershipState === "left";
 
   async function join() {
     if (!userId) return;
@@ -434,6 +466,16 @@ export default function RoomScreen() {
         </View>
       ) : null}
 
+      {/* :zap: CHANGE 14: Left banner */}
+      {myMembershipState === "left" ? (
+        <View style={{ padding: 10, borderWidth: 1, borderRadius: 12 }}>
+          <Text style={{ fontWeight: "800" }}>You left</Text>
+          <Text style={{ opacity: 0.8 }}>
+            You can view history messages. Tap Join to re-join this room.
+          </Text>
+        </View>
+      ) : null}
+
       <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
         {!joined ? (
           <Pressable
@@ -446,7 +488,9 @@ export default function RoomScreen() {
               opacity: roomState.isReadOnly ? 0.5 : 1,
             }}
           >
-            <Text style={{ fontWeight: "700" }}>Join</Text>
+            <Text style={{ fontWeight: "700" }}>
+              {myMembershipState === "left" ? "Re-join" : "Join"}
+            </Text>
           </Pressable>
         ) : (
           <Pressable
@@ -515,7 +559,7 @@ export default function RoomScreen() {
 
       <View style={{ flex: 1, borderWidth: 1, borderRadius: 12, padding: 10 }}>
         <ScrollView contentContainerStyle={{ gap: 8 }}>
-          {!joined ? (
+          {!canReadEvents ? (
             <Text style={{ opacity: 0.8 }}>
               Join this invite to see and send messages.
             </Text>
@@ -540,11 +584,13 @@ export default function RoomScreen() {
           value={message}
           onChangeText={setMessage}
           placeholder={
-            joined
-              ? roomState.isReadOnly
-                ? "Read-only"
-                : "Say something…"
-              : "Join to chat"
+            canInteract
+              ? "Say something…"
+              : myMembershipState === "left"
+                ? "Re-join to chat"
+                : roomState.isReadOnly
+                  ? "Read-only"
+                  : "Join to chat"
           }
           editable={canInteract}
           style={{

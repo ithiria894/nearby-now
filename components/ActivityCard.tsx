@@ -12,10 +12,12 @@ export type ActivityCardActivity = {
   created_at?: string;
 };
 
+export type MembershipState = "none" | "joined" | "left";
+
 type Props = {
   activity: ActivityCardActivity;
   currentUserId: string | null;
-  isJoined: boolean;
+  membershipState: MembershipState;
   isJoining: boolean;
   onPressCard: () => void;
   onPressEdit?: () => void;
@@ -45,7 +47,7 @@ export default function ActivityCard(props: Props) {
   const {
     activity: a,
     currentUserId,
-    isJoined,
+    membershipState,
     isJoining,
     onPressCard,
     onPressEdit,
@@ -53,6 +55,13 @@ export default function ActivityCard(props: Props) {
 
   const isCreator = !!currentUserId && a.creator_id === currentUserId;
   const statusLabel = computeStatusLabel(a);
+  // :zap: CHANGE 2: membership-aware helper text.
+  const helperText =
+    membershipState === "joined"
+      ? "You joined"
+      : membershipState === "left"
+        ? "You left"
+        : "Tap to join";
 
   return (
     <Pressable
@@ -97,9 +106,7 @@ export default function ActivityCard(props: Props) {
             gender: {a.gender_pref} • capacity: {a.capacity ?? "unlimited"}
           </Text>
 
-          <Text style={{ opacity: 0.7 }}>
-            {isJoined ? "You joined" : "Tap to join"}
-          </Text>
+          <Text style={{ opacity: 0.7 }}>{helperText}</Text>
         </View>
 
         {isCreator && onPressEdit ? (

@@ -11,6 +11,7 @@ export default function RootLayout() {
     let isMounted = true;
 
     async function guard() {
+      if (!segments.length) return;
       const {
         data: { session },
         error,
@@ -19,7 +20,7 @@ export default function RootLayout() {
       if (!isMounted) return;
       if (error) console.error("getSession error:", error);
 
-      // segments: e.g. ["login"] / ["register"] / ["room", "[id]"] / ["index"]
+      // segments: e.g. ["login"] / ["register"] / ["(tabs)", "browse"]
       const inAuthScreen =
         segments[0] === "login" || segments[0] === "register";
 
@@ -48,7 +49,7 @@ export default function RootLayout() {
         options={{ title: "Login", headerShown: false }}
       />
       <Stack.Screen name="register" options={{ title: "Register" }} />
-      <Stack.Screen name="index" options={{ title: "Nearby Now" }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="create" options={{ title: "Create" }} />
       {/* :zap: CHANGE 1: Register edit route. */}
       <Stack.Screen name="edit/[id]" options={{ title: "Edit Invite" }} />

@@ -4,7 +4,7 @@ set -euo pipefail
 # ============================================================
 # dump_supabase_schema.sh
 #
-# Outputs (all under supabase/migrations):
+# Outputs (all under supabase/SchemaSnapshot):
 #   1) public_tables_and_relationships.sql
 #   2) public_constraints_and_indexes.sql
 #   3) public_policies.sql
@@ -21,7 +21,7 @@ set -euo pipefail
 # :zap: CHANGE 1: Hardcode DB URL (local-only convenience)
 SUPABASE_DB_URL="postgresql://postgres:Somnium_8947@db.vvpkrbrirnfzdvyndmet.supabase.co:5432/postgres"
 
-OUT_DIR="supabase/migrations"
+OUT_DIR="supabase/SchemaSnapshot"
 OUT_TABLES="${OUT_DIR}/public_tables_and_relationships.sql"
 OUT_CONSTRAINTS_INDEXES="${OUT_DIR}/public_constraints_and_indexes.sql"
 OUT_POLICIES="${OUT_DIR}/public_policies.sql"
@@ -379,7 +379,7 @@ echo "[dump] Writing: $OUT_PROJECT_META"
     "email_confirm_hint": "Set true if signUp requires email confirmation before session becomes active. Set false if user is immediately signed-in after signUp."
   },
   "client_init": {
-    "repo_dump_file": "supabase/migrations/project_client_init.txt",
+    "repo_dump_file": "supabase/SchemaSnapshot/project_client_init.txt",
     "uses_service_role_key": null,
     "service_role_hint": "Client apps should NOT use service role. If you see 'service_role' key in repo, it should only be on server."
   }
