@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-01-25T12:25:51Z",
+  "generated_at_utc": "2026-01-25T13:25:34Z",
   "notes": [
     "Auth settings (e.g. email confirmation on/off) are Supabase project-level settings (GoTrue), not stored in Postgres public schema.",
     "Fill these fields manually from Supabase Dashboard > Authentication > Providers / Settings."
@@ -9,7 +9,7 @@
     "email_confirm_hint": "Set true if signUp requires email confirmation before session becomes active. Set false if user is immediately signed-in after signUp."
   },
   "client_init": {
-    "repo_dump_file": "supabase/migrations/project_client_init.txt",
+    "repo_dump_file": "supabase/SchemaSnapshot/project_client_init.txt",
     "uses_service_role_key": null,
     "service_role_hint": "Client apps should NOT use service role. If you see 'service_role' key in repo, it should only be on server."
   }
