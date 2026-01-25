@@ -137,11 +137,9 @@ export default function RoomScreen() {
     setMembers((m ?? []) as any);
 
     const uid = currentUserId ?? userId;
-    const isJoined = uid
-      ? (m ?? []).some((x: any) => x.user_id === uid)
-      : false;
 
     // :zap: CHANGE 13: Load my membership state (joined/left/none).
+    let myState: "none" | "joined" | "left" = "none";
     if (uid) {
       const { data: me, error: meErr } = await supabase
         .from("activity_members")
@@ -152,14 +150,14 @@ export default function RoomScreen() {
 
       if (meErr) console.error(meErr);
       const st = (me as any)?.state;
-      setMyMembershipState(
-        st === "left" ? "left" : st === "joined" ? "joined" : "none"
-      );
-    } else {
-      setMyMembershipState("none");
+      myState = st === "left" ? "left" : st === "joined" ? "joined" : "none";
     }
 
-    if (!isJoined) {
+    setMyMembershipState(myState);
+
+    // :zap: CHANGE 17: Allow viewing messages for joined OR left users.
+    const canReadEvents = myState === "joined" || myState === "left";
+    if (!canReadEvents) {
       setEvents([]);
       return;
     }
@@ -247,7 +245,9 @@ export default function RoomScreen() {
 
   const roomState = useMemo(() => computeRoomState(activity), [activity]);
   // :zap: CHANGE 5: only allow interaction when joined and not read-only.
-  const canInteract = joined && !roomState.isReadOnly;
+  const canInteract = myMembershipState === "joined" && !roomState.isReadOnly;
+  const canReadEvents =
+    myMembershipState === "joined" || myMembershipState === "left";
 
   async function join() {
     if (!userId) return;
@@ -548,7 +548,7 @@ export default function RoomScreen() {
 
       <View style={{ flex: 1, borderWidth: 1, borderRadius: 12, padding: 10 }}>
         <ScrollView contentContainerStyle={{ gap: 8 }}>
-          {!joined ? (
+          {!canReadEvents ? (
             <Text style={{ opacity: 0.8 }}>
               Join this invite to see and send messages.
             </Text>
@@ -573,11 +573,13 @@ export default function RoomScreen() {
           value={message}
           onChangeText={setMessage}
           placeholder={
-            joined
-              ? roomState.isReadOnly
-                ? "Read-only"
-                : "Say something…"
-              : "Join to chat"
+            canInteract
+              ? "Say something…"
+              : myMembershipState === "left"
+                ? "Re-join to chat"
+                : roomState.isReadOnly
+                  ? "Read-only"
+                  : "Join to chat"
           }
           editable={canInteract}
           style={{
