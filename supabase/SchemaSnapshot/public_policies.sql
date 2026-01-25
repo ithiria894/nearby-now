@@ -1,6 +1,6 @@
 -- ============================================================
 -- AUTO-GENERATED: public RLS + policies
--- Generated at: 2026-01-25T09:09:34Z
+-- Generated at: 2026-01-25T13:25:24Z
 -- ============================================================
 
 -- ---- RLS flags (ENABLE/FORCE) ----
@@ -80,5 +80,5 @@ CREATE POLICY room_events_select_members ON public.room_events AS PERMISSIVE FOR
 
    FROM activity_members m
 
-  WHERE ((m.activity_id = room_events.activity_id) AND (m.user_id = auth.uid()) AND (m.state = 'joined'::text)))));
+  WHERE ((m.activity_id = room_events.activity_id) AND (m.user_id = auth.uid()) AND ((m.state = 'joined'::text) OR ((m.state = 'left'::text) AND (m.left_at IS NOT NULL) AND (room_events.created_at <= m.left_at)))))));
 

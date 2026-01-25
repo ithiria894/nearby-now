@@ -1,6 +1,6 @@
 -- ============================================================
 -- AUTO-GENERATED: public constraints + indexes
--- Generated at: 2026-01-25T09:09:37Z
+-- Generated at: 2026-01-25T13:25:26Z
 -- ============================================================
 
 -- ---- Constraints (PK / UNIQUE / CHECK) ----
@@ -45,6 +45,10 @@ CREATE INDEX idx_activities_start_time ON public.activities USING btree (start_t
 -- Index: public.idx_activities_status
 
 CREATE INDEX idx_activities_status ON public.activities USING btree (status);
+
+-- Index: public.idx_activity_members_activity_user
+
+CREATE INDEX idx_activity_members_activity_user ON public.activity_members USING btree (activity_id, user_id);
 
 -- Index: public.idx_members_activity_state
 
