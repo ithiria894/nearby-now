@@ -108,6 +108,9 @@ export default function RoomScreen() {
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [events, setEvents] = useState<RoomEventRow[]>([]);
   const [message, setMessage] = useState("");
+  const [myMembershipState, setMyMembershipState] = useState<
+    "none" | "joined" | "left"
+  >("none");
 
   // :zap: CHANGE 1: Load activity + members always, but only load events if joined (RLS)
   async function loadAll(currentUserId?: string | null) {
@@ -137,6 +140,24 @@ export default function RoomScreen() {
     const isJoined = uid
       ? (m ?? []).some((x: any) => x.user_id === uid)
       : false;
+
+    // :zap: CHANGE 13: Load my membership state (joined/left/none).
+    if (uid) {
+      const { data: me, error: meErr } = await supabase
+        .from("activity_members")
+        .select("state")
+        .eq("activity_id", activityId)
+        .eq("user_id", uid)
+        .maybeSingle();
+
+      if (meErr) console.error(meErr);
+      const st = (me as any)?.state;
+      setMyMembershipState(
+        st === "left" ? "left" : st === "joined" ? "joined" : "none"
+      );
+    } else {
+      setMyMembershipState("none");
+    }
 
     if (!isJoined) {
       setEvents([]);
@@ -434,6 +455,16 @@ export default function RoomScreen() {
         </View>
       ) : null}
 
+      {/* :zap: CHANGE 14: Left banner */}
+      {myMembershipState === "left" ? (
+        <View style={{ padding: 10, borderWidth: 1, borderRadius: 12 }}>
+          <Text style={{ fontWeight: "800" }}>You left</Text>
+          <Text style={{ opacity: 0.8 }}>
+            You can view history messages. Tap Join to re-join this room.
+          </Text>
+        </View>
+      ) : null}
+
       <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
         {!joined ? (
           <Pressable
@@ -446,7 +477,9 @@ export default function RoomScreen() {
               opacity: roomState.isReadOnly ? 0.5 : 1,
             }}
           >
-            <Text style={{ fontWeight: "700" }}>Join</Text>
+            <Text style={{ fontWeight: "700" }}>
+              {myMembershipState === "left" ? "Re-join" : "Join"}
+            </Text>
           </Pressable>
         ) : (
           <Pressable

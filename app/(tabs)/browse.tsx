@@ -1,12 +1,202 @@
-import { View, Text } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, FlatList, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 
+import ActivityCard, {
+  type ActivityCardActivity,
+} from "../../components/ActivityCard";
+import { requireUserId } from "../../lib/auth";
+import { fetchMembershipRowsForUser, upsertJoin } from "../../lib/activities";
+import { supabase } from "../../lib/supabase";
+
+function isJoinable(a: ActivityCardActivity, joinedSet: Set<string>): boolean {
+  if (joinedSet.has(a.id)) return false;
+  if (a.status !== "open") return false;
+  if (a.expires_at && new Date(a.expires_at).getTime() <= Date.now())
+    return false;
+  return true;
+}
+
+// :zap: CHANGE 1: Browse = joinable open + not expired + not joined
 export default function BrowseScreen() {
+  const router = useRouter();
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const [items, setItems] = useState<ActivityCardActivity[]>([]);
+  const [joinedSet, setJoinedSet] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [joiningId, setJoiningId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const uid = await requireUserId();
+    setUserId(uid);
+
+    const memberships = await fetchMembershipRowsForUser(uid);
+    const joined = new Set(
+      memberships.filter((m) => m.state === "joined").map((m) => m.activity_id)
+    );
+    setJoinedSet(joined);
+
+    const { data, error } = await supabase
+      .from("activities")
+      .select(
+        "id, creator_id, title_text, place_text, expires_at, gender_pref, capacity, status, created_at"
+      )
+      .eq("status", "open")
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (error) throw error;
+
+    const rows = (data ?? []) as ActivityCardActivity[];
+    const joinable = rows.filter((a) => isJoinable(a, joined));
+
+    setItems(joinable);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await load();
+      } catch (e: any) {
+        console.error(e);
+        Alert.alert("Load failed", e?.message ?? "Unknown error");
+        router.replace("/login");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [load, router]);
+
+  // :zap: CHANGE 9: Realtime updates for Browse list.
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel("browse-activities")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "activities" },
+        (payload) => {
+          const next = (payload.new ?? null) as ActivityCardActivity | null;
+          const old = (payload.old ?? null) as ActivityCardActivity | null;
+
+          setItems((prev) => {
+            const map = new Map(prev.map((x) => [x.id, x]));
+
+            if (payload.eventType === "DELETE") {
+              if (old?.id) map.delete(old.id);
+              return Array.from(map.values());
+            }
+
+            if (!next?.id) return prev;
+
+            const shouldShow = isJoinable(next, joinedSet);
+
+            if (!shouldShow) {
+              map.delete(next.id);
+            } else {
+              map.set(next.id, next);
+            }
+
+            const arr = Array.from(map.values());
+            arr.sort((a, b) => {
+              const ta = new Date(a.created_at ?? 0).getTime();
+              const tb = new Date(b.created_at ?? 0).getTime();
+              return tb - ta;
+            });
+            return arr;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, joinedSet]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await load();
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert("Refresh failed", e?.message ?? "Unknown error");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [load]);
+
+  async function onPressCard(a: ActivityCardActivity) {
+    if (!userId) return;
+
+    if (!joinedSet.has(a.id)) {
+      setJoiningId(a.id);
+      try {
+        await upsertJoin(a.id, userId);
+        setJoinedSet((prev) => new Set([...prev, a.id]));
+      } catch (e: any) {
+        console.error(e);
+        Alert.alert("Join failed", e?.message ?? "Unknown error");
+        return;
+      } finally {
+        setJoiningId(null);
+      }
+    }
+
+    router.push(`/room/${a.id}`);
+  }
+
+  const header = useMemo(() => {
+    return (
+      <View style={{ padding: 16, gap: 6 }}>
+        <Text style={{ fontSize: 18, fontWeight: "800" }}>Browse</Text>
+        <Text style={{ opacity: 0.7 }}>
+          Open invites you can join right now.
+        </Text>
+      </View>
+    );
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, padding: 16 }}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1, padding: 16 }}>
-      <Text style={{ fontSize: 18, fontWeight: "800" }}>Browse</Text>
-      <Text style={{ opacity: 0.7, marginTop: 8 }}>
-        Joinable activities will be shown here.
-      </Text>
-    </View>
+    <FlatList
+      data={items}
+      keyExtractor={(x) => x.id}
+      ListHeaderComponent={header}
+      contentContainerStyle={{ paddingBottom: 16 }}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      renderItem={({ item }) => (
+        <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+          <ActivityCard
+            activity={item}
+            currentUserId={userId}
+            membershipState="none"
+            isJoining={joiningId === item.id}
+            onPressCard={() => onPressCard(item)}
+            onPressEdit={
+              item.creator_id === userId
+                ? () => router.push(`/edit/${item.id}`)
+                : undefined
+            }
+          />
+        </View>
+      )}
+      ListEmptyComponent={
+        <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
+          <Text style={{ opacity: 0.8 }}>No joinable invites right now.</Text>
+        </View>
+      }
+    />
   );
 }
