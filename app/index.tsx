@@ -47,18 +47,41 @@ export default function IndexScreen() {
   // :zap: CHANGE 8: Track which activities the current user already joined.
   const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
 
-  // :zap: CHANGE 1: Load current user id for creator-only UI.
+  // :zap: CHANGE 1: Keep Index in sync with auth state (login/logout).
   useEffect(() => {
-    (async () => {
-      try {
-        const uid = await requireUserId();
-        setUserId(uid);
-        await fetchJoinedIds(uid);
-      } catch {
-        setUserId(null);
+    let isMounted = true;
+
+    async function syncFromSession() {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (!isMounted) return;
+      if (error) console.error("getSession error:", error);
+
+      const uid = session?.user?.id ?? null;
+      setUserId(uid);
+
+      if (!uid) {
         setJoinedIds(new Set());
+        return;
       }
-    })();
+
+      await fetchJoinedIds(uid);
+    }
+
+    syncFromSession();
+
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      syncFromSession();
+    });
+
+    return () => {
+      isMounted = false;
+      sub.subscription.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fetchActivities() {
@@ -208,6 +231,9 @@ export default function IndexScreen() {
   }, []);
 
   async function onLogout() {
+    // :zap: CHANGE 2: Reset local state immediately on logout for consistent UX.
+    setUserId(null);
+    setJoinedIds(new Set());
     const { error } = await supabase.auth.signOut();
     if (error) Alert.alert("Logout failed", error.message);
   }
@@ -251,7 +277,10 @@ export default function IndexScreen() {
             <Pressable
               key={a.id}
               onPress={() => {
-                if (joinedIds.has(a.id)) {
+                if (
+                  joinedIds.has(a.id) ||
+                  (userId && a.creator_id === userId)
+                ) {
                   router.push(`/room/${a.id}`);
                   return;
                 }
