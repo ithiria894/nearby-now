@@ -1,6 +1,6 @@
 -- ============================================================
 -- AUTO-GENERATED: public constraints + indexes
--- Generated at: 2026-01-25T08:49:35Z
+-- Generated at: 2026-01-25T09:09:37Z
 -- ============================================================
 
 -- ---- Constraints (PK / UNIQUE / CHECK) ----
@@ -22,6 +22,14 @@ ALTER TABLE ONLY public.room_events ADD CONSTRAINT room_events_pkey PRIMARY KEY 
 
 
 -- ---- Indexes (excluding constraint-backed indexes) ----
+-- Index: public.idx_activities_closed_at
+
+CREATE INDEX idx_activities_closed_at ON public.activities USING btree (closed_at);
+
+-- Index: public.idx_activities_closed_by
+
+CREATE INDEX idx_activities_closed_by ON public.activities USING btree (closed_by);
+
 -- Index: public.idx_activities_creator
 
 CREATE INDEX idx_activities_creator ON public.activities USING btree (creator_id);
