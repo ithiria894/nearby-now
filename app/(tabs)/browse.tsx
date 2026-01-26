@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import ActivityCard, {
   type ActivityCardActivity,
 } from "../../components/ActivityCard";
+import BrowseMap from "../../components/BrowseMap";
 import { requireUserId } from "../../lib/auth";
 import { fetchMembershipRowsForUser, upsertJoin } from "../../lib/activities";
 import { supabase } from "../../lib/supabase";
@@ -27,6 +28,7 @@ export default function BrowseScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
   const load = useCallback(async () => {
     const uid = await requireUserId();
@@ -41,7 +43,7 @@ export default function BrowseScreen() {
     const { data, error } = await supabase
       .from("activities")
       .select(
-        "id, creator_id, title_text, place_text, expires_at, gender_pref, capacity, status, created_at"
+        "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at"
       )
       .eq("status", "open")
       .order("created_at", { ascending: false })
@@ -150,20 +152,61 @@ export default function BrowseScreen() {
   }
 
   const header = useMemo(() => {
+    const ToggleButton = ({
+      value,
+      label,
+    }: {
+      value: "list" | "map";
+      label: string;
+    }) => {
+      const selected = viewMode === value;
+      return (
+        <Pressable
+          onPress={() => setViewMode(value)}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            borderRadius: 999,
+            borderWidth: 1,
+            opacity: selected ? 1 : 0.6,
+          }}
+        >
+          <Text style={{ fontWeight: "800" }}>{label}</Text>
+        </Pressable>
+      );
+    };
+
     return (
-      <View style={{ padding: 16, gap: 6 }}>
+      <View style={{ padding: 16, gap: 10 }}>
         <Text style={{ fontSize: 18, fontWeight: "800" }}>Browse</Text>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <ToggleButton value="list" label="List" />
+          <ToggleButton value="map" label="Map" />
+        </View>
         <Text style={{ opacity: 0.7 }}>
           Open invites you can join right now.
         </Text>
       </View>
     );
-  }, []);
+  }, [viewMode]);
 
   if (loading) {
     return (
       <View style={{ flex: 1, padding: 16 }}>
         <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (viewMode === "map") {
+    return (
+      <View style={{ flex: 1 }}>
+        {header}
+        <BrowseMap
+          items={items}
+          onPressCard={onPressCard}
+          onRequestList={() => setViewMode("list")}
+        />
       </View>
     );
   }

@@ -26,7 +26,7 @@ export async function fetchActivitiesByIds(
   const { data, error } = await supabase
     .from("activities")
     .select(
-      "id, creator_id, title_text, place_text, expires_at, gender_pref, capacity, status, created_at"
+      "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at"
     )
     .in("id", activityIds);
 

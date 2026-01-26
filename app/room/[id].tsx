@@ -16,6 +16,8 @@ type ActivityRow = {
   id: string;
   title_text: string;
   place_text: string | null;
+  place_name: string | null;
+  place_address: string | null;
   // :zap: CHANGE 1: allow null (never expire).
   expires_at: string | null;
   gender_pref: string;
@@ -118,7 +120,7 @@ export default function RoomScreen() {
     const { data: a, error: aErr } = await supabase
       .from("activities")
       .select(
-        "id, title_text, place_text, expires_at, gender_pref, capacity, status, creator_id"
+        "id, title_text, place_text, place_name, place_address, expires_at, gender_pref, capacity, status, creator_id"
       )
       .eq("id", activityId)
       .single();
@@ -446,15 +448,21 @@ export default function RoomScreen() {
     }
   }
 
+  const placeName =
+    (activity?.place_name ?? activity?.place_text ?? "").trim() || "No place";
+  const placeAddress = (activity?.place_address ?? "").trim();
+
   return (
     <View style={{ flex: 1, padding: 16, gap: 10 }}>
       <Text style={{ fontSize: 18, fontWeight: "800" }}>
         {activity?.title_text ?? "Room"}
       </Text>
 
-      <Text>
-        {activity?.place_text ?? "No place"} • members: {members.length}
-      </Text>
+      <Text style={{ fontWeight: "600" }}>{placeName}</Text>
+      {placeAddress ? (
+        <Text style={{ opacity: 0.7 }}>{placeAddress}</Text>
+      ) : null}
+      <Text>members: {members.length}</Text>
 
       {/* :zap: CHANGE 7: Status banner */}
       {roomState.label ? (
