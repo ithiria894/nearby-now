@@ -4,6 +4,7 @@ import {
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   Text,
@@ -44,36 +45,84 @@ type RoomEventRow = {
   profiles?: { display_name: string | null } | null;
 };
 
+type ChatItem =
+  | { kind: "section"; id: string; label: string }
+  | { kind: "event"; id: string; e: RoomEventRow };
+
 const TOKENS = {
   bg: "#FFFFFF",
   border: "#E5E7EB",
+  title: "#111827",
   text: "#111827",
   subtext: "#6B7280",
 
-  bannerBg: "#F3F4F6",
-  bannerBorder: "#E5E7EB",
+  cardBg: "#FFFFFF",
 
+  mineBg: "#DCFCE7",
+  mineBorder: "#BBF7D0",
+
+  otherBg: "#F3F4F6",
+  otherBorder: "#E5E7EB",
+
+  systemText: "#6B7280",
+  systemBg: "#F3F4F6",
+  systemBorder: "#E5E7EB",
+
+  primary: "#111827",
+  overlay: "rgba(0,0,0,0.28)",
+
+  dangerText: "#991B1B",
   dangerBg: "#FEE2E2",
   dangerBorder: "#FECACA",
-  dangerText: "#991B1B",
 
+  okText: "#166534",
   okBg: "#DCFCE7",
   okBorder: "#BBF7D0",
-  okText: "#166534",
-
-  chipBg: "#F3F4F6",
-  chipBorder: "#E5E7EB",
 } as const;
 
+/* =======================
+ * Time helpers
+ * ======================= */
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(ms / 60000);
   if (mins < 1) return "now";
   if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
-  return `${hrs}h`;
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d`;
 }
 
+function hhmm(iso: string): string {
+  const d = new Date(iso);
+  const h = String(d.getHours()).padStart(2, "0");
+  const m = String(d.getMinutes()).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+function startOfLocalDayMs(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+function sectionLabelForIso(iso: string): string {
+  const t = new Date(iso);
+  const now = new Date();
+  const t0 = startOfLocalDayMs(t);
+  const n0 = startOfLocalDayMs(now);
+
+  const diffDays = Math.round((t0 - n0) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === -1) return "Yesterday";
+
+  // older: show date like "Jan 26"
+  const month = t.toLocaleString(undefined, { month: "short" });
+  return `${month} ${t.getDate()}`;
+}
+
+/* =======================
+ * Message content helpers
+ * ======================= */
 function renderEventContent(e: RoomEventRow): string {
   if (e.type === "quick") {
     switch (e.content) {
@@ -119,26 +168,10 @@ function friendlyDbError(message: string): string {
   return message;
 }
 
-function SmallChip({ label }: { label: string }) {
-  return (
-    <View
-      style={{
-        paddingVertical: 4,
-        paddingHorizontal: 10,
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: TOKENS.chipBorder,
-        backgroundColor: TOKENS.chipBg,
-      }}
-    >
-      <Text style={{ fontSize: 12, fontWeight: "700", color: TOKENS.text }}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
-function PrimaryButton({
+/* =======================
+ * UI components
+ * ======================= */
+function IconButton({
   label,
   onPress,
   disabled,
@@ -153,19 +186,82 @@ function PrimaryButton({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      hitSlop={10}
       style={({ pressed }) => ({
-        paddingVertical: 10,
-        paddingHorizontal: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 10,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: destructive ? TOKENS.dangerBorder : TOKENS.border,
-        backgroundColor: destructive ? TOKENS.dangerBg : TOKENS.bg,
+        backgroundColor: destructive ? TOKENS.dangerBg : TOKENS.cardBg,
         opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
       })}
     >
       <Text
         style={{
-          fontWeight: "800",
+          fontWeight: "900",
+          color: destructive ? TOKENS.dangerText : TOKENS.text,
+          fontSize: 12,
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function QuickChip({
+  label,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => ({
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: TOKENS.border,
+        backgroundColor: TOKENS.cardBg,
+        opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
+      })}
+    >
+      <Text style={{ fontWeight: "800", color: TOKENS.text, fontSize: 13 }}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function SheetItem({
+  label,
+  onPress,
+  destructive,
+}: {
+  label: string;
+  onPress: () => void;
+  destructive?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <Text
+        style={{
+          fontSize: 16,
+          fontWeight: "900",
           color: destructive ? TOKENS.dangerText : TOKENS.text,
         }}
       >
@@ -175,6 +271,9 @@ function PrimaryButton({
   );
 }
 
+/* =======================
+ * Main
+ * ======================= */
 export default function RoomScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -189,23 +288,20 @@ export default function RoomScreen() {
     "none" | "joined" | "left"
   >("none");
 
-  const listRef = useRef<FlatList<RoomEventRow> | null>(null);
+  // long-press menu state
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuTarget, setMenuTarget] = useState<RoomEventRow | null>(null);
+
+  const listRef = useRef<FlatList<ChatItem> | null>(null);
   const inputRef = useRef<TextInput | null>(null);
 
-  // :zap: CHANGE 1: A single helper to scroll chat to bottom
   function scrollToBottom(animated = true) {
     requestAnimationFrame(() => {
       listRef.current?.scrollToEnd({ animated });
     });
   }
 
-  // :zap: CHANGE 2: Keyboard avoid offset (keeps input visible)
-  const keyboardVerticalOffset = useMemo(() => {
-    // Expo Router header height varies; we keep a safe-ish offset.
-    // If you later add a native header, bump iOS from 64 -> 88.
-    if (Platform.OS === "ios") return 100;
-    return 0;
-  }, []);
+  const keyboardVerticalOffset = 100; // you said you already set this
 
   async function loadAll(currentUserId?: string | null) {
     const { data: a, error: aErr } = await supabase
@@ -272,7 +368,6 @@ export default function RoomScreen() {
     if (eErr) console.error(eErr);
     setEvents((e ?? []) as any);
 
-    // :zap: CHANGE 3: After loading events, keep view at bottom
     if ((e ?? []).length > 0) scrollToBottom(false);
   }
 
@@ -333,14 +428,11 @@ export default function RoomScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityId, myMembershipState]);
 
-  // :zap: CHANGE 4: When keyboard shows, auto-scroll so input + latest msgs stay visible
   useEffect(() => {
     const subShow = Keyboard.addListener("keyboardDidShow", () => {
       scrollToBottom(true);
     });
-    return () => {
-      subShow.remove();
-    };
+    return () => subShow.remove();
   }, []);
 
   const joined = useMemo(() => {
@@ -546,40 +638,164 @@ export default function RoomScreen() {
     (activity?.place_name ?? activity?.place_text ?? "").trim() || "No place";
   const placeAddress = (activity?.place_address ?? "").trim();
 
-  // :zap: CHANGE 5: Render message bubble style (small but improves UX a lot)
-  function renderItem({ item }: { item: RoomEventRow }) {
-    const isMine = !!userId && item.user_id === userId;
-    const name = getEventDisplayName(item);
-    const content = renderEventContent(item);
+  // :zap: CHANGE 1: Build "sectioned list items" (Today/Yesterday/Date)
+  const chatItems: ChatItem[] = useMemo(() => {
+    const items: ChatItem[] = [];
+    let lastLabel: string | null = null;
 
+    for (const e of events) {
+      const label = sectionLabelForIso(e.created_at);
+      if (label !== lastLabel) {
+        items.push({ kind: "section", id: `section:${label}`, label });
+        lastLabel = label;
+      }
+      items.push({ kind: "event", id: e.id, e });
+    }
+
+    return items;
+  }, [events]);
+
+  // :zap: CHANGE 2: Long-press handler for message
+  function openMessageMenu(e: RoomEventRow) {
+    setMenuTarget(e);
+    setMenuOpen(true);
+  }
+
+  async function copyToClipboard(text: string) {
+    // Web
+    if (Platform.OS === "web") {
+      try {
+        await navigator.clipboard.writeText(text);
+        Alert.alert("Copied", "Message copied.");
+      } catch {
+        Alert.alert("Copy failed", "Clipboard not available.");
+      }
+      return;
+    }
+
+    // Native placeholder (so you can test UX now without adding deps)
+    // If you want real native copy, tell me and I’ll add expo-clipboard cleanly.
+    Alert.alert("Copy", "Not implemented yet on native (placeholder).");
+  }
+
+  function reportMessage(_e: RoomEventRow) {
+    Alert.alert("Report", "Not implemented yet.");
+  }
+
+  function renderChatItem({ item }: { item: ChatItem }) {
+    if (item.kind === "section") {
+      return (
+        <View style={{ alignItems: "center", paddingVertical: 6 }}>
+          <View
+            style={{
+              paddingVertical: 4,
+              paddingHorizontal: 10,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: TOKENS.border,
+              backgroundColor: TOKENS.otherBg,
+            }}
+          >
+            <Text
+              style={{ fontSize: 12, fontWeight: "800", color: TOKENS.subtext }}
+            >
+              {item.label}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    const e = item.e;
+
+    // :zap: CHANGE 3: System message style (grey centered small bubble)
+    if (e.type === "system" || !e.user_id) {
+      return (
+        <View style={{ alignItems: "center", paddingVertical: 6 }}>
+          <View
+            style={{
+              paddingVertical: 6,
+              paddingHorizontal: 10,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: TOKENS.systemBorder,
+              backgroundColor: TOKENS.systemBg,
+              maxWidth: "92%",
+            }}
+          >
+            <Text
+              style={{
+                color: TOKENS.systemText,
+                fontSize: 12,
+                fontWeight: "700",
+              }}
+            >
+              {renderEventContent(e)}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    const isMine = !!userId && e.user_id === userId;
+    const name = getEventDisplayName(e);
+    const content = renderEventContent(e);
+
+    // :zap: CHANGE 4: IG-ish layout: name closer + smaller gap, time near bubble
     return (
-      <View style={{ gap: 4 }}>
-        <Text
-          style={{ fontSize: 12, color: TOKENS.subtext, fontWeight: "700" }}
+      <Pressable
+        onLongPress={() => openMessageMenu(e)}
+        delayLongPress={250}
+        style={{
+          alignSelf: isMine ? "flex-end" : "flex-start",
+          maxWidth: "88%",
+          gap: 4,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: isMine ? "row-reverse" : "row",
+            alignItems: "baseline",
+            gap: 6,
+          }}
         >
-          {name} • {timeAgo(item.created_at)}
-        </Text>
+          <Text
+            numberOfLines={1}
+            style={{
+              fontSize: 12,
+              fontWeight: "800",
+              color: TOKENS.subtext,
+              maxWidth: 180,
+            }}
+          >
+            {name}
+          </Text>
+          <Text style={{ fontSize: 11, color: TOKENS.subtext }}>
+            {hhmm(e.created_at)}
+          </Text>
+        </View>
 
         <View
           style={{
-            alignSelf: isMine ? "flex-end" : "flex-start",
-            maxWidth: "86%",
             paddingVertical: 10,
             paddingHorizontal: 12,
-            borderRadius: 14,
+            borderRadius: 18,
+            borderTopRightRadius: isMine ? 6 : 18,
+            borderTopLeftRadius: isMine ? 18 : 6,
             borderWidth: 1,
-            borderColor: TOKENS.border,
-            backgroundColor: isMine ? TOKENS.okBg : TOKENS.bannerBg,
+            borderColor: isMine ? TOKENS.mineBorder : TOKENS.otherBorder,
+            backgroundColor: isMine ? TOKENS.mineBg : TOKENS.otherBg,
           }}
         >
-          <Text style={{ color: TOKENS.text, fontWeight: "600" }}>
+          <Text style={{ color: TOKENS.text, fontWeight: "600", fontSize: 15 }}>
             {content}
           </Text>
         </View>
-      </View>
+      </Pressable>
     );
   }
 
+  // :zap: CHANGE 5: Header action placement — top-right controls; quick actions near input
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: TOKENS.bg }}
@@ -587,38 +803,163 @@ export default function RoomScreen() {
       keyboardVerticalOffset={keyboardVerticalOffset}
     >
       <View style={{ flex: 1, padding: 16, gap: 12 }}>
-        {/* Header card */}
+        {/* Header */}
         <View
           style={{
             borderWidth: 1,
             borderColor: TOKENS.border,
             borderRadius: 16,
             padding: 12,
-            gap: 8,
+            backgroundColor: TOKENS.cardBg,
+            gap: 10,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "900", color: TOKENS.text }}>
-            {activity?.title_text ?? "Room"}
-          </Text>
-
-          <View style={{ gap: 2 }}>
-            <Text style={{ fontWeight: "700", color: TOKENS.text }}>
-              {placeName}
-            </Text>
-            {placeAddress ? (
-              <Text style={{ fontSize: 12, color: TOKENS.subtext }}>
-                {placeAddress}
+          <View
+            style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}
+          >
+            <View style={{ flex: 1, gap: 4, paddingRight: 6 }}>
+              <Text
+                style={{ fontSize: 18, fontWeight: "900", color: TOKENS.title }}
+              >
+                {activity?.title_text ?? "Room"}
               </Text>
-            ) : null}
+
+              <Text
+                style={{ fontWeight: "700", color: TOKENS.text }}
+                numberOfLines={1}
+              >
+                {placeName}
+              </Text>
+
+              {placeAddress ? (
+                <Text
+                  style={{ fontSize: 12, color: TOKENS.subtext }}
+                  numberOfLines={1}
+                >
+                  {placeAddress}
+                </Text>
+              ) : null}
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginTop: 4,
+                }}
+              >
+                <View
+                  style={{
+                    paddingVertical: 4,
+                    paddingHorizontal: 10,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: TOKENS.border,
+                    backgroundColor: TOKENS.otherBg,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: "800",
+                      color: TOKENS.text,
+                    }}
+                  >
+                    Members {members.length}
+                  </Text>
+                </View>
+
+                {isCreator ? (
+                  <View
+                    style={{
+                      paddingVertical: 4,
+                      paddingHorizontal: 10,
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: TOKENS.okBorder,
+                      backgroundColor: TOKENS.okBg,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "900",
+                        color: TOKENS.okText,
+                      }}
+                    >
+                      Created
+                    </Text>
+                  </View>
+                ) : null}
+
+                {roomState.label ? (
+                  <View
+                    style={{
+                      paddingVertical: 4,
+                      paddingHorizontal: 10,
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: TOKENS.dangerBorder,
+                      backgroundColor: TOKENS.dangerBg,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "900",
+                        color: TOKENS.dangerText,
+                      }}
+                    >
+                      {roomState.label}
+                    </Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+            {/* Top-right controls */}
+            <View style={{ gap: 8, alignItems: "flex-end" }}>
+              {!joined ? (
+                <IconButton
+                  label={myMembershipState === "left" ? "Re-join" : "Join"}
+                  onPress={join}
+                  disabled={roomState.isReadOnly}
+                />
+              ) : (
+                <IconButton label="Leave" onPress={confirmLeave} destructive />
+              )}
+
+              {isCreator ? (
+                <IconButton
+                  label="Close"
+                  onPress={closeInvite}
+                  disabled={roomState.isReadOnly}
+                  destructive
+                />
+              ) : null}
+            </View>
           </View>
 
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            <SmallChip label={`Members ${members.length}`} />
-            {isCreator ? <SmallChip label="Created" /> : null}
-            {roomState.label ? <SmallChip label={roomState.label} /> : null}
-          </View>
+          {myMembershipState === "left" ? (
+            <View
+              style={{
+                padding: 10,
+                borderWidth: 1,
+                borderRadius: 12,
+                borderColor: TOKENS.border,
+                backgroundColor: TOKENS.otherBg,
+                gap: 4,
+              }}
+            >
+              <Text style={{ fontWeight: "900", color: TOKENS.text }}>
+                You left
+              </Text>
+              <Text style={{ color: TOKENS.subtext }}>
+                You can view history. Tap Re-join to chat again.
+              </Text>
+            </View>
+          ) : null}
 
-          {/* Status banners */}
           {roomState.label ? (
             <View
               style={{
@@ -631,81 +972,26 @@ export default function RoomScreen() {
               }}
             >
               <Text style={{ fontWeight: "900", color: TOKENS.dangerText }}>
-                {roomState.label}
+                Read-only
               </Text>
               <Text style={{ color: TOKENS.dangerText, opacity: 0.9 }}>
-                This room is read-only. You can still view messages.
+                You can still view messages.
               </Text>
             </View>
           ) : null}
-
-          {myMembershipState === "left" ? (
-            <View
-              style={{
-                padding: 10,
-                borderWidth: 1,
-                borderRadius: 12,
-                borderColor: TOKENS.border,
-                backgroundColor: TOKENS.bannerBg,
-                gap: 4,
-              }}
-            >
-              <Text style={{ fontWeight: "900", color: TOKENS.text }}>
-                You left
-              </Text>
-              <Text style={{ color: TOKENS.subtext }}>
-                You can view history messages. Tap Join to re-join.
-              </Text>
-            </View>
-          ) : null}
-
-          {/* Action row */}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {!joined ? (
-              <PrimaryButton
-                label={myMembershipState === "left" ? "Re-join" : "Join"}
-                onPress={join}
-                disabled={roomState.isReadOnly}
-              />
-            ) : (
-              <PrimaryButton label="Leave" onPress={confirmLeave} destructive />
-            )}
-
-            {isCreator ? (
-              <PrimaryButton
-                label="Close invite"
-                onPress={closeInvite}
-                disabled={roomState.isReadOnly}
-                destructive
-              />
-            ) : null}
-
-            <PrimaryButton
-              label="✅ I'm here"
-              onPress={() => sendQuick("IM_HERE")}
-              disabled={!canInteract}
-            />
-            <PrimaryButton
-              label="⏱️ 10 min late"
-              onPress={() => sendQuick("LATE_10")}
-              disabled={!canInteract}
-            />
-            <PrimaryButton
-              label="❌ Cancel"
-              onPress={() => sendQuick("CANCEL")}
-              disabled={!canInteract}
-            />
-          </View>
         </View>
 
-        {/* Chat list */}
+        {/* Chat */}
         <View
           style={{
             flex: 1,
             borderWidth: 1,
             borderColor: TOKENS.border,
             borderRadius: 16,
-            padding: 12,
+            backgroundColor: TOKENS.cardBg,
+            paddingHorizontal: 12,
+            paddingTop: 8,
+            paddingBottom: 10,
           }}
         >
           {!canReadEvents ? (
@@ -715,17 +1001,37 @@ export default function RoomScreen() {
           ) : (
             <FlatList
               ref={(r) => (listRef.current = r)}
-              data={events}
-              keyExtractor={(e) => e.id}
-              renderItem={renderItem}
-              contentContainerStyle={{ gap: 10, paddingBottom: 6 }}
+              data={chatItems}
+              keyExtractor={(x) => x.id}
+              renderItem={renderChatItem}
+              contentContainerStyle={{ gap: 8, paddingBottom: 6 }}
               onContentSizeChange={() => scrollToBottom(false)}
               keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
             />
           )}
         </View>
 
-        {/* Input bar (always pinned to bottom; keyboard won’t cover it) */}
+        {/* Quick actions (near input, like IG quick reactions) */}
+        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+          <QuickChip
+            label="✅ I'm here"
+            onPress={() => sendQuick("IM_HERE")}
+            disabled={!canInteract}
+          />
+          <QuickChip
+            label="⏱️ 10 min late"
+            onPress={() => sendQuick("LATE_10")}
+            disabled={!canInteract}
+          />
+          <QuickChip
+            label="❌ Cancel"
+            onPress={() => sendQuick("CANCEL")}
+            disabled={!canInteract}
+          />
+        </View>
+
+        {/* Input bar */}
         <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
           <TextInput
             ref={(r) => (inputRef.current = r)}
@@ -733,7 +1039,7 @@ export default function RoomScreen() {
             onChangeText={setMessage}
             placeholder={
               canInteract
-                ? "Say something…"
+                ? "Message…"
                 : myMembershipState === "left"
                   ? "Re-join to chat"
                   : roomState.isReadOnly
@@ -746,13 +1052,14 @@ export default function RoomScreen() {
             style={{
               flex: 1,
               minHeight: 44,
-              maxHeight: 120,
+              maxHeight: 130,
               borderWidth: 1,
               borderColor: TOKENS.border,
-              borderRadius: 14,
+              borderRadius: 18,
               paddingHorizontal: 12,
               paddingVertical: 10,
               color: TOKENS.text,
+              backgroundColor: TOKENS.cardBg,
               opacity: canInteract ? 1 : 0.6,
             }}
           />
@@ -763,10 +1070,10 @@ export default function RoomScreen() {
             style={({ pressed }) => ({
               paddingVertical: 12,
               paddingHorizontal: 14,
-              borderRadius: 14,
+              borderRadius: 18,
               borderWidth: 1,
               borderColor: TOKENS.border,
-              backgroundColor: "#FFFFFF",
+              backgroundColor: TOKENS.cardBg,
               opacity: !canInteract ? 0.5 : pressed ? 0.85 : 1,
             })}
           >
@@ -774,6 +1081,78 @@ export default function RoomScreen() {
           </Pressable>
         </View>
       </View>
+
+      {/* :zap: CHANGE 6: Long-press message menu (Copy/Report placeholders) */}
+      <Modal
+        transparent
+        visible={menuOpen}
+        animationType="fade"
+        onRequestClose={() => setMenuOpen(false)}
+      >
+        <Pressable
+          onPress={() => setMenuOpen(false)}
+          style={{
+            flex: 1,
+            backgroundColor: TOKENS.overlay,
+            justifyContent: "flex-end",
+          }}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              borderWidth: 1,
+              borderColor: TOKENS.border,
+              paddingTop: 10,
+              paddingBottom: 12,
+            }}
+          >
+            <View
+              style={{
+                alignSelf: "center",
+                width: 42,
+                height: 4,
+                borderRadius: 999,
+                backgroundColor: "#E5E7EB",
+                marginBottom: 10,
+              }}
+            />
+
+            <View style={{ paddingHorizontal: 16, paddingBottom: 8, gap: 4 }}>
+              <Text style={{ fontWeight: "900", color: TOKENS.text }}>
+                Message
+              </Text>
+              {menuTarget ? (
+                <Text style={{ color: TOKENS.subtext }} numberOfLines={2}>
+                  {renderEventContent(menuTarget)}
+                </Text>
+              ) : null}
+            </View>
+
+            <SheetItem
+              label="Copy"
+              onPress={async () => {
+                const t = menuTarget ? renderEventContent(menuTarget) : "";
+                setMenuOpen(false);
+                await copyToClipboard(t);
+              }}
+            />
+            <SheetItem
+              label="Report"
+              onPress={() => {
+                if (!menuTarget) return;
+                setMenuOpen(false);
+                reportMessage(menuTarget);
+              }}
+            />
+
+            <View style={{ height: 8 }} />
+            <SheetItem label="Cancel" onPress={() => setMenuOpen(false)} />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
