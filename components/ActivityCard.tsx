@@ -4,7 +4,11 @@ export type ActivityCardActivity = {
   id: string;
   creator_id: string;
   title_text: string;
-  place_text: string | null;
+  place_name: string | null;
+  place_address: string | null;
+  place_text?: string | null;
+  lat?: number | null;
+  lng?: number | null;
   expires_at: string | null;
   gender_pref: string;
   capacity: number | null;
@@ -55,6 +59,8 @@ export default function ActivityCard(props: Props) {
 
   const isCreator = !!currentUserId && a.creator_id === currentUserId;
   const statusLabel = computeStatusLabel(a);
+  const placeName = (a.place_name ?? a.place_text ?? "").trim() || "No place";
+  const placeAddress = (a.place_address ?? "").trim();
   // :zap: CHANGE 2: membership-aware helper text.
   const helperText =
     membershipState === "joined"
@@ -97,10 +103,12 @@ export default function ActivityCard(props: Props) {
             ) : null}
           </View>
 
-          <Text>
-            {a.place_text ? a.place_text : "No place"} • expires{" "}
-            {formatTimeLeft(a.expires_at)}
-          </Text>
+          <Text style={{ fontWeight: "600" }}>{placeName}</Text>
+          {placeAddress ? (
+            <Text style={{ fontSize: 12, opacity: 0.7 }}>{placeAddress}</Text>
+          ) : null}
+
+          <Text>expires {formatTimeLeft(a.expires_at)}</Text>
 
           <Text>
             gender: {a.gender_pref} • capacity: {a.capacity ?? "unlimited"}
