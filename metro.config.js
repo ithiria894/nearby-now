@@ -1,5 +1,7 @@
 // metro.config.js
 const { getDefaultConfig } = require("expo/metro-config");
+const { resolve } = require("metro-resolver");
+const path = require("path");
 
 const config = getDefaultConfig(__dirname);
 
@@ -13,5 +15,17 @@ config.resolver.resolverMainFields = [
 
 // (Optional) some libs ship .cjs
 config.resolver.sourceExts.push("cjs");
+
+const punycodePath = path.join(__dirname, "node_modules/punycode/punycode.js");
+
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === "punycode") {
+    return {
+      type: "sourceFile",
+      filePath: punycodePath,
+    };
+  }
+  return resolve(context, moduleName, platform);
+};
 
 module.exports = config;

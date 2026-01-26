@@ -9,3 +9,4 @@ npm install
 # 3. 啟動 Expo（最常用）
 
 npm start
+npx expo start -c

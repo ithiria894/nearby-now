@@ -1,18 +1,46 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { requireUserId } from "../../lib/auth";
+import InviteForm, {
+  type InviteFormPayload,
+} from "../../components/InviteForm";
 
 type ActivityRow = {
   id: string;
   creator_id: string;
   title_text: string;
   place_text: string | null;
+  place_name: string | null;
+  place_address: string | null;
+  lat: number | null;
+  lng: number | null;
+  place_id: string | null;
+  location_source: string | null;
   gender_pref: string;
   capacity: number | null;
   expires_at: string | null;
 };
+
+function formatPlace(name?: string | null, address?: string | null): string {
+  const safeName = (name ?? "").trim();
+  const safeAddress = (address ?? "").trim();
+  if (!safeName && !safeAddress) return "none";
+  if (safeName && safeAddress && safeName !== safeAddress) {
+    return `${safeName} / ${safeAddress}`;
+  }
+  return safeName || safeAddress;
+}
+
+function formatExpiryPreview(expiresAt: string | null): string {
+  if (expiresAt === null) return "expires: set -> never";
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (ms <= 0) return "expires: now";
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `expires: -> in ${mins}m`;
+  return `expires: -> in ${Math.round(mins / 60)}h`;
+}
 
 export default function EditActivityScreen() {
   const router = useRouter();
@@ -22,14 +50,6 @@ export default function EditActivityScreen() {
   const [userId, setUserId] = useState<string | null>(null);
   const [activity, setActivity] = useState<ActivityRow | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const [place, setPlace] = useState("");
-  const [genderPref, setGenderPref] = useState<"any" | "female" | "male">(
-    "any"
-  );
-  const [capacity, setCapacity] = useState<string>("");
-  const [expiryMinutes, setExpiryMinutes] = useState<number | null>(null);
-  const [neverExpire, setNeverExpire] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const isCreator = useMemo(() => {
@@ -47,7 +67,7 @@ export default function EditActivityScreen() {
         const { data, error } = await supabase
           .from("activities")
           .select(
-            "id, creator_id, title_text, place_text, gender_pref, capacity, expires_at"
+            "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, place_id, location_source, gender_pref, capacity, expires_at"
           )
           .eq("id", activityId)
           .single();
@@ -62,9 +82,6 @@ export default function EditActivityScreen() {
         }
 
         setActivity(a);
-        setPlace(a.place_text ?? "");
-        setGenderPref((a.gender_pref as any) ?? "any");
-        setCapacity(a.capacity == null ? "" : String(a.capacity));
       } catch (e: any) {
         console.error(e);
         Alert.alert("Load failed", e?.message ?? "Unknown error");
@@ -76,81 +93,61 @@ export default function EditActivityScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityId]);
 
-  // :zap: CHANGE 2: Prefill expiry editor.
-  useEffect(() => {
-    if (!activity) return;
-    if (!activity.expires_at) {
-      setNeverExpire(true);
-      setExpiryMinutes(null);
-    } else {
-      setNeverExpire(false);
-      setExpiryMinutes(null);
-    }
-  }, [activity]);
-
   // :zap: CHANGE 4: Save edit + system broadcast.
-  async function onSave() {
+  async function onSave(payload: InviteFormPayload) {
     if (!userId || !activity) return;
     if (!isCreator) {
       Alert.alert("Not allowed", "Only the creator can edit this invite.");
       return;
     }
 
-    const nextPlace = place.trim() ? place.trim() : null;
-    const nextGender = genderPref;
+    const updates: Record<string, any> = {
+      title_text: payload.title_text,
+      place_name: payload.place_name,
+      place_address: payload.place_address,
+      lat: payload.lat,
+      lng: payload.lng,
+      place_id: payload.place_id,
+      location_source: payload.location_source,
+      gender_pref: payload.gender_pref,
+      capacity: payload.capacity,
+    };
 
-    const trimmedCapacity = capacity.trim();
-    if (trimmedCapacity !== "") {
-      const parsed = Number(trimmedCapacity);
-      if (!Number.isInteger(parsed) || parsed < 1) {
-        Alert.alert("Invalid", "Capacity must be an integer of 1 or more.");
-        return;
-      }
-    }
-
-    const capacityNumRaw =
-      trimmedCapacity === "" ? null : Number(trimmedCapacity);
-    const nextCapacity =
-      capacityNumRaw == null
-        ? null
-        : Number.isFinite(capacityNumRaw)
-          ? capacityNumRaw
-          : null;
-
-    // :zap: CHANGE 5: Compute next expires_at from presets.
-    let nextExpiresAt: string | null = activity.expires_at ?? null;
-    if (neverExpire) {
-      nextExpiresAt = null;
-    } else if (expiryMinutes != null) {
-      nextExpiresAt = new Date(
-        Date.now() + expiryMinutes * 60 * 1000
-      ).toISOString();
+    if (payload.expires_at !== undefined) {
+      updates.expires_at = payload.expires_at;
     }
 
     const changes: string[] = [];
-    if ((activity.place_text ?? null) !== nextPlace) {
-      changes.push(
-        `place: ${activity.place_text ?? "none"} -> ${nextPlace ?? "none"}`
-      );
+    if (activity.title_text !== payload.title_text) {
+      changes.push(`title: ${activity.title_text} -> ${payload.title_text}`);
     }
-    if (activity.gender_pref !== nextGender) {
-      changes.push(`gender: ${activity.gender_pref} -> ${nextGender}`);
+
+    const oldPlace = formatPlace(
+      activity.place_name ?? activity.place_text,
+      activity.place_address
+    );
+    const nextPlace = formatPlace(payload.place_name, payload.place_address);
+    if (oldPlace !== nextPlace) {
+      changes.push(`place: ${oldPlace} -> ${nextPlace}`);
     }
-    if ((activity.capacity ?? null) !== nextCapacity) {
+
+    if (activity.gender_pref !== payload.gender_pref) {
+      changes.push(`gender: ${activity.gender_pref} -> ${payload.gender_pref}`);
+    }
+    if ((activity.capacity ?? null) !== (payload.capacity ?? null)) {
       changes.push(
         `capacity: ${activity.capacity ?? "unlimited"} -> ${
-          nextCapacity ?? "unlimited"
+          payload.capacity ?? "unlimited"
         }`
       );
     }
-    if (neverExpire && activity.expires_at !== null) {
-      changes.push("expires: set -> never");
-    } else if (expiryMinutes != null) {
-      const pretty =
-        expiryMinutes < 60
-          ? `in ${expiryMinutes}m`
-          : `in ${Math.round(expiryMinutes / 60)}h`;
-      changes.push(`expires: -> ${pretty}`);
+
+    if (payload.expires_at !== undefined) {
+      if (payload.expires_at === null && activity.expires_at !== null) {
+        changes.push("expires: set -> never");
+      } else if (payload.expires_at) {
+        changes.push(formatExpiryPreview(payload.expires_at));
+      }
     }
 
     if (changes.length === 0) {
@@ -162,12 +159,7 @@ export default function EditActivityScreen() {
     try {
       const { error: updErr } = await supabase
         .from("activities")
-        .update({
-          place_text: nextPlace,
-          gender_pref: nextGender,
-          capacity: nextCapacity,
-          expires_at: nextExpiresAt,
-        })
+        .update(updates)
         .eq("id", activityId);
 
       if (updErr) throw updErr;
@@ -201,131 +193,33 @@ export default function EditActivityScreen() {
     );
   }
 
+  if (!activity) return null;
+
   return (
-    <View style={{ flex: 1, padding: 16, gap: 12 }}>
+    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
       <Text style={{ fontSize: 18, fontWeight: "800" }}>
-        Edit: {activity?.title_text ?? "Invite"}
+        Edit: {activity.title_text ?? "Invite"}
       </Text>
 
-      <TextInput
-        value={place}
-        onChangeText={setPlace}
-        placeholder="Place (optional)"
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
+      <InviteForm
+        mode="edit"
+        submitting={saving}
+        submitLabel="Save"
+        onSubmit={onSave}
+        onCancel={() => router.back()}
+        initialValues={{
+          title_text: activity.title_text ?? "",
+          place_name: activity.place_name ?? activity.place_text ?? null,
+          place_address: activity.place_address ?? null,
+          lat: activity.lat ?? null,
+          lng: activity.lng ?? null,
+          place_id: activity.place_id ?? null,
+          location_source: activity.location_source ?? null,
+          gender_pref: (activity.gender_pref as any) ?? "any",
+          capacity: activity.capacity ?? null,
+          expires_at: activity.expires_at,
+        }}
       />
-
-      <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-        {(["any", "female", "male"] as const).map((v) => (
-          <Pressable
-            key={v}
-            onPress={() => setGenderPref(v)}
-            style={{
-              paddingVertical: 10,
-              paddingHorizontal: 12,
-              borderRadius: 10,
-              borderWidth: 1,
-              opacity: genderPref === v ? 1 : 0.6,
-            }}
-          >
-            <Text style={{ fontWeight: "600" }}>{v}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* :zap: CHANGE 3: Expiry presets + never option. */}
-      <Text style={{ fontWeight: "800" }}>Expiry</Text>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        {[
-          { label: "30m", minutes: 30 },
-          { label: "1h", minutes: 60 },
-          { label: "2h", minutes: 120 },
-          { label: "4h", minutes: 240 },
-          { label: "8h", minutes: 480 },
-        ].map((p) => (
-          <Pressable
-            key={p.label}
-            onPress={() => {
-              setNeverExpire(false);
-              setExpiryMinutes(p.minutes);
-            }}
-            style={{
-              paddingVertical: 10,
-              paddingHorizontal: 12,
-              borderRadius: 10,
-              borderWidth: 1,
-              opacity: !neverExpire && expiryMinutes === p.minutes ? 1 : 0.6,
-            }}
-          >
-            <Text style={{ fontWeight: "600" }}>{p.label}</Text>
-          </Pressable>
-        ))}
-
-        <Pressable
-          onPress={() => {
-            setNeverExpire(true);
-            setExpiryMinutes(null);
-          }}
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 10,
-            borderWidth: 1,
-            opacity: neverExpire ? 1 : 0.6,
-          }}
-        >
-          <Text style={{ fontWeight: "600" }}>Never</Text>
-        </Pressable>
-      </View>
-      {neverExpire ? (
-        <Text style={{ opacity: 0.7 }}>This invite will not expire.</Text>
-      ) : expiryMinutes != null ? (
-        <Text style={{ opacity: 0.7 }}>
-          Expires in {expiryMinutes} minutes.
-        </Text>
-      ) : (
-        <Text style={{ opacity: 0.7 }}>No change to expiry.</Text>
-      )}
-
-      <TextInput
-        value={capacity}
-        onChangeText={setCapacity}
-        keyboardType="number-pad"
-        placeholder="Capacity (optional)"
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
-      />
-
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        <Pressable
-          onPress={onSave}
-          disabled={saving}
-          style={{
-            flex: 1,
-            padding: 12,
-            borderRadius: 10,
-            borderWidth: 1,
-            alignItems: "center",
-            opacity: saving ? 0.6 : 1,
-          }}
-        >
-          <Text style={{ fontWeight: "800" }}>
-            {saving ? "Saving..." : "Save"}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.back()}
-          disabled={saving}
-          style={{
-            padding: 12,
-            borderRadius: 10,
-            borderWidth: 1,
-            alignItems: "center",
-            opacity: saving ? 0.6 : 1,
-          }}
-        >
-          <Text style={{ fontWeight: "700" }}>Cancel</Text>
-        </Pressable>
-      </View>
-    </View>
+    </ScrollView>
   );
 }

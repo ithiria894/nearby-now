@@ -16,6 +16,8 @@ type ActivityRow = {
   id: string;
   title_text: string;
   place_text: string | null;
+  place_name: string | null;
+  place_address: string | null;
   // :zap: CHANGE 1: allow null (never expire).
   expires_at: string | null;
   gender_pref: string;
@@ -118,7 +120,7 @@ export default function RoomScreen() {
     const { data: a, error: aErr } = await supabase
       .from("activities")
       .select(
-        "id, title_text, place_text, expires_at, gender_pref, capacity, status, creator_id"
+        "id, title_text, place_text, place_name, place_address, expires_at, gender_pref, capacity, status, creator_id"
       )
       .eq("id", activityId)
       .single();
@@ -267,18 +269,27 @@ export default function RoomScreen() {
       return;
     }
 
-    const { error } = await supabase.from("activity_members").upsert({
-      activity_id: activityId,
-      user_id: userId,
-      role: "member",
-      state: "joined",
-    });
+    Alert.alert("Join this invite?", "Confirm to join this room.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Join",
+        style: "default",
+        onPress: async () => {
+          const { error } = await supabase.from("activity_members").upsert({
+            activity_id: activityId,
+            user_id: userId,
+            role: "member",
+            state: "joined",
+          });
 
-    if (error) Alert.alert("Join failed", friendlyDbError(error.message));
-    else {
-      // :zap: CHANGE 4: Refresh local state immediately (do not rely on realtime)
-      await loadAll(userId);
-    }
+          if (error) Alert.alert("Join failed", friendlyDbError(error.message));
+          else {
+            // :zap: CHANGE 4: Refresh local state immediately (do not rely on realtime)
+            await loadAll(userId);
+          }
+        },
+      },
+    ]);
   }
 
   // :zap: CHANGE 8: Actual leave execution (DB update) + system event + navigate back.
@@ -286,6 +297,20 @@ export default function RoomScreen() {
     if (!userId) return;
 
     try {
+      // :zap: CHANGE 10: Insert leave event before marking as left (RLS requires joined + open).
+      if (!roomState.isReadOnly) {
+        const { error: evtErr } = await supabase.from("room_events").insert({
+          activity_id: activityId,
+          user_id: userId,
+          type: "system",
+          content: "Left the invite",
+        });
+
+        if (evtErr) {
+          console.error("leave system event insert failed:", evtErr);
+        }
+      }
+
       const { error } = await supabase
         .from("activity_members")
         .update({ state: "left" })
@@ -293,18 +318,6 @@ export default function RoomScreen() {
         .eq("user_id", userId);
 
       if (error) throw error;
-
-      // :zap: CHANGE 10: Insert a system event so others see the leave action.
-      const { error: evtErr } = await supabase.from("room_events").insert({
-        activity_id: activityId,
-        user_id: userId,
-        type: "system",
-        content: "Left the invite",
-      });
-
-      if (evtErr) {
-        console.error("leave system event insert failed:", evtErr);
-      }
 
       // :zap: CHANGE 11: Refresh local state once then navigate back to list.
       await loadAll(userId);
@@ -446,15 +459,21 @@ export default function RoomScreen() {
     }
   }
 
+  const placeName =
+    (activity?.place_name ?? activity?.place_text ?? "").trim() || "No place";
+  const placeAddress = (activity?.place_address ?? "").trim();
+
   return (
     <View style={{ flex: 1, padding: 16, gap: 10 }}>
       <Text style={{ fontSize: 18, fontWeight: "800" }}>
         {activity?.title_text ?? "Room"}
       </Text>
 
-      <Text>
-        {activity?.place_text ?? "No place"} • members: {members.length}
-      </Text>
+      <Text style={{ fontWeight: "600" }}>{placeName}</Text>
+      {placeAddress ? (
+        <Text style={{ opacity: 0.7 }}>{placeAddress}</Text>
+      ) : null}
+      <Text>members: {members.length}</Text>
 
       {/* :zap: CHANGE 7: Status banner */}
       {roomState.label ? (

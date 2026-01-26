@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Text, View } from "react-native";
+import { Alert, FlatList, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import ActivityCard, {
   type ActivityCardActivity,
 } from "../../components/ActivityCard";
+import BrowseMap from "../../components/BrowseMap";
 import { requireUserId } from "../../lib/auth";
 import { fetchMembershipRowsForUser, upsertJoin } from "../../lib/activities";
 import { supabase } from "../../lib/supabase";
@@ -27,6 +28,7 @@ export default function BrowseScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
   const load = useCallback(async () => {
     const uid = await requireUserId();
@@ -41,7 +43,7 @@ export default function BrowseScreen() {
     const { data, error } = await supabase
       .from("activities")
       .select(
-        "id, creator_id, title_text, place_text, expires_at, gender_pref, capacity, status, created_at"
+        "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at"
       )
       .eq("status", "open")
       .order("created_at", { ascending: false })
@@ -131,39 +133,114 @@ export default function BrowseScreen() {
 
   async function onPressCard(a: ActivityCardActivity) {
     if (!userId) return;
+    if (joinedSet.has(a.id)) {
+      router.push(`/room/${a.id}`);
+      return;
+    }
 
-    if (!joinedSet.has(a.id)) {
+    const title = a.title_text;
+    const placeName = (a.place_name ?? a.place_text ?? "").trim() || "No place";
+    const placeAddress = (a.place_address ?? "").trim();
+    const expiresLabel = a.expires_at
+      ? new Date(a.expires_at).toLocaleString()
+      : "Never";
+    const capacityLabel = a.capacity ?? "Unlimited";
+
+    const confirmJoin = async () => {
       setJoiningId(a.id);
       try {
         await upsertJoin(a.id, userId);
         setJoinedSet((prev) => new Set([...prev, a.id]));
+        router.push(`/room/${a.id}`);
       } catch (e: any) {
         console.error(e);
         Alert.alert("Join failed", e?.message ?? "Unknown error");
-        return;
       } finally {
         setJoiningId(null);
       }
+    };
+
+    if (viewMode === "map") {
+      const details = [
+        `🎯 ${title}`,
+        `📍 ${placeName}`,
+        placeAddress ? `   ${placeAddress}` : null,
+        `👥 性別偏好: ${a.gender_pref}`,
+        `👤 人數: ${capacityLabel}`,
+        `⏳ 到期: ${expiresLabel}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      Alert.alert("確認加入邀請？", details, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Join", style: "default", onPress: confirmJoin },
+      ]);
+      return;
     }
 
-    router.push(`/room/${a.id}`);
+    Alert.alert(`Join "${title}"?`, "", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Join", style: "default", onPress: confirmJoin },
+    ]);
   }
 
   const header = useMemo(() => {
+    const ToggleButton = ({
+      value,
+      label,
+    }: {
+      value: "list" | "map";
+      label: string;
+    }) => {
+      const selected = viewMode === value;
+      return (
+        <Pressable
+          onPress={() => setViewMode(value)}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            borderRadius: 999,
+            borderWidth: 1,
+            opacity: selected ? 1 : 0.6,
+          }}
+        >
+          <Text style={{ fontWeight: "800" }}>{label}</Text>
+        </Pressable>
+      );
+    };
+
     return (
-      <View style={{ padding: 16, gap: 6 }}>
+      <View style={{ padding: 16, gap: 10 }}>
         <Text style={{ fontSize: 18, fontWeight: "800" }}>Browse</Text>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <ToggleButton value="list" label="List" />
+          <ToggleButton value="map" label="Map" />
+        </View>
         <Text style={{ opacity: 0.7 }}>
           Open invites you can join right now.
         </Text>
       </View>
     );
-  }, []);
+  }, [viewMode]);
 
   if (loading) {
     return (
       <View style={{ flex: 1, padding: 16 }}>
         <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (viewMode === "map") {
+    return (
+      <View style={{ flex: 1 }}>
+        {header}
+        <BrowseMap
+          items={items}
+          onPressCard={onPressCard}
+          onRequestList={() => setViewMode("list")}
+        />
       </View>
     );
   }
