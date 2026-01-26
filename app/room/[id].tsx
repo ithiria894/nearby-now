@@ -269,18 +269,27 @@ export default function RoomScreen() {
       return;
     }
 
-    const { error } = await supabase.from("activity_members").upsert({
-      activity_id: activityId,
-      user_id: userId,
-      role: "member",
-      state: "joined",
-    });
+    Alert.alert("Join this invite?", "Confirm to join this room.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Join",
+        style: "default",
+        onPress: async () => {
+          const { error } = await supabase.from("activity_members").upsert({
+            activity_id: activityId,
+            user_id: userId,
+            role: "member",
+            state: "joined",
+          });
 
-    if (error) Alert.alert("Join failed", friendlyDbError(error.message));
-    else {
-      // :zap: CHANGE 4: Refresh local state immediately (do not rely on realtime)
-      await loadAll(userId);
-    }
+          if (error) Alert.alert("Join failed", friendlyDbError(error.message));
+          else {
+            // :zap: CHANGE 4: Refresh local state immediately (do not rely on realtime)
+            await loadAll(userId);
+          }
+        },
+      },
+    ]);
   }
 
   // :zap: CHANGE 8: Actual leave execution (DB update) + system event + navigate back.
