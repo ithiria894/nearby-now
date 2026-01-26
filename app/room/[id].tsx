@@ -288,6 +288,20 @@ export default function RoomScreen() {
     if (!userId) return;
 
     try {
+      // :zap: CHANGE 10: Insert leave event before marking as left (RLS requires joined + open).
+      if (!roomState.isReadOnly) {
+        const { error: evtErr } = await supabase.from("room_events").insert({
+          activity_id: activityId,
+          user_id: userId,
+          type: "system",
+          content: "Left the invite",
+        });
+
+        if (evtErr) {
+          console.error("leave system event insert failed:", evtErr);
+        }
+      }
+
       const { error } = await supabase
         .from("activity_members")
         .update({ state: "left" })
@@ -295,18 +309,6 @@ export default function RoomScreen() {
         .eq("user_id", userId);
 
       if (error) throw error;
-
-      // :zap: CHANGE 10: Insert a system event so others see the leave action.
-      const { error: evtErr } = await supabase.from("room_events").insert({
-        activity_id: activityId,
-        user_id: userId,
-        type: "system",
-        content: "Left the invite",
-      });
-
-      if (evtErr) {
-        console.error("leave system event insert failed:", evtErr);
-      }
 
       // :zap: CHANGE 11: Refresh local state once then navigate back to list.
       await loadAll(userId);
