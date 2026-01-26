@@ -1,5 +1,9 @@
-import { Pressable, Text, View } from "react-native";
+import React, { useMemo, useState } from "react";
+import { Alert, Modal, Pressable, Text, View } from "react-native";
 
+/* =======================
+ * Types
+ * ======================= */
 export type ActivityCardActivity = {
   id: string;
   creator_id: string;
@@ -13,7 +17,6 @@ export type ActivityCardActivity = {
   gender_pref: string;
   capacity: number | null;
   status: string;
-  created_at?: string;
 };
 
 export type MembershipState = "none" | "joined" | "left";
@@ -27,321 +30,412 @@ type Props = {
   onPressEdit?: () => void;
 };
 
-// :zap: CHANGE 1: Centralized design tokens (simple, consistent, easy to tweak).
+/* =======================
+ * Design Tokens
+ * ======================= */
 const TOKENS = {
-  card: {
-    bg: "#FFFFFF",
-    border: "#E6E8EB",
-    title: "#111827",
-    text: "#1F2937",
-    subtext: "#6B7280",
-  },
-  chip: {
-    bg: "#F3F4F6",
-    border: "#E5E7EB",
-    text: "#111827",
-  },
-  status: {
-    closedBg: "#FEF3C7",
-    closedBorder: "#FDE68A",
-    closedText: "#92400E",
-    expiredBg: "#FEE2E2",
-    expiredBorder: "#FECACA",
-    expiredText: "#991B1B",
-  },
-  join: {
-    joinedBg: "#DCFCE7",
-    joinedBorder: "#BBF7D0",
-    joinedText: "#166534",
-    leftBg: "#E5E7EB",
-    leftBorder: "#D1D5DB",
-    leftText: "#374151",
-    hintText: "#6B7280",
-  },
+  cardBg: "#FFFFFF",
+  border: "#E5E7EB",
+  title: "#111827",
+  text: "#1F2937",
+  subtext: "#6B7280",
+
+  chipBg: "#F3F4F6",
+  chipBorder: "#E5E7EB",
+
+  // status / meta chips
+  createdBg: "#DBEAFE",
+  createdBorder: "#BFDBFE",
+  createdText: "#1D4ED8",
+
+  joinedBg: "#DCFCE7",
+  joinedBorder: "#BBF7D0",
+  joinedText: "#166534",
+
+  expiredBg: "#FEE2E2",
+  expiredBorder: "#FECACA",
+  expiredText: "#991B1B",
+
+  soonBg: "#FEF3C7",
+  soonBorder: "#FDE68A",
+  soonText: "#92400E",
+
+  overlay: "rgba(0,0,0,0.28)",
 } as const;
 
-// :zap: CHANGE 2: Robust gender preference short label.
-function formatGenderPrefShort(genderPref: string): string {
-  const raw = (genderPref ?? "").toLowerCase().trim();
-  if (raw === "female" || raw === "f") return "F";
-  if (raw === "male" || raw === "m") return "M";
+/* =======================
+ * Helpers
+ * ======================= */
+
+// :zap: CHANGE 1: Ultra-short gender label
+function shortGender(g: string) {
+  const v = (g ?? "").toLowerCase().trim();
+  if (v === "female" || v === "f") return "F";
+  if (v === "male" || v === "m") return "M";
   return "Any";
 }
 
-function formatTimeLeft(expiresAtIso: string | null): string {
-  if (!expiresAtIso) return "No expiry";
-  const ms = new Date(expiresAtIso).getTime() - Date.now();
-  if (ms <= 0) return "Expired";
+// :zap: CHANGE 2: Time + urgency
+function timeLeft(expiresAt: string | null) {
+  if (!expiresAt) return { label: "No expiry", urgency: "normal" as const };
+
+  const ms = new Date(expiresAt).getTime() - Date.now();
+  if (ms <= 0) return { label: "Expired", urgency: "expired" as const };
+
   const mins = Math.floor(ms / 60000);
-  if (mins < 60) return `${mins}m`;
+  if (mins < 15) return { label: `${mins}m`, urgency: "critical" as const };
+  if (mins < 60) return { label: `${mins}m`, urgency: "soon" as const };
+
   const hrs = Math.floor(mins / 60);
   const rem = mins % 60;
-  return rem === 0 ? `${hrs}h` : `${hrs}h ${rem}m`;
+  return rem === 0
+    ? { label: `${hrs}h`, urgency: "normal" as const }
+    : { label: `${hrs}h ${rem}m`, urgency: "normal" as const };
 }
 
-// :zap: CHANGE 3: Status label + styling intent.
-function computeStatusLabel(
-  a: ActivityCardActivity
-): "Closed" | "Expired" | null {
-  if (a.status && a.status !== "open") return "Closed";
-  if (a.expires_at) {
-    const ms = new Date(a.expires_at).getTime() - Date.now();
-    if (ms <= 0) return "Expired";
-  }
-  return null;
-}
-
-// :zap: CHANGE 4: Membership helper -> chip label + colors.
-function membershipChip(membershipState: MembershipState): {
-  label: string;
-  bg: string;
-  border: string;
-  text: string;
-} {
-  if (membershipState === "joined") {
-    return {
-      label: "Joined",
-      bg: TOKENS.join.joinedBg,
-      border: TOKENS.join.joinedBorder,
-      text: TOKENS.join.joinedText,
-    };
-  }
-  if (membershipState === "left") {
-    return {
-      label: "Left",
-      bg: TOKENS.join.leftBg,
-      border: TOKENS.join.leftBorder,
-      text: TOKENS.join.leftText,
-    };
-  }
-  return {
-    label: "Tap to join",
-    bg: TOKENS.chip.bg,
-    border: TOKENS.chip.border,
-    text: TOKENS.join.hintText,
-  };
-}
-
-// :zap: CHANGE 5: Reusable Chip with color support.
+// :zap: CHANGE 3: Compact reusable chip
 function Chip({
   label,
   bg,
   border,
-  textColor,
-  weight = "700",
+  color,
+  bold,
 }: {
   label: string;
   bg: string;
   border: string;
-  textColor: string;
-  weight?: "600" | "700" | "800";
+  color: string;
+  bold?: boolean;
 }) {
   return (
     <View
       style={{
-        paddingVertical: 4,
-        paddingHorizontal: 10,
+        paddingVertical: 3,
+        paddingHorizontal: 9,
         borderRadius: 999,
         borderWidth: 1,
         backgroundColor: bg,
         borderColor: border,
       }}
     >
-      <Text style={{ fontSize: 12, fontWeight: weight, color: textColor }}>
+      <Text style={{ fontSize: 12, fontWeight: bold ? "800" : "700", color }}>
         {label}
       </Text>
     </View>
   );
 }
 
-export default function ActivityCard(props: Props) {
-  const {
-    activity: a,
-    currentUserId,
-    membershipState,
-    isJoining,
-    onPressCard,
-    onPressEdit,
-  } = props;
+// :zap: CHANGE 4: Cross-platform menu item
+function MenuItem({
+  label,
+  onPress,
+  destructive,
+}: {
+  label: string;
+  onPress: () => void;
+  destructive?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        opacity: pressed ? 0.65 : 1,
+      })}
+    >
+      <Text
+        style={{
+          fontSize: 16,
+          fontWeight: "800",
+          color: destructive ? "#B91C1C" : "#111827",
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
+export default function ActivityCard({
+  activity: a,
+  currentUserId,
+  membershipState,
+  isJoining,
+  onPressCard,
+  onPressEdit,
+}: Props) {
   const isCreator = !!currentUserId && a.creator_id === currentUserId;
-  const statusLabel = computeStatusLabel(a);
 
   const placeName = (a.place_name ?? a.place_text ?? "").trim() || "No place";
   const placeAddress = (a.place_address ?? "").trim();
 
-  const timeLeft = formatTimeLeft(a.expires_at);
-  const genderShort = formatGenderPrefShort(a.gender_pref);
-  const cap = a.capacity ?? "∞";
+  const time = timeLeft(a.expires_at);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  const member = membershipChip(membershipState);
+  const timeChipStyle = useMemo(() => {
+    if (time.urgency === "critical" || time.urgency === "expired") {
+      return {
+        bg: TOKENS.expiredBg,
+        border: TOKENS.expiredBorder,
+        color: TOKENS.expiredText,
+        bold: true,
+      };
+    }
+    if (time.urgency === "soon") {
+      return {
+        bg: TOKENS.soonBg,
+        border: TOKENS.soonBorder,
+        color: TOKENS.soonText,
+        bold: true,
+      };
+    }
+    return {
+      bg: TOKENS.chipBg,
+      border: TOKENS.chipBorder,
+      color: TOKENS.text,
+      bold: false,
+    };
+  }, [time.label, time.urgency]);
 
-  const statusChip =
-    statusLabel === "Expired"
-      ? {
-          label: "Expired",
-          bg: TOKENS.status.expiredBg,
-          border: TOKENS.status.expiredBorder,
-          text: TOKENS.status.expiredText,
-        }
-      : statusLabel === "Closed"
-        ? {
-            label: "Closed",
-            bg: TOKENS.status.closedBg,
-            border: TOKENS.status.closedBorder,
-            text: TOKENS.status.closedText,
-          }
-        : null;
+  // :zap: CHANGE 5: Placeholder actions
+  function notImplemented(name: string) {
+    Alert.alert(name, "Not implemented yet.");
+  }
+
+  function runAction(action: "edit" | "share" | "report" | "delete") {
+    setMenuOpen(false);
+
+    if (action === "edit") {
+      if (!isCreator) return;
+      if (!onPressEdit) return;
+      onPressEdit();
+      return;
+    }
+
+    if (action === "share") return notImplemented("Share");
+    if (action === "report") return notImplemented("Report");
+    if (action === "delete") return notImplemented("Delete");
+  }
 
   return (
-    <Pressable
-      onPress={onPressCard}
-      disabled={isJoining}
-      style={{
-        padding: 14,
-        borderRadius: 18,
-        borderWidth: 1,
-        borderColor: TOKENS.card.border,
-        backgroundColor: TOKENS.card.bg,
-        opacity: isJoining ? 0.6 : 1,
+    <>
+      <Pressable
+        onPress={onPressCard}
+        disabled={isJoining}
+        // :zap: CHANGE 6: Fix RN/Hermes transform crash + allow floating menu
+        style={({ pressed }) => ({
+          position: "relative",
+          padding: 12,
+          borderRadius: 16,
+          borderWidth: 1,
+          borderColor: TOKENS.border,
+          backgroundColor: TOKENS.cardBg,
+          opacity: isJoining ? 0.6 : pressed ? 0.92 : 1,
+          ...(pressed ? { transform: [{ scale: 0.985 }] } : {}),
+          shadowColor: "#000",
+          shadowOpacity: 0.07,
+          shadowRadius: 8,
+          shadowOffset: { width: 0, height: 4 },
+          elevation: 2,
+        })}
+      >
+        {/* :zap: CHANGE 7: Always show "..." for all activities; large tap target */}
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            setMenuOpen(true);
+          }}
+          hitSlop={16}
+          style={({ pressed }) => ({
+            position: "absolute",
+            top: 6,
+            right: 6,
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10,
+            backgroundColor: pressed ? "#F3F4F6" : "#FFFFFF",
+          })}
+        >
+          <Text
+            style={{ fontSize: 18, fontWeight: "900", color: TOKENS.subtext }}
+          >
+            ⋯
+          </Text>
+        </Pressable>
 
-        // :zap: CHANGE 6: "More premium" shadow/elevation that behaves well on iOS + Android.
-        shadowColor: "#000",
-        shadowOpacity: 0.08,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 6 },
-        elevation: 3,
-      }}
-    >
-      {/* Title row */}
-      <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}>
-        <View style={{ flex: 1, gap: 8 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          {/* Avatar */}
+          <View
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: TOKENS.chipBg,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ fontSize: 18 }}>🎯</Text>
+          </View>
+
+          {/* Main */}
+          <View style={{ flex: 1, gap: 6 }}>
+            {/* Title */}
             <Text
               numberOfLines={2}
               style={{
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: "800",
-                flex: 1,
-                lineHeight: 20,
-                color: TOKENS.card.title,
+                lineHeight: 19,
+                color: TOKENS.title,
+                paddingRight: 44, // reserve for ...
               }}
             >
               {a.title_text}
             </Text>
 
-            {statusChip ? (
-              <Chip
-                label={statusChip.label}
-                bg={statusChip.bg}
-                border={statusChip.border}
-                textColor={statusChip.text}
-                weight="800"
-              />
-            ) : null}
-          </View>
-
-          {/* Place */}
-          <View style={{ gap: 2 }}>
-            <Text
-              numberOfLines={1}
-              style={{
-                fontSize: 14,
-                fontWeight: "700",
-                color: TOKENS.card.text,
-              }}
-            >
-              {placeName}
-            </Text>
-
-            {/* :zap: CHANGE 7: Address smaller + lighter */}
-            {placeAddress ? (
+            {/* Place */}
+            <View style={{ gap: 1 }}>
               <Text
-                numberOfLines={2}
-                style={{
-                  fontSize: 11,
-                  lineHeight: 14,
-                  color: TOKENS.card.subtext,
-                }}
+                numberOfLines={1}
+                style={{ fontSize: 13, fontWeight: "700", color: TOKENS.text }}
               >
-                {placeAddress}
+                {placeName}
               </Text>
-            ) : null}
-          </View>
 
-          {/* Chips row */}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {/* time */}
-            <Chip
-              label={`⏳ ${timeLeft}`}
-              bg={TOKENS.chip.bg}
-              border={TOKENS.chip.border}
-              textColor={TOKENS.chip.text}
-            />
+              {placeAddress ? (
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    fontSize: 11,
+                    lineHeight: 13,
+                    color: TOKENS.subtext,
+                  }}
+                >
+                  {placeAddress}
+                </Text>
+              ) : null}
+            </View>
 
-            {/* gender (short) */}
-            <Chip
-              label={`Pref: ${genderShort}`}
-              bg={TOKENS.chip.bg}
-              border={TOKENS.chip.border}
-              textColor={TOKENS.chip.text}
-            />
+            {/* Chips */}
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {/* :zap: CHANGE 8: Move "Created" into chips row to avoid overlap with ... */}
+              {isCreator ? (
+                <Chip
+                  label="Created"
+                  bg={TOKENS.createdBg}
+                  border={TOKENS.createdBorder}
+                  color={TOKENS.createdText}
+                  bold
+                />
+              ) : null}
 
-            {/* capacity */}
-            <Chip
-              label={`Cap: ${cap}`}
-              bg={TOKENS.chip.bg}
-              border={TOKENS.chip.border}
-              textColor={TOKENS.chip.text}
-            />
+              <Chip
+                label={`⏳ ${time.label}`}
+                bg={timeChipStyle.bg}
+                border={timeChipStyle.border}
+                color={timeChipStyle.color}
+                bold={timeChipStyle.bold}
+              />
 
-            {/* membership */}
-            <Chip
-              label={member.label}
-              bg={member.bg}
-              border={member.border}
-              textColor={member.text}
-              weight="800"
-            />
+              <Chip
+                label={`Pref ${shortGender(a.gender_pref)}`}
+                bg={TOKENS.chipBg}
+                border={TOKENS.chipBorder}
+                color={TOKENS.text}
+              />
+
+              <Chip
+                label={`Cap ${a.capacity ?? "∞"}`}
+                bg={TOKENS.chipBg}
+                border={TOKENS.chipBorder}
+                color={TOKENS.text}
+              />
+
+              {membershipState === "joined" ? (
+                <Chip
+                  label="Joined"
+                  bg={TOKENS.joinedBg}
+                  border={TOKENS.joinedBorder}
+                  color={TOKENS.joinedText}
+                  bold
+                />
+              ) : membershipState === "left" ? (
+                <Chip
+                  label="Left"
+                  bg={TOKENS.chipBg}
+                  border={TOKENS.chipBorder}
+                  color={TOKENS.subtext}
+                />
+              ) : null}
+            </View>
           </View>
         </View>
+      </Pressable>
 
-        {/* Edit button */}
-        {isCreator && onPressEdit ? (
+      {/* :zap: CHANGE 9: Unified menu for iOS/Android/Web */}
+      <Modal
+        transparent
+        visible={menuOpen}
+        animationType="fade"
+        onRequestClose={() => setMenuOpen(false)}
+      >
+        <Pressable
+          onPress={() => setMenuOpen(false)}
+          style={{
+            flex: 1,
+            backgroundColor: TOKENS.overlay,
+            justifyContent: "flex-end",
+          }}
+        >
           <Pressable
-            onPress={(event: any) => {
-              event?.stopPropagation?.();
-              onPressEdit();
-            }}
+            onPress={(e) => e.stopPropagation()}
             style={{
-              paddingVertical: 8,
-              paddingHorizontal: 12,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: TOKENS.card.border,
               backgroundColor: "#FFFFFF",
-              alignSelf: "flex-start",
-
-              shadowColor: "#000",
-              shadowOpacity: 0.05,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 4 },
-              elevation: 2,
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              borderWidth: 1,
+              borderColor: TOKENS.border,
+              paddingTop: 10,
+              paddingBottom: 12,
             }}
           >
-            <Text style={{ fontWeight: "800", color: TOKENS.card.text }}>
-              Edit
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
+            <View
+              style={{
+                alignSelf: "center",
+                width: 42,
+                height: 4,
+                borderRadius: 999,
+                backgroundColor: "#E5E7EB",
+                marginBottom: 10,
+              }}
+            />
 
-      {/* Footer hint */}
-      <View style={{ marginTop: 10 }}>
-        <Text style={{ fontSize: 11, color: TOKENS.card.subtext }}>
-          {isJoining ? "Working..." : isCreator ? "You’re the host" : " "}
-        </Text>
-      </View>
-    </Pressable>
+            {/* Creator-only actions */}
+            {isCreator ? (
+              <>
+                <MenuItem label="Edit" onPress={() => runAction("edit")} />
+                <MenuItem
+                  label="Delete"
+                  destructive
+                  onPress={() => runAction("delete")}
+                />
+              </>
+            ) : null}
+
+            {/* Everyone actions */}
+            <MenuItem label="Share" onPress={() => runAction("share")} />
+            <MenuItem label="Report" onPress={() => runAction("report")} />
+
+            <View style={{ height: 8 }} />
+            <MenuItem label="Cancel" onPress={() => setMenuOpen(false)} />
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
