@@ -66,7 +66,11 @@ This will:
 
 Always do this before pushing.
 
----
+# 會把 migrations apply 到 local supabase
+
+supabase migration up
+
+## （如果你係用 supabase db reset 會清 data；你而家唔想清就用 migration up。）
 
 2. Alternative workflow: diff-based migration
 
