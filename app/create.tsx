@@ -1,50 +1,40 @@
 import { useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, ScrollView, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { requireUserId } from "../lib/auth";
+import InviteForm, { type InviteFormPayload } from "../components/InviteForm";
 
 export default function CreateScreen() {
   const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [place, setPlace] = useState("");
-  const [genderPref, setGenderPref] = useState<"any" | "female" | "male">(
-    "any"
-  );
-  const [capacity, setCapacity] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
-  function computeExpiresAtIso(endTimeIso?: string | null) {
-    if (endTimeIso) return endTimeIso;
-    const twoHoursMs = 2 * 60 * 60 * 1000;
-    return new Date(Date.now() + twoHoursMs).toISOString();
-  }
-
-  async function onCreate() {
-    if (!title.trim()) {
-      Alert.alert("Missing", "Please type what you want to do.");
-      return;
-    }
-
+  async function onCreate(payload: InviteFormPayload) {
     setSubmitting(true);
     try {
       const userId = await requireUserId();
 
-      const capacityNum =
-        capacity.trim() === "" ? null : Math.max(1, Number(capacity));
-      const expiresAt = computeExpiresAtIso(null);
+      const insertPayload: any = {
+        creator_id: userId,
+        title_text: payload.title_text,
+        place_name: payload.place_name,
+        place_address: payload.place_address,
+        lat: payload.lat,
+        lng: payload.lng,
+        place_id: payload.place_id,
+        location_source: payload.location_source,
+        gender_pref: payload.gender_pref,
+        capacity: payload.capacity,
+        status: "open",
+      };
+
+      if (payload.expires_at !== undefined) {
+        insertPayload.expires_at = payload.expires_at;
+      }
 
       const { data, error } = await supabase
         .from("activities")
-        .insert({
-          creator_id: userId,
-          title_text: title.trim(),
-          place_text: place.trim() ? place.trim() : null,
-          gender_pref: genderPref,
-          capacity: Number.isFinite(capacityNum as any) ? capacityNum : null,
-          status: "open",
-          expires_at: expiresAt,
-        })
+        .insert(insertPayload)
         .select("id")
         .single();
 
@@ -73,64 +63,15 @@ export default function CreateScreen() {
   }
 
   return (
-    <View style={{ flex: 1, padding: 16, gap: 12 }}>
+    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
       <Text style={{ fontSize: 18, fontWeight: "700" }}>Create an invite</Text>
 
-      <TextInput
-        value={title}
-        onChangeText={setTitle}
-        placeholder="e.g. Dinner at Robson, karaoke tonight, club now..."
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
+      <InviteForm
+        mode="create"
+        submitting={submitting}
+        submitLabel="Post now"
+        onSubmit={onCreate}
       />
-
-      <TextInput
-        value={place}
-        onChangeText={setPlace}
-        placeholder="Place (optional)"
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
-      />
-
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        {(["any", "female", "male"] as const).map((v) => (
-          <Pressable
-            key={v}
-            onPress={() => setGenderPref(v)}
-            style={{
-              paddingVertical: 10,
-              paddingHorizontal: 12,
-              borderRadius: 10,
-              borderWidth: 1,
-              opacity: genderPref === v ? 1 : 0.6,
-            }}
-          >
-            <Text style={{ fontWeight: "600" }}>{v}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <TextInput
-        value={capacity}
-        onChangeText={setCapacity}
-        keyboardType="number-pad"
-        placeholder="Capacity (optional)"
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
-      />
-
-      <Pressable
-        onPress={onCreate}
-        disabled={submitting}
-        style={{
-          padding: 12,
-          borderRadius: 10,
-          borderWidth: 1,
-          alignItems: "center",
-          opacity: submitting ? 0.6 : 1,
-        }}
-      >
-        <Text style={{ fontWeight: "700" }}>
-          {submitting ? "Creating…" : "Post now"}
-        </Text>
-      </Pressable>
-    </View>
+    </ScrollView>
   );
 }

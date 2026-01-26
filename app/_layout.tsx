@@ -2,6 +2,8 @@
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { supabase } from "../lib/supabase";
+import "fast-text-encoding"; // ✅ provides TextDecoder/TextEncoder
+import "react-native-url-polyfill/auto"; // ✅ provides URL, URLSearchParams
 
 export default function RootLayout() {
   const router = useRouter();
