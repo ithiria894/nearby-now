@@ -133,22 +133,56 @@ export default function BrowseScreen() {
 
   async function onPressCard(a: ActivityCardActivity) {
     if (!userId) return;
+    if (joinedSet.has(a.id)) {
+      router.push(`/room/${a.id}`);
+      return;
+    }
 
-    if (!joinedSet.has(a.id)) {
+    const title = a.title_text;
+    const placeName = (a.place_name ?? a.place_text ?? "").trim() || "No place";
+    const placeAddress = (a.place_address ?? "").trim();
+    const expiresLabel = a.expires_at
+      ? new Date(a.expires_at).toLocaleString()
+      : "Never";
+    const capacityLabel = a.capacity ?? "Unlimited";
+
+    const confirmJoin = async () => {
       setJoiningId(a.id);
       try {
         await upsertJoin(a.id, userId);
         setJoinedSet((prev) => new Set([...prev, a.id]));
+        router.push(`/room/${a.id}`);
       } catch (e: any) {
         console.error(e);
         Alert.alert("Join failed", e?.message ?? "Unknown error");
-        return;
       } finally {
         setJoiningId(null);
       }
+    };
+
+    if (viewMode === "map") {
+      const details = [
+        `🎯 ${title}`,
+        `📍 ${placeName}`,
+        placeAddress ? `   ${placeAddress}` : null,
+        `👥 性別偏好: ${a.gender_pref}`,
+        `👤 人數: ${capacityLabel}`,
+        `⏳ 到期: ${expiresLabel}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      Alert.alert("確認加入邀請？", details, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Join", style: "default", onPress: confirmJoin },
+      ]);
+      return;
     }
 
-    router.push(`/room/${a.id}`);
+    Alert.alert(`Join "${title}"?`, "", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Join", style: "default", onPress: confirmJoin },
+    ]);
   }
 
   const header = useMemo(() => {
