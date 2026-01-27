@@ -164,16 +164,31 @@ export default function EditActivityScreen() {
 
       if (updErr) throw updErr;
 
-      const { error: evtErr } = await supabase.from("room_events").insert({
-        activity_id: activityId,
-        user_id: userId,
-        type: "system",
-        // Keep a readable diff for immediate room visibility.
-        content: `Updated invite — ${changes.join(", ")}`,
-      });
+      // Only insert system event if user is still joined and room is open.
+      const { data: memberRow } = await supabase
+        .from("activity_members")
+        .select("state")
+        .eq("activity_id", activityId)
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      if (evtErr) {
-        console.error("system message insert failed:", evtErr);
+      const isJoined = (memberRow as any)?.state === "joined";
+      const isOpen =
+        !activity.expires_at ||
+        new Date(activity.expires_at).getTime() > Date.now();
+
+      if (isJoined && isOpen) {
+        const { error: evtErr } = await supabase.from("room_events").insert({
+          activity_id: activityId,
+          user_id: userId,
+          type: "system",
+          // Keep a readable diff for immediate room visibility.
+          content: `Updated invite — ${changes.join(", ")}`,
+        });
+
+        if (evtErr) {
+          console.error("system message insert failed:", evtErr);
+        }
       }
 
       router.replace("/");
