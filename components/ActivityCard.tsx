@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Alert, Modal, Pressable, Text, View } from "react-native";
+import { Alert, Modal, Pressable, Text, View, Platform } from "react-native";
 import {
   Canvas,
   Circle,
@@ -72,6 +72,50 @@ const TOKENS = {
 
   overlay: "rgba(0,0,0,0.28)",
 } as const;
+/* =======================
+ * Font Tokens (Cute)
+ * ======================= */
+const cuteFontFamily = Platform.select({
+  ios: "SF Pro Rounded",
+  android: undefined, // keep Roboto/system for reliability
+});
+const FONT = {
+  title: {
+    fontFamily: cuteFontFamily,
+    fontSize: 16, // ⬆️ 更明顯
+    fontWeight: "800" as const,
+    lineHeight: 20,
+    letterSpacing: 0.2,
+  },
+  placeName: {
+    fontFamily: cuteFontFamily,
+    fontSize: 13.5 as any, // RN 接受 number，但 TS 有時唔鍾意小數；唔想就改 14
+    fontWeight: "700" as const,
+    lineHeight: 17,
+    letterSpacing: 0.15,
+  },
+  address: {
+    fontFamily: cuteFontFamily,
+    fontSize: 11.5 as any, // 唔想小數就用 12
+    fontWeight: "500" as const,
+    lineHeight: 14,
+    letterSpacing: 0.25,
+  },
+  chip: {
+    fontFamily: cuteFontFamily,
+    fontSize: 12,
+    fontWeight: "700" as const,
+    lineHeight: 14,
+    letterSpacing: 0.3, // ⬆️ sticker label 感更明顯
+  },
+  chipBold: {
+    fontFamily: cuteFontFamily,
+    fontSize: 12,
+    fontWeight: "800" as const,
+    lineHeight: 14,
+    letterSpacing: 0.3,
+  },
+};
 
 /* =======================
  * Variants (3 templates)
@@ -253,7 +297,12 @@ function Chip({
         borderColor: border,
       }}
     >
-      <Text style={{ fontSize: 12, fontWeight: bold ? "900" : "800", color }}>
+      <Text
+        style={{
+          ...(bold ? FONT.chipBold : FONT.chip),
+          color,
+        }}
+      >
         {label}
       </Text>
     </View>
@@ -640,9 +689,7 @@ export default function ActivityCard({
                 <Text
                   numberOfLines={1}
                   style={{
-                    fontSize: 15,
-                    fontWeight: "900",
-                    lineHeight: 18,
+                    ...FONT.title,
                     color: TOKENS.title,
                     paddingRight: 44,
                   }}
@@ -654,8 +701,7 @@ export default function ActivityCard({
                   <Text
                     numberOfLines={1}
                     style={{
-                      fontSize: 13,
-                      fontWeight: "800",
+                      ...FONT.placeName,
                       color: TOKENS.text,
                     }}
                   >
@@ -666,8 +712,7 @@ export default function ActivityCard({
                     <Text
                       numberOfLines={1}
                       style={{
-                        fontSize: 11,
-                        lineHeight: 13,
+                        ...FONT.address,
                         color: TOKENS.subtext,
                       }}
                     >
