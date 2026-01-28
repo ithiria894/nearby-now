@@ -1,3 +1,22 @@
 {
-  "plugins": ["expo-secure-store"]
+  "expo": {
+    "name": "nearby-now",
+    "slug": "nearby-now",
+    "scheme": "nearbynow",
+    "owner": "ithiria137",
+    "plugins": ["expo-secure-store", "expo-font"],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/6e5dab48-215a-44ea-957a-57b63291e706"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6e5dab48-215a-44ea-957a-57b63291e706"
+      }
+    },
+    "android": {},
+    "ios": {}
+  }
 }

@@ -1,6 +1,6 @@
 -- ============================================================
 -- AUTO-GENERATED: public triggers + functions
--- Generated at: 2026-01-26T07:47:24Z
+-- Generated at: 2026-01-27T01:20:44Z
 -- ============================================================
 
 -- ---- Functions (public) ----
@@ -16,7 +16,7 @@ AS $function$
 
   select case
 
-    when p_end_time is null then p_created_at + interval '2 hours'
+    when p_end_time is null then p_created_at + interval '30 days'
 
     else p_end_time
 
@@ -38,7 +38,7 @@ AS $function$
 
 BEGIN
 
-  -- :zap: CHANGE 1: Allow NULL expires_at to mean "never expire"
+  -- NULL means "never expire" (keep it)
 
   IF NEW.expires_at IS NULL THEN
 
@@ -50,7 +50,21 @@ BEGIN
 
   IF (TG_OP = 'INSERT') THEN
 
-    -- :zap: CHANGE 2: Only compute when expires_at is not NULL (guard above)
+    -- If client provided expires_at (not null), respect it.
+
+    -- If they did not provide it, it will still be NULL at this point,
+
+    -- but we already returned above. So here, expires_at is not null.
+
+    -- However, some clients may pass an empty value weirdly; we keep safe logic:
+
+    IF NEW.expires_at IS NOT NULL THEN
+
+      RETURN NEW;
+
+    END IF;
+
+
 
     NEW.expires_at := public.compute_expires_at(
 
@@ -60,19 +74,13 @@ BEGIN
 
     );
 
-  ELSE
-
-    -- :zap: CHANGE 3: Recompute only when end_time changed (and expires_at is not NULL)
-
-    IF NEW.end_time IS DISTINCT FROM OLD.end_time THEN
-
-      NEW.expires_at := public.compute_expires_at(OLD.created_at, NEW.end_time);
-
-    END IF;
+    RETURN NEW;
 
   END IF;
 
 
+
+  -- On UPDATE, do not recompute automatically (Edit screen controls it explicitly)
 
   RETURN NEW;
 

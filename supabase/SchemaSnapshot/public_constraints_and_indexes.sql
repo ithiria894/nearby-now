@@ -1,6 +1,6 @@
 -- ============================================================
 -- AUTO-GENERATED: public constraints + indexes
--- Generated at: 2026-01-26T07:47:22Z
+-- Generated at: 2026-01-27T01:20:42Z
 -- ============================================================
 
 -- ---- Constraints (PK / UNIQUE / CHECK) ----
@@ -37,6 +37,14 @@ CREATE INDEX idx_activities_creator ON public.activities USING btree (creator_id
 -- Index: public.idx_activities_expires_at
 
 CREATE INDEX idx_activities_expires_at ON public.activities USING btree (expires_at);
+
+-- Index: public.idx_activities_lat
+
+CREATE INDEX idx_activities_lat ON public.activities USING btree (lat);
+
+-- Index: public.idx_activities_lng
+
+CREATE INDEX idx_activities_lng ON public.activities USING btree (lng);
 
 -- Index: public.idx_activities_start_time
 

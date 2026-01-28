@@ -10,3 +10,7 @@ npm install
 
 npm start
 npx expo start -c
+
+npx expo start --tunnel -c
+
+npx expo start --tunnel --no-dev --minify -c
