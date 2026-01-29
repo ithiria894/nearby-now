@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { Alert, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import ActivityCard, {
@@ -18,7 +18,7 @@ import {
   formatGenderPref,
   formatLocalDateTime,
 } from "../../lib/i18n/i18n_format";
-import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { Screen, SegmentedTabs } from "../../src/ui/common";
 
 function isJoinable(a: ActivityCardActivity, joinedSet: Set<string>): boolean {
   if (joinedSet.has(a.id)) return false;
@@ -31,7 +31,6 @@ function isJoinable(a: ActivityCardActivity, joinedSet: Set<string>): boolean {
 // :zap: CHANGE 1: Browse = joinable open + not expired + not joined
 export default function BrowseScreen() {
   const router = useRouter();
-  const theme = useTheme();
   const { t } = useT();
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -198,64 +197,42 @@ export default function BrowseScreen() {
   }
 
   const header = useMemo(() => {
-    const ToggleButton = ({
-      value,
-      label,
-    }: {
-      value: "list" | "map";
-      label: string;
-    }) => {
-      const selected = viewMode === value;
-      return (
-        <Pressable
-          onPress={() => setViewMode(value)}
-          style={{
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            backgroundColor: theme.colors.surface,
-            opacity: selected ? 1 : 0.6,
-          }}
-        >
-          <Text style={{ fontWeight: "800" }}>{label}</Text>
-        </Pressable>
-      );
-    };
-
     return (
       <View style={{ padding: 16, gap: 10 }}>
         <Text style={{ fontSize: 18, fontWeight: "800" }}>
           {t("browse.headerTitle")}
         </Text>
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <ToggleButton value="list" label={t("browse.mode_list")} />
-          <ToggleButton value="map" label={t("browse.mode_map")} />
-        </View>
+        <SegmentedTabs
+          value={viewMode}
+          onChange={setViewMode}
+          items={[
+            { value: "list", label: t("browse.mode_list") },
+            { value: "map", label: t("browse.mode_map") },
+          ]}
+        />
         <Text style={{ opacity: 0.7 }}>{t("browse.subtitle")}</Text>
       </View>
     );
-  }, [viewMode, t, theme.colors.border, theme.colors.surface]);
+  }, [viewMode, t]);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: 16, backgroundColor: theme.colors.bg }}>
+      <Screen>
         <Text>{t("common.loading")}</Text>
-      </View>
+      </Screen>
     );
   }
 
   if (viewMode === "map") {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+      <Screen>
         {header}
         <BrowseMap
           items={items}
           onPressCard={onPressCard}
           onRequestList={() => setViewMode("list")}
         />
-      </View>
+      </Screen>
     );
   }
 
@@ -263,7 +240,6 @@ export default function BrowseScreen() {
     <FlatList
       data={items}
       keyExtractor={(x) => x.id}
-      style={{ backgroundColor: theme.colors.bg }}
       ListHeaderComponent={header}
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
