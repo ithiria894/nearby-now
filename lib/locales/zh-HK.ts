@@ -2,6 +2,11 @@ import zhHK from "../../locales/zh-HK.json";
 
 const merged = {
   ...zhHK,
+  common: {
+    ...zhHK.common,
+    unknown: "未知",
+    never: "永不",
+  },
   room: {
     ...zhHK.room,
     system: {
@@ -20,6 +25,10 @@ const merged = {
       },
     },
   },
+  inviteForm: {
+    ...zhHK.inviteForm,
+    expiry_hint_preset: "將於 {{when}} 到期。",
+  },
   gender: {
     any: "不限",
     female: "女",
@@ -27,6 +36,16 @@ const merged = {
   },
   capacity: {
     unlimited: "不限",
+    n: "{{n}}",
+  },
+  expiry: {
+    none: "不設到期",
+    expired: "已到期",
+  },
+  time: {
+    in_minutes: "{{n}} 分鐘後",
+    in_hours: "{{h}} 小時後",
+    in_hours_minutes: "{{h}} 小時 {{m}} 分鐘後",
   },
   place: {
     none: "未有地點",

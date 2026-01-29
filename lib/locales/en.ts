@@ -2,6 +2,11 @@ import en from "../../locales/en.json";
 
 const merged = {
   ...en,
+  common: {
+    ...en.common,
+    unknown: "Unknown",
+    never: "Never",
+  },
   room: {
     ...en.room,
     system: {
@@ -20,6 +25,10 @@ const merged = {
       },
     },
   },
+  inviteForm: {
+    ...en.inviteForm,
+    expiry_hint_preset: "Expires {{when}}.",
+  },
   gender: {
     any: "any",
     female: "female",
@@ -27,6 +36,16 @@ const merged = {
   },
   capacity: {
     unlimited: "Unlimited",
+    n: "{{n}}",
+  },
+  expiry: {
+    none: "No expiry",
+    expired: "Expired",
+  },
+  time: {
+    in_minutes: "in {{n}} minutes",
+    in_hours: "in {{h}} hours",
+    in_hours_minutes: "in {{h}}h {{m}}m",
   },
   place: {
     none: "No place",

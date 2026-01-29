@@ -14,6 +14,11 @@ import {
   DashPathEffect,
 } from "@shopify/react-native-skia";
 import { useT } from "../lib/useT";
+import {
+  formatCapacity,
+  formatExpiryLabel,
+  formatGenderPref,
+} from "../lib/i18n_format";
 
 /* =======================
  * Types
@@ -247,32 +252,41 @@ function makeTornRectPath(
   return p;
 }
 
-// :zap: CHANGE 4: Ultra-short gender label
-function shortGender(g: string) {
-  const v = (g ?? "").toLowerCase().trim();
-  if (v === "female" || v === "f") return "F";
-  if (v === "male" || v === "m") return "M";
-  return "Any";
-}
-
-// :zap: CHANGE 5: Time + urgency
+// :zap: CHANGE 4: Time + urgency
 function timeLeft(t: (key: string) => string, expiresAt: string | null) {
-  if (!expiresAt)
-    return { label: t("activityCard.noExpiry"), urgency: "normal" as const };
+  const nowMs = Date.now();
+  if (!expiresAt) {
+    return {
+      label: formatExpiryLabel(null, nowMs, t),
+      urgency: "normal" as const,
+    };
+  }
 
-  const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0)
-    return { label: t("activityCard.expired"), urgency: "expired" as const };
+  const ts = new Date(expiresAt).getTime();
+  if (!Number.isFinite(ts)) {
+    return {
+      label: t("common.unknown"),
+      urgency: "normal" as const,
+    };
+  }
+
+  const ms = ts - nowMs;
+  if (ms <= 0) {
+    return {
+      label: formatExpiryLabel(expiresAt, nowMs, t),
+      urgency: "expired" as const,
+    };
+  }
 
   const mins = Math.floor(ms / 60000);
-  if (mins < 15) return { label: `${mins}m`, urgency: "critical" as const };
-  if (mins < 60) return { label: `${mins}m`, urgency: "soon" as const };
+  let urgency: "critical" | "soon" | "normal" = "normal";
+  if (mins < 15) urgency = "critical";
+  else if (mins < 60) urgency = "soon";
 
-  const hrs = Math.floor(mins / 60);
-  const rem = mins % 60;
-  return rem === 0
-    ? { label: `${hrs}h`, urgency: "normal" as const }
-    : { label: `${hrs}h ${rem}m`, urgency: "normal" as const };
+  return {
+    label: formatExpiryLabel(expiresAt, nowMs, t),
+    urgency,
+  };
 }
 
 // :zap: CHANGE 6: Sticker-like chip
@@ -751,7 +765,7 @@ export default function ActivityCard({
 
                   <Chip
                     label={t("activityCard.chip_pref", {
-                      value: shortGender(a.gender_pref),
+                      value: formatGenderPref(a.gender_pref, t),
                     })}
                     bg={TOKENS.chipBg}
                     border={TOKENS.chipBorder}
@@ -760,7 +774,7 @@ export default function ActivityCard({
 
                   <Chip
                     label={t("activityCard.chip_cap", {
-                      value: a.capacity ?? "∞",
+                      value: formatCapacity(a.capacity, t),
                     })}
                     bg={TOKENS.chipBg}
                     border={TOKENS.chipBorder}

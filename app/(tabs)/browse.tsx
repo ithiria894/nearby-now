@@ -10,6 +10,11 @@ import { requireUserId } from "../../lib/auth";
 import { fetchMembershipRowsForUser, upsertJoin } from "../../lib/activities";
 import { supabase } from "../../lib/supabase";
 import { useT } from "../../lib/useT";
+import {
+  formatCapacity,
+  formatGenderPref,
+  formatLocalDateTime,
+} from "../../lib/i18n_format";
 
 function isJoinable(a: ActivityCardActivity, joinedSet: Set<string>): boolean {
   if (joinedSet.has(a.id)) return false;
@@ -144,10 +149,9 @@ export default function BrowseScreen() {
     const placeName =
       (a.place_name ?? a.place_text ?? "").trim() || t("browse.place_none");
     const placeAddress = (a.place_address ?? "").trim();
-    const expiresLabel = a.expires_at
-      ? new Date(a.expires_at).toLocaleString(i18n.language)
-      : t("browse.expires_never");
-    const capacityLabel = a.capacity ?? t("browse.capacity_unlimited");
+    const expiresLabel = formatLocalDateTime(a.expires_at, t);
+    const capacityLabel = formatCapacity(a.capacity, t);
+    const genderPrefLabel = formatGenderPref(a.gender_pref, t);
 
     const confirmJoin = async () => {
       setJoiningId(a.id);
@@ -168,7 +172,7 @@ export default function BrowseScreen() {
         t("browse.details.goal", { title }),
         t("browse.details.place", { placeName }),
         placeAddress ? t("browse.details.address", { placeAddress }) : null,
-        t("browse.details.genderPref", { genderPref: a.gender_pref }),
+        t("browse.details.genderPref", { genderPref: genderPrefLabel }),
         t("browse.details.capacity", { capacityLabel }),
         t("browse.details.expires", { expiresLabel }),
       ]
