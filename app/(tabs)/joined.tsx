@@ -6,13 +6,14 @@ import ActivityCard, {
   type ActivityCardActivity,
   type MembershipState,
 } from "../../components/ActivityCard";
-import { requireUserId } from "../../lib/auth";
+import { requireUserId } from "../../lib/domain/auth";
 import {
   fetchMembershipRowsForUser,
   fetchActivitiesByIds,
-} from "../../lib/activities";
-import { supabase } from "../../lib/supabase";
-import { useT } from "../../lib/useT";
+} from "../../lib/domain/activities";
+import { supabase } from "../../lib/api/supabase";
+import { useT } from "../../lib/i18n/useT";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
 
 function isActive(a: ActivityCardActivity): boolean {
   if (a.status !== "open") return false;
@@ -23,6 +24,7 @@ function isActive(a: ActivityCardActivity): boolean {
 
 export default function JoinedScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { t } = useT();
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -156,6 +158,8 @@ export default function JoinedScreen() {
             paddingHorizontal: 12,
             borderRadius: 999,
             borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface,
             opacity: selected ? 1 : 0.6,
           }}
         >
@@ -192,11 +196,19 @@ export default function JoinedScreen() {
         </Text>
       </View>
     );
-  }, [tab, activeJoined.length, inactiveJoined.length, leftRooms.length, t]);
+  }, [
+    tab,
+    activeJoined.length,
+    inactiveJoined.length,
+    leftRooms.length,
+    t,
+    theme.colors.border,
+    theme.colors.surface,
+  ]);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: 16 }}>
+      <View style={{ flex: 1, padding: 16, backgroundColor: theme.colors.bg }}>
         <Text>{t("common.loading")}</Text>
       </View>
     );
@@ -206,6 +218,7 @@ export default function JoinedScreen() {
     <FlatList
       data={dataToShow}
       keyExtractor={(a) => a.id}
+      style={{ backgroundColor: theme.colors.bg }}
       ListHeaderComponent={header}
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}

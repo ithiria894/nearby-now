@@ -12,10 +12,12 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { supabase } from "../../lib/supabase";
-import { requireUserId } from "../../lib/auth";
-import { useT } from "../../lib/useT";
-import { formatChangeValue } from "../../lib/i18n_format";
+import { supabase } from "../../lib/api/supabase";
+import { requireUserId } from "../../lib/domain/auth";
+import { useT } from "../../lib/i18n/useT";
+import { formatChangeValue } from "../../lib/i18n/i18n_format";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import type { ThemeTokens } from "../../src/ui/theme/tokens";
 
 type ActivityRow = {
   id: string;
@@ -50,37 +52,6 @@ type RoomEventRow = {
 type ChatItem =
   | { kind: "section"; id: string; label: string }
   | { kind: "event"; id: string; e: RoomEventRow };
-
-const TOKENS = {
-  bg: "#FFFFFF",
-  border: "#E5E7EB",
-  title: "#111827",
-  text: "#111827",
-  subtext: "#6B7280",
-
-  cardBg: "#FFFFFF",
-
-  mineBg: "#DCFCE7",
-  mineBorder: "#BBF7D0",
-
-  otherBg: "#F3F4F6",
-  otherBorder: "#E5E7EB",
-
-  systemText: "#6B7280",
-  systemBg: "#F3F4F6",
-  systemBorder: "#E5E7EB",
-
-  primary: "#111827",
-  overlay: "rgba(0,0,0,0.28)",
-
-  dangerText: "#991B1B",
-  dangerBg: "#FEE2E2",
-  dangerBorder: "#FECACA",
-
-  okText: "#166534",
-  okBg: "#DCFCE7",
-  okBorder: "#BBF7D0",
-} as const;
 
 /* =======================
  * Time helpers
@@ -184,7 +155,7 @@ function getEventDisplayName(
   t: (key: string) => string,
   e: RoomEventRow
 ): string {
-  if (!e.user_id) return t("room.system");
+  if (!e.user_id) return t("room.systemName");
   const name = (e.profiles?.display_name ?? "").trim();
   return name || t("room.unknownUser");
 }
@@ -279,11 +250,13 @@ function IconButton({
   onPress,
   disabled,
   destructive,
+  tokens,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   destructive?: boolean;
+  tokens: ThemeTokens["colors"];
 }) {
   return (
     <Pressable
@@ -295,15 +268,15 @@ function IconButton({
         paddingHorizontal: 10,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: destructive ? TOKENS.dangerBorder : TOKENS.border,
-        backgroundColor: destructive ? TOKENS.dangerBg : TOKENS.cardBg,
+        borderColor: destructive ? tokens.dangerBorder : tokens.border,
+        backgroundColor: destructive ? tokens.dangerBg : tokens.surface,
         opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
       })}
     >
       <Text
         style={{
           fontWeight: "900",
-          color: destructive ? TOKENS.dangerText : TOKENS.text,
+          color: destructive ? tokens.dangerText : tokens.text,
           fontSize: 12,
         }}
       >
@@ -317,10 +290,12 @@ function QuickChip({
   label,
   onPress,
   disabled,
+  tokens,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  tokens: ThemeTokens["colors"];
 }) {
   return (
     <Pressable
@@ -331,12 +306,12 @@ function QuickChip({
         paddingHorizontal: 12,
         borderRadius: 999,
         borderWidth: 1,
-        borderColor: TOKENS.border,
-        backgroundColor: TOKENS.cardBg,
+        borderColor: tokens.border,
+        backgroundColor: tokens.surface,
         opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
       })}
     >
-      <Text style={{ fontWeight: "800", color: TOKENS.text, fontSize: 13 }}>
+      <Text style={{ fontWeight: "800", color: tokens.text, fontSize: 13 }}>
         {label}
       </Text>
     </Pressable>
@@ -347,10 +322,12 @@ function SheetItem({
   label,
   onPress,
   destructive,
+  tokens,
 }: {
   label: string;
   onPress: () => void;
   destructive?: boolean;
+  tokens: ThemeTokens["colors"];
 }) {
   return (
     <Pressable
@@ -365,7 +342,7 @@ function SheetItem({
         style={{
           fontSize: 16,
           fontWeight: "900",
-          color: destructive ? TOKENS.dangerText : TOKENS.text,
+          color: destructive ? tokens.dangerText : tokens.text,
         }}
       >
         {label}
@@ -380,6 +357,8 @@ function SheetItem({
 export default function RoomScreen() {
   const router = useRouter();
   const { t, i18n } = useT();
+  const theme = useTheme();
+  const TOKENS = theme.colors;
   const { id } = useLocalSearchParams<{ id: string }>();
   const activityId = String(id);
 
@@ -939,7 +918,7 @@ export default function RoomScreen() {
             borderColor: TOKENS.border,
             borderRadius: 16,
             padding: 12,
-            backgroundColor: TOKENS.cardBg,
+            backgroundColor: TOKENS.surface,
             gap: 10,
           }}
         >
@@ -1059,12 +1038,14 @@ export default function RoomScreen() {
                   }
                   onPress={join}
                   disabled={roomState.isReadOnly}
+                  tokens={TOKENS}
                 />
               ) : (
                 <IconButton
                   label={t("common.leave")}
                   onPress={confirmLeave}
                   destructive
+                  tokens={TOKENS}
                 />
               )}
 
@@ -1074,6 +1055,7 @@ export default function RoomScreen() {
                   onPress={closeInvite}
                   disabled={roomState.isReadOnly}
                   destructive
+                  tokens={TOKENS}
                 />
               ) : null}
             </View>
@@ -1127,7 +1109,7 @@ export default function RoomScreen() {
             borderWidth: 1,
             borderColor: TOKENS.border,
             borderRadius: 16,
-            backgroundColor: TOKENS.cardBg,
+            backgroundColor: TOKENS.surface,
             paddingHorizontal: 12,
             paddingTop: 8,
             paddingBottom: 10,
@@ -1155,16 +1137,19 @@ export default function RoomScreen() {
             label={t("room.quick.imHere")}
             onPress={() => sendQuick("IM_HERE")}
             disabled={!canInteract}
+            tokens={TOKENS}
           />
           <QuickChip
             label={t("room.quick.late10")}
             onPress={() => sendQuick("LATE_10")}
             disabled={!canInteract}
+            tokens={TOKENS}
           />
           <QuickChip
             label={t("room.quick.cancel")}
             onPress={() => sendQuick("CANCEL")}
             disabled={!canInteract}
+            tokens={TOKENS}
           />
         </View>
 
@@ -1196,7 +1181,7 @@ export default function RoomScreen() {
               paddingHorizontal: 12,
               paddingVertical: 10,
               color: TOKENS.text,
-              backgroundColor: TOKENS.cardBg,
+              backgroundColor: TOKENS.surface,
               opacity: canInteract ? 1 : 0.6,
             }}
           />
@@ -1210,7 +1195,7 @@ export default function RoomScreen() {
               borderRadius: 18,
               borderWidth: 1,
               borderColor: TOKENS.border,
-              backgroundColor: TOKENS.cardBg,
+              backgroundColor: TOKENS.surface,
               opacity: !canInteract ? 0.5 : pressed ? 0.85 : 1,
             })}
           >
@@ -1239,7 +1224,7 @@ export default function RoomScreen() {
           <Pressable
             onPress={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: TOKENS.surface,
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               borderWidth: 1,
@@ -1254,7 +1239,7 @@ export default function RoomScreen() {
                 width: 42,
                 height: 4,
                 borderRadius: 999,
-                backgroundColor: "#E5E7EB",
+                backgroundColor: TOKENS.border,
                 marginBottom: 10,
               }}
             />
@@ -1279,6 +1264,7 @@ export default function RoomScreen() {
                 setMenuOpen(false);
                 await copyToClipboard(text);
               }}
+              tokens={TOKENS}
             />
             <SheetItem
               label={t("room.menu.report")}
@@ -1287,12 +1273,14 @@ export default function RoomScreen() {
                 setMenuOpen(false);
                 reportMessage(menuTarget);
               }}
+              tokens={TOKENS}
             />
 
             <View style={{ height: 8 }} />
             <SheetItem
               label={t("room.menu.cancel")}
               onPress={() => setMenuOpen(false)}
+              tokens={TOKENS}
             />
           </Pressable>
         </Pressable>

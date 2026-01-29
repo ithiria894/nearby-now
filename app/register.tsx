@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Alert, Pressable, Text, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
-import { supabase } from "../lib/supabase";
-import { ensureProfile } from "../lib/auth";
-import { useT } from "../lib/useT";
+import { supabase } from "../lib/api/supabase";
+import { ensureProfile } from "../lib/domain/auth";
+import { useT } from "../lib/i18n/useT";
+import { useTheme } from "../src/ui/theme/ThemeProvider";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { t } = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,7 +60,15 @@ export default function RegisterScreen() {
   }
 
   return (
-    <View style={{ flex: 1, padding: 16, gap: 12, justifyContent: "center" }}>
+    <View
+      style={{
+        flex: 1,
+        padding: 16,
+        gap: 12,
+        justifyContent: "center",
+        backgroundColor: theme.colors.bg,
+      }}
+    >
       <Text style={{ fontSize: 22, fontWeight: "800" }}>
         {t("auth.register.title")}
       </Text>
@@ -69,7 +79,13 @@ export default function RegisterScreen() {
         placeholder={t("auth.register.emailPlaceholder")}
         autoCapitalize="none"
         keyboardType="email-address"
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 10,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+        }}
       />
 
       <TextInput
@@ -77,7 +93,13 @@ export default function RegisterScreen() {
         onChangeText={setPassword}
         placeholder={t("auth.register.passwordPlaceholder")}
         secureTextEntry
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 10,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+        }}
       />
 
       <Pressable
@@ -87,6 +109,8 @@ export default function RegisterScreen() {
           padding: 12,
           borderRadius: 10,
           borderWidth: 1,
+          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.surface,
           alignItems: "center",
           opacity: submitting ? 0.6 : 1,
         }}

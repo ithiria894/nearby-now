@@ -18,7 +18,9 @@
     "copy": "Copy",
     "report": "Report",
     "rejoin": "Re-join",
-    "ok": "OK"
+    "ok": "OK",
+    "unknown": "Unknown",
+    "never": "Never"
   },
   "auth": {
     "login": {
@@ -69,6 +71,10 @@
     "logout": "Log out",
     "logoutErrorTitle": "Logout failed",
     "language": "Language",
+    "theme": "Theme",
+    "theme_system": "System",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
     "language_en": "English",
     "language_zhHK": "繁體中文（香港）"
   },
@@ -122,7 +128,7 @@
   "room": {
     "navTitle": "Room",
     "fallbackRoomTitle": "Room",
-    "system": "System",
+    "systemName": "System",
     "unknownUser": "Unknown",
     "time_now": "now",
     "time_m": "{{count}}m",
@@ -184,6 +190,21 @@
       "nativePlaceholderBody": "Not implemented yet on native (placeholder).",
       "reportPlaceholderTitle": "Report",
       "reportPlaceholderBody": "Not implemented yet."
+    },
+    "system": {
+      "left": "{{name}} left the invite",
+      "invite_updated": "Updated invite — {{changes}}",
+      "invite_closed": "Invite closed by creator"
+    },
+    "change": {
+      "title": "title: {{from}} -> {{to}}",
+      "place": "place: {{from}} -> {{to}}",
+      "gender": "gender: {{from}} -> {{to}}",
+      "capacity": "capacity: {{from}} -> {{to}}",
+      "expires": {
+        "never": "expires: set -> never",
+        "datetime": "expires: {{to}}"
+      }
     }
   },
   "activityCard": {
@@ -227,7 +248,7 @@
     "expiry_default": "Default",
     "expiry_never": "Never",
     "expiry_hint_never": "This invite will not expire.",
-    "expiry_hint_preset": "Expires in {{minutes}} minutes.",
+    "expiry_hint_preset": "Expires {{when}}.",
     "expiry_hint_edit": "No change to expiry.",
     "expiry_hint_default": "Default is 30 days.",
     "capacityPlaceholder": "Capacity (optional)",
@@ -245,5 +266,29 @@
     "create": "Create",
     "editInvite": "Edit Invite",
     "room": "Room"
+  },
+  "gender": {
+    "any": "any",
+    "female": "female",
+    "male": "male"
+  },
+  "capacity": {
+    "unlimited": "Unlimited",
+    "n": "{{n}}"
+  },
+  "expiry": {
+    "none": "No expiry",
+    "expired": "Expired"
+  },
+  "time": {
+    "in_minutes": "in {{n}} minutes",
+    "in_hours": "in {{h}} hours",
+    "in_hours_minutes": "in {{h}}h {{m}}m"
+  },
+  "place": {
+    "none": "No place"
+  },
+  "expires": {
+    "never": "Never"
   }
 }

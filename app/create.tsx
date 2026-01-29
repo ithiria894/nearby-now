@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Alert, ScrollView, Text } from "react-native";
 import { useRouter } from "expo-router";
-import { supabase } from "../lib/supabase";
-import { requireUserId } from "../lib/auth";
+import { supabase } from "../lib/api/supabase";
+import { requireUserId } from "../lib/domain/auth";
 import InviteForm, { type InviteFormPayload } from "../components/InviteForm";
-import { useT } from "../lib/useT";
+import { useT } from "../lib/i18n/useT";
+import { useTheme } from "../src/ui/theme/ThemeProvider";
 
 export default function CreateScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { t } = useT();
   const [submitting, setSubmitting] = useState(false);
 
@@ -65,7 +67,10 @@ export default function CreateScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScrollView
+      style={{ backgroundColor: theme.colors.bg }}
+      contentContainerStyle={{ padding: 16, gap: 12 }}
+    >
       <Text style={{ fontSize: 18, fontWeight: "700" }}>
         {t("create.title")}
       </Text>

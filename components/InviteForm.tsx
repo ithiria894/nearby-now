@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, Text, TextInput, View } from "react-native";
-import { searchPlacesNominatim, type PlaceCandidate } from "../lib/places";
-import { useT } from "../lib/useT";
-import { formatExpiryLabel } from "../lib/i18n_format";
+import { searchPlacesNominatim, type PlaceCandidate } from "../lib/api/places";
+import { useT } from "../lib/i18n/useT";
+import { formatExpiryLabel } from "../lib/i18n/i18n_format";
+import { useTheme } from "../src/ui/theme/ThemeProvider";
 
 type GenderPref = "any" | "female" | "male";
 
@@ -89,6 +90,7 @@ export default function InviteForm(props: Props) {
     mode = "create",
   } = props;
 
+  const theme = useTheme();
   const { t } = useT();
   const initialPlace = buildInitialPlace(initialValues, t);
   const effectiveSubmitLabel =
@@ -264,7 +266,13 @@ export default function InviteForm(props: Props) {
         value={title}
         onChangeText={setTitle}
         placeholder={t("inviteForm.titlePlaceholder")}
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 10,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+        }}
       />
 
       <View style={{ gap: 8 }}>
@@ -272,16 +280,24 @@ export default function InviteForm(props: Props) {
           value={placeQuery}
           onChangeText={onChangePlaceQuery}
           placeholder={t("inviteForm.placePlaceholder")}
-          style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
+          style={{
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            borderRadius: 10,
+            padding: 12,
+            backgroundColor: theme.colors.surface,
+          }}
         />
 
         {selectedPlace ? (
           <View
             style={{
               borderWidth: 1,
+              borderColor: theme.colors.border,
               borderRadius: 10,
               padding: 10,
               gap: 4,
+              backgroundColor: theme.colors.surface,
             }}
           >
             <Text style={{ fontSize: 15, fontWeight: "700" }}>
@@ -296,7 +312,9 @@ export default function InviteForm(props: Props) {
                 paddingHorizontal: 10,
                 borderRadius: 8,
                 borderWidth: 1,
+                borderColor: theme.colors.border,
                 alignSelf: "flex-start",
+                backgroundColor: theme.colors.surface,
               }}
             >
               <Text style={{ fontWeight: "600" }}>
@@ -311,7 +329,14 @@ export default function InviteForm(props: Props) {
         ) : null}
 
         {!selectedPlace && candidates.length > 0 ? (
-          <View style={{ borderWidth: 1, borderRadius: 10 }}>
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              borderRadius: 10,
+              backgroundColor: theme.colors.surface,
+            }}
+          >
             {candidates.map((c) => (
               <Pressable
                 key={c.placeId}
@@ -320,6 +345,7 @@ export default function InviteForm(props: Props) {
                   paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderBottomWidth: 1,
+                  borderBottomColor: theme.colors.border,
                 }}
               >
                 <Text style={{ fontSize: 15, fontWeight: "700" }}>
@@ -349,7 +375,9 @@ export default function InviteForm(props: Props) {
               paddingHorizontal: 12,
               borderRadius: 10,
               borderWidth: 1,
+              borderColor: theme.colors.border,
               opacity: genderPref === v ? 1 : 0.6,
+              backgroundColor: theme.colors.surface,
             }}
           >
             <Text style={{ fontWeight: "600" }}>
@@ -371,7 +399,9 @@ export default function InviteForm(props: Props) {
             paddingHorizontal: 12,
             borderRadius: 10,
             borderWidth: 1,
+            borderColor: theme.colors.border,
             opacity: expiryMode === "default" ? 1 : 0.6,
+            backgroundColor: theme.colors.surface,
           }}
         >
           <Text style={{ fontWeight: "600" }}>
@@ -391,10 +421,12 @@ export default function InviteForm(props: Props) {
               paddingHorizontal: 12,
               borderRadius: 10,
               borderWidth: 1,
+              borderColor: theme.colors.border,
               opacity:
                 expiryMode === "preset" && expiryMinutes === p.minutes
                   ? 1
                   : 0.6,
+              backgroundColor: theme.colors.surface,
             }}
           >
             <Text style={{ fontWeight: "600" }}>{p.label}</Text>
@@ -411,7 +443,9 @@ export default function InviteForm(props: Props) {
             paddingHorizontal: 12,
             borderRadius: 10,
             borderWidth: 1,
+            borderColor: theme.colors.border,
             opacity: expiryMode === "never" ? 1 : 0.6,
+            backgroundColor: theme.colors.surface,
           }}
         >
           <Text style={{ fontWeight: "600" }}>
@@ -426,7 +460,13 @@ export default function InviteForm(props: Props) {
         onChangeText={setCapacity}
         keyboardType="number-pad"
         placeholder={t("inviteForm.capacityPlaceholder")}
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 10,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+        }}
       />
 
       <View style={{ flexDirection: "row", gap: 8 }}>
@@ -438,6 +478,8 @@ export default function InviteForm(props: Props) {
             padding: 12,
             borderRadius: 10,
             borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface,
             alignItems: "center",
             opacity: submitting ? 0.6 : 1,
           }}
@@ -455,6 +497,8 @@ export default function InviteForm(props: Props) {
               padding: 12,
               borderRadius: 10,
               borderWidth: 1,
+              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface,
               alignItems: "center",
               opacity: submitting ? 0.6 : 1,
             }}

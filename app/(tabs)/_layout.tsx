@@ -1,6 +1,6 @@
 import { Tabs, useRouter } from "expo-router";
 import { Pressable, Text } from "react-native";
-import { useT } from "../../lib/useT";
+import { useT } from "../../lib/i18n/useT";
 
 // :zap: CHANGE 1: Shared header button for navigating to Create screen
 function HeaderCreateButton() {

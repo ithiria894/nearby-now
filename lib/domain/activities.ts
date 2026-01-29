@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase } from "../api/supabase";
 import type { ActivityCardActivity } from "../components/ActivityCard";
 
 export type MembershipState = "joined" | "left";
