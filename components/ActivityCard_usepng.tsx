@@ -1,18 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Alert, Modal, Pressable, Text, View, Platform } from "react-native";
-import {
-  Canvas,
-  Circle,
-  Group,
-  LinearGradient,
-  Path,
-  Rect,
-  RoundedRect,
-  Skia,
-  vec,
-  BlurMask,
-  DashPathEffect,
-} from "@shopify/react-native-skia";
+import { Alert, Image, Modal, Pressable, Text, View } from "react-native";
 
 /* =======================
  * Types
@@ -51,6 +38,7 @@ const TOKENS = {
   text: "#1F2937",
   subtext: "#6B7280",
 
+  // sticker chip
   chipBg: "rgba(255,255,255,0.82)",
   chipBorder: "rgba(17,24,39,0.10)",
 
@@ -72,181 +60,31 @@ const TOKENS = {
 
   overlay: "rgba(0,0,0,0.28)",
 } as const;
-/* =======================
- * Font Tokens (Cute)
- * ======================= */
-const cuteFontFamily = Platform.select({
-  ios: "SF Pro Rounded",
-  android: undefined, // keep Roboto/system for reliability
-});
-const FONT = {
-  title: {
-    fontFamily: cuteFontFamily,
-    fontSize: 16, // ⬆️ 更明顯
-    fontWeight: "800" as const,
-    lineHeight: 20,
-    letterSpacing: 0.2,
-  },
-  placeName: {
-    fontFamily: cuteFontFamily,
-    fontSize: 13.5 as any, // RN 接受 number，但 TS 有時唔鍾意小數；唔想就改 14
-    fontWeight: "700" as const,
-    lineHeight: 17,
-    letterSpacing: 0.15,
-  },
-  address: {
-    fontFamily: cuteFontFamily,
-    fontSize: 11.5 as any, // 唔想小數就用 12
-    fontWeight: "500" as const,
-    lineHeight: 14,
-    letterSpacing: 0.25,
-  },
-  chip: {
-    fontFamily: cuteFontFamily,
-    fontSize: 12,
-    fontWeight: "700" as const,
-    lineHeight: 14,
-    letterSpacing: 0.3, // ⬆️ sticker label 感更明顯
-  },
-  chipBold: {
-    fontFamily: cuteFontFamily,
-    fontSize: 12,
-    fontWeight: "800" as const,
-    lineHeight: 14,
-    letterSpacing: 0.3,
-  },
-};
 
 /* =======================
- * Variants (3 templates)
+ * Card Templates (3)
  * ======================= */
-type Variant = 0 | 1 | 2;
-
-const CARD_VARIANTS: Array<{
-  paperTop: string;
-  paperBottom: string;
-  stitch: string;
-  speck: string;
-  accent: string; // tape / sticker accent
-  icon: string;
-}> = [
-  {
-    paperTop: "#FBF6EC",
-    paperBottom: "#F3E6D2",
-    stitch: "rgba(182,130,70,0.32)",
-    speck: "rgba(120,80,40,0.12)",
-    accent: "rgba(240,208,150,0.55)",
-    icon: "🎯",
-  },
-  {
-    paperTop: "#F8F2EA",
-    paperBottom: "#EADFD3",
-    stitch: "rgba(110,110,110,0.24)",
-    speck: "rgba(80,80,80,0.12)",
-    accent: "rgba(200,220,240,0.55)",
-    icon: "🎬",
-  },
-  {
-    paperTop: "#FAF3E7",
-    paperBottom: "#F0D7C3",
-    stitch: "rgba(165,90,60,0.26)",
-    speck: "rgba(120,70,50,0.12)",
-    accent: "rgba(210,235,210,0.55)",
-    icon: "🍜",
-  },
-];
+// :zap: CHANGE 1: Use 3 scrapbook templates (PNG)
+const CARD_TEMPLATES = [
+  { bg: require("../assets/activity-cards/card_template_1.png"), icon: "🎯" },
+  { bg: require("../assets/activity-cards/card_template_2.png"), icon: "🎬" },
+  { bg: require("../assets/activity-cards/card_template_3.png"), icon: "🍜" },
+] as const;
 
 /* =======================
  * Helpers
  * ======================= */
 
-// :zap: CHANGE 1: Stable variant pick per activity id
-function pickVariant(activityId: string): Variant {
+// :zap: CHANGE 2: Stable template pick per activity id
+function pickTemplateIndex(activityId: string) {
   let h = 0;
   for (let i = 0; i < activityId.length; i += 1) {
     h = (h * 31 + activityId.charCodeAt(i)) >>> 0;
   }
-  return (h % 3) as Variant;
+  return h % CARD_TEMPLATES.length;
 }
 
-// :zap: CHANGE 2: Tiny PRNG for deterministic "texture" points
-function mulberry32(seed: number) {
-  return function rand() {
-    let t = (seed += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-// :zap: CHANGE 3: Torn-ish rounded rect path (subtle, not too noisy)
-function makeTornRectPath(
-  w: number,
-  h: number,
-  r: number,
-  seed: number,
-  jitter: number
-) {
-  const rand = mulberry32(seed);
-  const p = Skia.Path.Make();
-
-  const left = 0;
-  const top = 0;
-  const right = w;
-  const bottom = h;
-
-  const steps = Math.max(10, Math.floor((w + h) / 28)); // controls edge detail
-  const j = Math.max(0.6, jitter);
-
-  // Start near top-left corner
-  p.moveTo(left + r, top);
-
-  // Top edge
-  for (let i = 1; i <= steps; i += 1) {
-    const t = i / steps;
-    const x = left + r + (w - 2 * r) * t;
-    const y = top + (rand() - 0.5) * j;
-    p.lineTo(x, y);
-  }
-
-  // Top-right corner arc approximation
-  p.quadTo(right, top, right, top + r);
-
-  // Right edge
-  for (let i = 1; i <= steps; i += 1) {
-    const t = i / steps;
-    const y = top + r + (h - 2 * r) * t;
-    const x = right + (rand() - 0.5) * j;
-    p.lineTo(x, y);
-  }
-
-  p.quadTo(right, bottom, right - r, bottom);
-
-  // Bottom edge
-  for (let i = 1; i <= steps; i += 1) {
-    const t = i / steps;
-    const x = right - r - (w - 2 * r) * t;
-    const y = bottom + (rand() - 0.5) * j;
-    p.lineTo(x, y);
-  }
-
-  p.quadTo(left, bottom, left, bottom - r);
-
-  // Left edge
-  for (let i = 1; i <= steps; i += 1) {
-    const t = i / steps;
-    const y = bottom - r - (h - 2 * r) * t;
-    const x = left + (rand() - 0.5) * j;
-    p.lineTo(x, y);
-  }
-
-  p.quadTo(left, top, left + r, top);
-
-  p.close();
-  return p;
-}
-
-// :zap: CHANGE 4: Ultra-short gender label
+// :zap: CHANGE 3: Ultra-short gender label
 function shortGender(g: string) {
   const v = (g ?? "").toLowerCase().trim();
   if (v === "female" || v === "f") return "F";
@@ -254,7 +92,7 @@ function shortGender(g: string) {
   return "Any";
 }
 
-// :zap: CHANGE 5: Time + urgency
+// :zap: CHANGE 4: Time + urgency
 function timeLeft(expiresAt: string | null) {
   if (!expiresAt) return { label: "No expiry", urgency: "normal" as const };
 
@@ -272,7 +110,7 @@ function timeLeft(expiresAt: string | null) {
     : { label: `${hrs}h ${rem}m`, urgency: "normal" as const };
 }
 
-// :zap: CHANGE 6: Sticker-like chip
+// :zap: CHANGE 5: Sticker-like chip
 function Chip({
   label,
   bg,
@@ -297,19 +135,14 @@ function Chip({
         borderColor: border,
       }}
     >
-      <Text
-        style={{
-          ...(bold ? FONT.chipBold : FONT.chip),
-          color,
-        }}
-      >
+      <Text style={{ fontSize: 12, fontWeight: bold ? "900" : "800", color }}>
         {label}
       </Text>
     </View>
   );
 }
 
-// :zap: CHANGE 7: Cross-platform menu item
+// :zap: CHANGE 6: Cross-platform menu item
 function MenuItem({
   label,
   onPress,
@@ -341,177 +174,6 @@ function MenuItem({
   );
 }
 
-/* =======================
- * Skia Background Frame
- * ======================= */
-function ScrapbookBackground({
-  width,
-  height,
-  variant,
-  seed,
-}: {
-  width: number;
-  height: number;
-  variant: Variant;
-  seed: number;
-}) {
-  const v = CARD_VARIANTS[variant];
-
-  const paperPath = useMemo(() => {
-    const r = 18;
-    const jitter = 2.6; // subtle torn feel
-    return makeTornRectPath(width, height, r, seed, jitter);
-  }, [width, height, seed]);
-
-  const innerPath = useMemo(() => {
-    const inset = 10;
-    const r = 14;
-    const jitter = 0.6;
-    return makeTornRectPath(
-      width - inset * 2,
-      height - inset * 2,
-      r,
-      seed + 77,
-      jitter
-    );
-  }, [width, height, seed]);
-
-  // Speckles / doodles (deterministic)
-  const speckles = useMemo(() => {
-    const rand = mulberry32(seed + 999);
-    const dots: Array<{ x: number; y: number; r: number; a: number }> = [];
-    const n = Math.floor((width * height) / 4200); // density
-    for (let i = 0; i < n; i += 1) {
-      dots.push({
-        x: rand() * width,
-        y: rand() * height,
-        r: 0.6 + rand() * 1.6,
-        a: 0.06 + rand() * 0.12,
-      });
-    }
-    return dots;
-  }, [width, height, seed]);
-
-  // Little star-ish accents near top-right (subtle)
-  const stars = useMemo(() => {
-    const rand = mulberry32(seed + 2024);
-    const pts: Array<{ x: number; y: number; r: number }> = [];
-    for (let i = 0; i < 5; i += 1) {
-      pts.push({
-        x: width * (0.72 + rand() * 0.22),
-        y: height * (0.12 + rand() * 0.18),
-        r: 1.2 + rand() * 1.6,
-      });
-    }
-    return pts;
-  }, [width, height, seed]);
-
-  // Tape position (top-left-ish)
-  const tape = useMemo(() => {
-    const rand = mulberry32(seed + 404);
-    const w = 66 + rand() * 10;
-    const h = 18 + rand() * 4;
-    const x = 12 + rand() * 8;
-    const y = 8 + rand() * 6;
-    const rotate = (-12 + rand() * 18) * (Math.PI / 180);
-    return { w, h, x, y, rotate };
-  }, [seed]);
-
-  return (
-    <Canvas style={{ width, height }}>
-      {/* :zap: CHANGE 8: Soft shadow behind the paper */}
-      <Group transform={[{ translateX: 0 }, { translateY: 3 }]}>
-        <Path path={paperPath} color="rgba(0,0,0,0.14)">
-          <BlurMask blur={10} style="normal" />
-        </Path>
-      </Group>
-
-      {/* :zap: CHANGE 9: Paper fill with gentle gradient */}
-      <Path path={paperPath}>
-        <LinearGradient
-          start={vec(0, 0)}
-          end={vec(0, height)}
-          colors={[v.paperTop, v.paperBottom]}
-        />
-      </Path>
-
-      {/* :zap: CHANGE 10: Inner stitched/dashed border */}
-      <Group transform={[{ translateX: 10 }, { translateY: 10 }]}>
-        <Path
-          path={innerPath}
-          color={v.stitch}
-          style="stroke"
-          strokeWidth={1.6}
-        >
-          <DashPathEffect intervals={[6, 6]} phase={0} />
-        </Path>
-      </Group>
-
-      {/* :zap: CHANGE 11: Tape (semi-transparent rotated rounded rect) */}
-      <Group
-        transform={[
-          { translateX: tape.x + tape.w / 2 },
-          { translateY: tape.y + tape.h / 2 },
-          { rotate: tape.rotate },
-          { translateX: -(tape.x + tape.w / 2) },
-          { translateY: -(tape.y + tape.h / 2) },
-        ]}
-      >
-        <RoundedRect
-          x={tape.x}
-          y={tape.y}
-          width={tape.w}
-          height={tape.h}
-          r={6}
-          color={v.accent}
-        />
-        <RoundedRect
-          x={tape.x}
-          y={tape.y}
-          width={tape.w}
-          height={tape.h}
-          r={6}
-          color="rgba(255,255,255,0.10)"
-        />
-      </Group>
-
-      {/* :zap: CHANGE 12: Speckles texture */}
-      {speckles.map((d, idx) => (
-        <Circle
-          key={`sp-${idx}`}
-          cx={d.x}
-          cy={d.y}
-          r={d.r}
-          color={`rgba(0,0,0,${d.a})`}
-        />
-      ))}
-
-      {/* :zap: CHANGE 13: Small star-like highlights */}
-      {stars.map((s, idx) => (
-        <Circle
-          key={`st-${idx}`}
-          cx={s.x}
-          cy={s.y}
-          r={s.r}
-          color="rgba(255,255,255,0.55)"
-        />
-      ))}
-
-      {/* :zap: CHANGE 14: Corner vignette for depth */}
-      <Rect
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        color="rgba(0,0,0,0.03)"
-      />
-    </Canvas>
-  );
-}
-
-/* =======================
- * Component
- * ======================= */
 export default function ActivityCard({
   activity: a,
   currentUserId,
@@ -528,8 +190,8 @@ export default function ActivityCard({
   const time = timeLeft(a.expires_at);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const variant = useMemo(() => pickVariant(a.id), [a.id]);
-  const v = CARD_VARIANTS[variant];
+  const templateIdx = useMemo(() => pickTemplateIndex(a.id), [a.id]);
+  const template = CARD_TEMPLATES[templateIdx];
 
   const timeChipStyle = useMemo(() => {
     if (time.urgency === "critical" || time.urgency === "expired") {
@@ -556,12 +218,6 @@ export default function ActivityCard({
     };
   }, [time.label, time.urgency]);
 
-  // :zap: CHANGE 15: Card layout constants (tune once, applies everywhere)
-  const CARD_HEIGHT = 132;
-
-  // :zap: CHANGE 16: Measure width so Skia background matches the card frame
-  const [cardWidth, setCardWidth] = useState<number>(0);
-
   function notImplemented(name: string) {
     Alert.alert(name, "Not implemented yet.");
   }
@@ -586,46 +242,37 @@ export default function ActivityCard({
       <Pressable
         onPress={onPressCard}
         disabled={isJoining}
+        // :zap: CHANGE 7: Keep press feedback only; visuals are inside the card frame
         style={({ pressed }) => ({
-          opacity: isJoining ? 0.6 : pressed ? 0.94 : 1,
+          opacity: isJoining ? 0.6 : pressed ? 0.92 : 1,
           ...(pressed ? { transform: [{ scale: 0.99 }] } : {}),
         })}
       >
-        {/* :zap: CHANGE 17: Fixed-height frame so list spacing is predictable */}
+        {/* :zap: CHANGE 8: Card frame controlled by fixed height + background image ratio */}
         <View
-          onLayout={(e) => {
-            const w = Math.max(0, Math.floor(e.nativeEvent.layout.width));
-            if (w && w !== cardWidth) setCardWidth(w);
-          }}
           style={{
             width: "100%",
-            height: CARD_HEIGHT,
+            height: 132, // :zap: CHANGE 9: Adjust this number to match your PNG template look
             borderRadius: 18,
             overflow: "hidden",
           }}
         >
-          {/* :zap: CHANGE 18: Skia scrapbook background (no assets) */}
-          {cardWidth > 0 ? (
-            <View
-              pointerEvents="none"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-              }}
-            >
-              <ScrapbookBackground
-                width={cardWidth}
-                height={CARD_HEIGHT}
-                variant={variant}
-                seed={a.id.length * 1337 + a.id.charCodeAt(0)}
-              />
-            </View>
-          ) : null}
+          {/* :zap: CHANGE 10: Background template is absolute + contain so it shows fully */}
+          <Image
+            source={template.bg}
+            resizeMode="contain"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: "100%",
+              height: "100%",
+            }}
+          />
 
-          {/* :zap: CHANGE 19: Content overlay, vertically centered (your request) */}
+          {/* :zap: CHANGE 11: Content overlay */}
           <View
             style={{
               flex: 1,
@@ -634,7 +281,7 @@ export default function ActivityCard({
               justifyContent: "center", // ✅ vertical center
             }}
           >
-            {/* :zap: CHANGE 20: Always show ⋯ (top-right) */}
+            {/* :zap: CHANGE 12: Always show "..." on top-right */}
             <Pressable
               onPress={(e) => {
                 e.stopPropagation();
@@ -667,29 +314,37 @@ export default function ActivityCard({
               </Text>
             </Pressable>
 
-            {/* :zap: CHANGE 21: Icon stays on the left (your request) */}
             <View
-              style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
+              style={{
+                flexDirection: "row",
+                gap: 10,
+                alignItems: "center",
+                justifyContent: "center", // ✅ horizontal center
+              }}
             >
+              {/* :zap: CHANGE 13: Small icon badge */}
               <View
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
                   backgroundColor: "rgba(255,255,255,0.86)",
                   alignItems: "center",
                   justifyContent: "center",
                 }}
               >
-                <Text style={{ fontSize: 16 }}>{v.icon}</Text>
+                <Text style={{ fontSize: 14 }}>{template.icon}</Text>
               </View>
 
               {/* Main */}
-              <View style={{ flex: 1, gap: 5 }}>
+              <View style={{ flex: 1, gap: 4, paddingTop: 2 }}>
+                {/* Title */}
                 <Text
                   numberOfLines={1}
                   style={{
-                    ...FONT.title,
+                    fontSize: 15,
+                    fontWeight: "900",
+                    lineHeight: 18,
                     color: TOKENS.title,
                     paddingRight: 44,
                   }}
@@ -697,11 +352,13 @@ export default function ActivityCard({
                   {a.title_text}
                 </Text>
 
+                {/* Place */}
                 <View style={{ gap: 1 }}>
                   <Text
                     numberOfLines={1}
                     style={{
-                      ...FONT.placeName,
+                      fontSize: 13,
+                      fontWeight: "800",
                       color: TOKENS.text,
                     }}
                   >
@@ -712,7 +369,8 @@ export default function ActivityCard({
                     <Text
                       numberOfLines={1}
                       style={{
-                        ...FONT.address,
+                        fontSize: 11,
+                        lineHeight: 13,
                         color: TOKENS.subtext,
                       }}
                     >
@@ -723,7 +381,12 @@ export default function ActivityCard({
 
                 {/* Chips */}
                 <View
-                  style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}
+                  // :zap: CHANGE 14: Push chips to the bottom to match template spacing
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    gap: 6,
+                  }}
                 >
                   {isCreator ? (
                     <Chip
