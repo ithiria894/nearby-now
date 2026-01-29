@@ -14,7 +14,11 @@ CREATE TABLE public.activities (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     closed_at timestamp with time zone,
-    closed_by uuid
+    closed_by uuid,
+    place_name text,
+    place_address text,
+    place_id text,
+    location_source text
 );
 
 CREATE TABLE public.activity_members (

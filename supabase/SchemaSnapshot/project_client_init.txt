@@ -1,6 +1,6 @@
 # ============================================================
 # AUTO-GENERATED: Supabase client init (repo-side)
-# Generated at: 2026-01-26T07:47:30Z
+# Generated at: 2026-01-27T01:20:50Z
 # NOTE: This may contain keys. Local use only.
 # ============================================================
 
