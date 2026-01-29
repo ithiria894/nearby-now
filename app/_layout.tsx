@@ -19,7 +19,7 @@ export default function RootLayout() {
   const segments = useSegments();
 
   // :zap: CHANGE 3: Load fonts once at root
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     PatrickHand: PatrickHand_400Regular,
     Kalam: Kalam_400Regular,
     KalamBold: Kalam_700Bold,
@@ -27,10 +27,13 @@ export default function RootLayout() {
 
   // :zap: CHANGE 4: Hide splash only when fonts are loaded
   useEffect(() => {
-    if (fontsLoaded) {
+    if (fontsLoaded || fontError) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded]);
+    if (fontError) {
+      console.error("Font load error:", fontError);
+    }
+  }, [fontsLoaded, fontError]);
 
   useEffect(() => {
     let isMounted = true;
