@@ -13,6 +13,7 @@ import {
   BlurMask,
   DashPathEffect,
 } from "@shopify/react-native-skia";
+import { useT } from "../lib/useT";
 
 /* =======================
  * Types
@@ -255,11 +256,13 @@ function shortGender(g: string) {
 }
 
 // :zap: CHANGE 5: Time + urgency
-function timeLeft(expiresAt: string | null) {
-  if (!expiresAt) return { label: "No expiry", urgency: "normal" as const };
+function timeLeft(t: (key: string) => string, expiresAt: string | null) {
+  if (!expiresAt)
+    return { label: t("activityCard.noExpiry"), urgency: "normal" as const };
 
   const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0) return { label: "Expired", urgency: "expired" as const };
+  if (ms <= 0)
+    return { label: t("activityCard.expired"), urgency: "expired" as const };
 
   const mins = Math.floor(ms / 60000);
   if (mins < 15) return { label: `${mins}m`, urgency: "critical" as const };
@@ -520,12 +523,14 @@ export default function ActivityCard({
   onPressCard,
   onPressEdit,
 }: Props) {
+  const { t } = useT();
   const isCreator = !!currentUserId && a.creator_id === currentUserId;
 
-  const placeName = (a.place_name ?? a.place_text ?? "").trim() || "No place";
+  const placeName =
+    (a.place_name ?? a.place_text ?? "").trim() || t("activityCard.place_none");
   const placeAddress = (a.place_address ?? "").trim();
 
-  const time = timeLeft(a.expires_at);
+  const time = timeLeft(t, a.expires_at);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const variant = useMemo(() => pickVariant(a.id), [a.id]);
@@ -562,8 +567,9 @@ export default function ActivityCard({
   // :zap: CHANGE 16: Measure width so Skia background matches the card frame
   const [cardWidth, setCardWidth] = useState<number>(0);
 
-  function notImplemented(name: string) {
-    Alert.alert(name, "Not implemented yet.");
+  function notImplemented(action: "share" | "report" | "delete") {
+    const titleKey = `activityCard.notImplementedTitle_${action}` as const;
+    Alert.alert(t(titleKey), t("activityCard.notImplementedBody"));
   }
 
   function runAction(action: "edit" | "share" | "report" | "delete") {
@@ -576,9 +582,9 @@ export default function ActivityCard({
       return;
     }
 
-    if (action === "share") return notImplemented("Share");
-    if (action === "report") return notImplemented("Report");
-    if (action === "delete") return notImplemented("Delete");
+    if (action === "share") return notImplemented("share");
+    if (action === "report") return notImplemented("report");
+    if (action === "delete") return notImplemented("delete");
   }
 
   return (
@@ -727,7 +733,7 @@ export default function ActivityCard({
                 >
                   {isCreator ? (
                     <Chip
-                      label="Created"
+                      label={t("activityCard.chip_created")}
                       bg={TOKENS.createdBg}
                       border={TOKENS.createdBorder}
                       color={TOKENS.createdText}
@@ -736,7 +742,7 @@ export default function ActivityCard({
                   ) : null}
 
                   <Chip
-                    label={`⏳ ${time.label}`}
+                    label={t("activityCard.chip_time", { label: time.label })}
                     bg={timeChipStyle.bg}
                     border={timeChipStyle.border}
                     color={timeChipStyle.color}
@@ -744,14 +750,18 @@ export default function ActivityCard({
                   />
 
                   <Chip
-                    label={`Pref ${shortGender(a.gender_pref)}`}
+                    label={t("activityCard.chip_pref", {
+                      value: shortGender(a.gender_pref),
+                    })}
                     bg={TOKENS.chipBg}
                     border={TOKENS.chipBorder}
                     color={TOKENS.text}
                   />
 
                   <Chip
-                    label={`Cap ${a.capacity ?? "∞"}`}
+                    label={t("activityCard.chip_cap", {
+                      value: a.capacity ?? "∞",
+                    })}
                     bg={TOKENS.chipBg}
                     border={TOKENS.chipBorder}
                     color={TOKENS.text}
@@ -759,7 +769,7 @@ export default function ActivityCard({
 
                   {membershipState === "joined" ? (
                     <Chip
-                      label="Joined"
+                      label={t("activityCard.chip_joined")}
                       bg={TOKENS.joinedBg}
                       border={TOKENS.joinedBorder}
                       color={TOKENS.joinedText}
@@ -767,7 +777,7 @@ export default function ActivityCard({
                     />
                   ) : membershipState === "left" ? (
                     <Chip
-                      label="Left"
+                      label={t("activityCard.chip_left")}
                       bg={TOKENS.chipBg}
                       border={TOKENS.chipBorder}
                       color={TOKENS.subtext}
@@ -820,20 +830,32 @@ export default function ActivityCard({
 
             {isCreator ? (
               <>
-                <MenuItem label="Edit" onPress={() => runAction("edit")} />
                 <MenuItem
-                  label="Delete"
+                  label={t("activityCard.menu.edit")}
+                  onPress={() => runAction("edit")}
+                />
+                <MenuItem
+                  label={t("activityCard.menu.delete")}
                   destructive
                   onPress={() => runAction("delete")}
                 />
               </>
             ) : null}
 
-            <MenuItem label="Share" onPress={() => runAction("share")} />
-            <MenuItem label="Report" onPress={() => runAction("report")} />
+            <MenuItem
+              label={t("activityCard.menu.share")}
+              onPress={() => runAction("share")}
+            />
+            <MenuItem
+              label={t("activityCard.menu.report")}
+              onPress={() => runAction("report")}
+            />
 
             <View style={{ height: 8 }} />
-            <MenuItem label="Cancel" onPress={() => setMenuOpen(false)} />
+            <MenuItem
+              label={t("activityCard.menu.cancel")}
+              onPress={() => setMenuOpen(false)}
+            />
           </Pressable>
         </Pressable>
       </Modal>

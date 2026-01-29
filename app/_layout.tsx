@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import "fast-text-encoding"; // ✅ provides TextDecoder/TextEncoder
 import "react-native-url-polyfill/auto"; // ✅ provides URL, URLSearchParams
+import "../lib/i18n";
+import { useT } from "../lib/useT";
 
 // :zap: CHANGE 1: Load Google fonts via expo-font + expo-google-fonts
 import { useFonts } from "expo-font";
@@ -17,6 +19,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
+  const { t } = useT();
 
   // :zap: CHANGE 3: Load fonts once at root
   const [fontsLoaded, fontError] = useFonts({
@@ -74,13 +77,19 @@ export default function RootLayout() {
     <Stack>
       <Stack.Screen
         name="login"
-        options={{ title: "Login", headerShown: false }}
+        options={{ title: t("rootNav.login"), headerShown: false }}
       />
-      <Stack.Screen name="register" options={{ title: "Register" }} />
+      <Stack.Screen
+        name="register"
+        options={{ title: t("rootNav.register") }}
+      />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="create" options={{ title: "Create" }} />
-      <Stack.Screen name="edit/[id]" options={{ title: "Edit Invite" }} />
-      <Stack.Screen name="room/[id]" options={{ title: "Room" }} />
+      <Stack.Screen name="create" options={{ title: t("rootNav.create") }} />
+      <Stack.Screen
+        name="edit/[id]"
+        options={{ title: t("rootNav.editInvite") }}
+      />
+      <Stack.Screen name="room/[id]" options={{ title: t("rootNav.room") }} />
     </Stack>
   );
 }

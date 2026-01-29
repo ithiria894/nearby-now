@@ -12,6 +12,7 @@ import {
   fetchActivitiesByIds,
 } from "../../lib/activities";
 import { supabase } from "../../lib/supabase";
+import { useT } from "../../lib/useT";
 
 function isActive(a: ActivityCardActivity): boolean {
   if (a.status !== "open") return false;
@@ -22,6 +23,7 @@ function isActive(a: ActivityCardActivity): boolean {
 
 export default function JoinedScreen() {
   const router = useRouter();
+  const { t } = useT();
 
   const [userId, setUserId] = useState<string | null>(null);
   // :zap: CHANGE 1: Tabs instead of Active-only switch.
@@ -59,7 +61,7 @@ export default function JoinedScreen() {
         await load();
       } catch (e: any) {
         console.error(e);
-        Alert.alert("Load failed", e?.message ?? "Unknown error");
+        Alert.alert(t("joined.loadErrorTitle"), e?.message ?? "Unknown error");
         router.replace("/login");
       } finally {
         setLoading(false);
@@ -73,7 +75,7 @@ export default function JoinedScreen() {
       await load();
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Refresh failed", e?.message ?? "Unknown error");
+      Alert.alert(t("joined.refreshErrorTitle"), e?.message ?? "Unknown error");
     } finally {
       setRefreshing(false);
     }
@@ -164,30 +166,38 @@ export default function JoinedScreen() {
 
     return (
       <View style={{ padding: 16, gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>Joined</Text>
+        <Text style={{ fontSize: 18, fontWeight: "800" }}>
+          {t("joined.headerTitle")}
+        </Text>
 
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <TabButton value="active" label={`Active (${activeJoined.length})`} />
+          <TabButton
+            value="active"
+            label={t("joined.tab_active", { count: activeJoined.length })}
+          />
           <TabButton
             value="inactive"
-            label={`Inactive (${inactiveJoined.length})`}
+            label={t("joined.tab_inactive", { count: inactiveJoined.length })}
           />
-          <TabButton value="left" label={`Left (${leftRooms.length})`} />
+          <TabButton
+            value="left"
+            label={t("joined.tab_left", { count: leftRooms.length })}
+          />
         </View>
 
         <Text style={{ opacity: 0.7 }}>
-          {tab === "active" && "Showing active rooms you joined."}
-          {tab === "inactive" && "Showing closed/expired rooms you joined."}
-          {tab === "left" && "Showing rooms you left (history view only)."}
+          {tab === "active" && t("joined.subtitle_active")}
+          {tab === "inactive" && t("joined.subtitle_inactive")}
+          {tab === "left" && t("joined.subtitle_left")}
         </Text>
       </View>
     );
-  }, [tab, activeJoined.length, inactiveJoined.length, leftRooms.length]);
+  }, [tab, activeJoined.length, inactiveJoined.length, leftRooms.length, t]);
 
   if (loading) {
     return (
       <View style={{ flex: 1, padding: 16 }}>
-        <Text>Loading...</Text>
+        <Text>{t("common.loading")}</Text>
       </View>
     );
   }
@@ -224,9 +234,9 @@ export default function JoinedScreen() {
       ListEmptyComponent={
         <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
           <Text style={{ opacity: 0.8 }}>
-            {tab === "active" && "No active joined rooms."}
-            {tab === "inactive" && "No inactive joined rooms."}
-            {tab === "left" && "No left rooms."}
+            {tab === "active" && t("joined.empty_active")}
+            {tab === "inactive" && t("joined.empty_inactive")}
+            {tab === "left" && t("joined.empty_left")}
           </Text>
         </View>
       }

@@ -4,9 +4,11 @@ import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
 import { requireUserId } from "../lib/auth";
 import InviteForm, { type InviteFormPayload } from "../components/InviteForm";
+import { useT } from "../lib/useT";
 
 export default function CreateScreen() {
   const router = useRouter();
+  const { t } = useT();
   const [submitting, setSubmitting] = useState(false);
 
   async function onCreate(payload: InviteFormPayload) {
@@ -56,7 +58,7 @@ export default function CreateScreen() {
       router.replace("/");
     } catch (_e: any) {
       console.error(_e);
-      Alert.alert("Create failed", _e?.message ?? "Unknown error");
+      Alert.alert(t("create.errorTitle"), _e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }
@@ -64,12 +66,14 @@ export default function CreateScreen() {
 
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <Text style={{ fontSize: 18, fontWeight: "700" }}>Create an invite</Text>
+      <Text style={{ fontSize: 18, fontWeight: "700" }}>
+        {t("create.title")}
+      </Text>
 
       <InviteForm
         mode="create"
         submitting={submitting}
-        submitLabel="Post now"
+        submitLabel={t("create.submit")}
         onSubmit={onCreate}
       />
     </ScrollView>

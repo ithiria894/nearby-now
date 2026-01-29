@@ -6,6 +6,7 @@ import { requireUserId } from "../../lib/auth";
 import InviteForm, {
   type InviteFormPayload,
 } from "../../components/InviteForm";
+import { useT } from "../../lib/useT";
 
 type ActivityRow = {
   id: string;
@@ -23,10 +24,14 @@ type ActivityRow = {
   expires_at: string | null;
 };
 
-function formatPlace(name?: string | null, address?: string | null): string {
+function formatPlace(
+  t: (key: string) => string,
+  name?: string | null,
+  address?: string | null
+): string {
   const safeName = (name ?? "").trim();
   const safeAddress = (address ?? "").trim();
-  if (!safeName && !safeAddress) return "none";
+  if (!safeName && !safeAddress) return t("activityCard.place_none");
   if (safeName && safeAddress && safeName !== safeAddress) {
     return `${safeName} / ${safeAddress}`;
   }
@@ -44,6 +49,7 @@ function formatExpiryPreview(expiresAt: string | null): string {
 
 export default function EditActivityScreen() {
   const router = useRouter();
+  const { t } = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
   const activityId = String(id);
 
@@ -76,7 +82,7 @@ export default function EditActivityScreen() {
 
         const a = data as ActivityRow;
         if (a.creator_id !== uid) {
-          Alert.alert("Not allowed", "Only the creator can edit this invite.");
+          Alert.alert(t("edit.notAllowedTitle"), t("edit.notAllowedBody"));
           router.back();
           return;
         }
@@ -84,7 +90,7 @@ export default function EditActivityScreen() {
         setActivity(a);
       } catch (e: any) {
         console.error(e);
-        Alert.alert("Load failed", e?.message ?? "Unknown error");
+        Alert.alert(t("edit.loadErrorTitle"), e?.message ?? "Unknown error");
         router.back();
       } finally {
         setLoading(false);
@@ -97,7 +103,7 @@ export default function EditActivityScreen() {
   async function onSave(payload: InviteFormPayload) {
     if (!userId || !activity) return;
     if (!isCreator) {
-      Alert.alert("Not allowed", "Only the creator can edit this invite.");
+      Alert.alert(t("edit.notAllowedTitle"), t("edit.notAllowedBody"));
       return;
     }
 
@@ -123,10 +129,11 @@ export default function EditActivityScreen() {
     }
 
     const oldPlace = formatPlace(
+      t,
       activity.place_name ?? activity.place_text,
       activity.place_address
     );
-    const nextPlace = formatPlace(payload.place_name, payload.place_address);
+    const nextPlace = formatPlace(t, payload.place_name, payload.place_address);
     if (oldPlace !== nextPlace) {
       changes.push(`place: ${oldPlace} -> ${nextPlace}`);
     }
@@ -136,9 +143,9 @@ export default function EditActivityScreen() {
     }
     if ((activity.capacity ?? null) !== (payload.capacity ?? null)) {
       changes.push(
-        `capacity: ${activity.capacity ?? "unlimited"} -> ${
-          payload.capacity ?? "unlimited"
-        }`
+        `capacity: ${
+          activity.capacity ?? t("browse.capacity_unlimited")
+        } -> ${payload.capacity ?? t("browse.capacity_unlimited")}`
       );
     }
 
@@ -194,7 +201,7 @@ export default function EditActivityScreen() {
       router.replace("/");
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Save failed", e?.message ?? "Unknown error");
+      Alert.alert(t("edit.saveErrorTitle"), e?.message ?? "Unknown error");
     } finally {
       setSaving(false);
     }
@@ -203,7 +210,7 @@ export default function EditActivityScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, padding: 16 }}>
-        <Text>Loading...</Text>
+        <Text>{t("common.loading")}</Text>
       </View>
     );
   }
@@ -213,13 +220,14 @@ export default function EditActivityScreen() {
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
       <Text style={{ fontSize: 18, fontWeight: "800" }}>
-        Edit: {activity.title_text ?? "Invite"}
+        {t("edit.titlePrefix")}{" "}
+        {activity.title_text ?? t("edit.fallbackInviteTitle")}
       </Text>
 
       <InviteForm
         mode="edit"
         submitting={saving}
-        submitLabel="Save"
+        submitLabel={t("edit.save")}
         onSubmit={onSave}
         onCancel={() => router.back()}
         initialValues={{

@@ -1,0 +1,249 @@
+{
+  "app": {
+    "name": "Nearby Now"
+  },
+  "tabs": {
+    "browse": "探索",
+    "joined": "已加入",
+    "created": "我建立",
+    "settings": "設定"
+  },
+  "common": {
+    "loading": "載入中…",
+    "cancel": "取消",
+    "join": "加入",
+    "leave": "離開",
+    "close": "關閉",
+    "send": "送出",
+    "copy": "複製",
+    "report": "檢舉",
+    "rejoin": "重新加入",
+    "ok": "好"
+  },
+  "auth": {
+    "login": {
+      "title": "Nearby Now",
+      "emailPlaceholder": "電郵",
+      "passwordPlaceholder": "密碼",
+      "missingTitle": "未填",
+      "missingBody": "請輸入電郵同密碼。",
+      "submitIdle": "登入",
+      "submitBusy": "登入中…",
+      "errorTitle": "登入失敗",
+      "goRegister": "建立帳戶"
+    },
+    "register": {
+      "title": "建立帳戶",
+      "emailPlaceholder": "電郵",
+      "passwordPlaceholder": "密碼（最少 6 個字）",
+      "missingTitle": "未填",
+      "missingBody": "請輸入電郵同密碼。",
+      "weakTitle": "密碼太弱",
+      "weakBody": "密碼最少要 6 個字。",
+      "submitIdle": "建立",
+      "submitBusy": "建立中…",
+      "successTitle": "成功",
+      "successBody": "帳戶已建立，請登入。",
+      "errorTitle": "註冊失敗",
+      "backToLogin": "返回登入"
+    }
+  },
+  "create": {
+    "navTitle": "建立邀請",
+    "title": "建立一個邀請",
+    "submit": "立即發佈",
+    "errorTitle": "建立失敗"
+  },
+  "edit": {
+    "navTitle": "編輯邀請",
+    "titlePrefix": "編輯：",
+    "fallbackInviteTitle": "邀請",
+    "loadErrorTitle": "載入失敗",
+    "save": "儲存",
+    "saveErrorTitle": "儲存失敗",
+    "notAllowedTitle": "唔允許",
+    "notAllowedBody": "只限建立者可以編輯。"
+  },
+  "settings": {
+    "title": "設定",
+    "logout": "登出",
+    "logoutErrorTitle": "登出失敗",
+    "language": "語言",
+    "language_en": "English",
+    "language_zhHK": "繁體中文（香港）"
+  },
+  "browse": {
+    "headerTitle": "探索",
+    "mode_list": "列表",
+    "mode_map": "地圖",
+    "subtitle": "而家可以即刻加入嘅公開邀請。",
+    "empty": "而家冇可以加入嘅邀請。",
+    "loadErrorTitle": "載入失敗",
+    "refreshErrorTitle": "更新失敗",
+    "joinConfirmTitle": "加入「{{title}}」？",
+    "mapJoinConfirmTitle": "確認加入邀請？",
+    "joinErrorTitle": "加入失敗",
+    "place_none": "未有地點",
+    "expires_never": "不設到期",
+    "capacity_unlimited": "不限",
+    "details": {
+      "goal": "🎯 {{title}}",
+      "place": "📍 {{placeName}}",
+      "address": "   {{placeAddress}}",
+      "genderPref": "👥 性別偏好：{{genderPref}}",
+      "capacity": "👤 人數：{{capacityLabel}}",
+      "expires": "⏳ 到期：{{expiresLabel}}"
+    }
+  },
+  "created": {
+    "headerTitle": "我建立",
+    "tab_active": "進行中（{{count}}）",
+    "tab_inactive": "已結束（{{count}}）",
+    "subtitle_active": "顯示你建立、仍然有效嘅邀請。",
+    "subtitle_inactive": "顯示已到期／已關閉嘅邀請。",
+    "empty": "你仲未發佈過邀請。",
+    "loadErrorTitle": "載入失敗",
+    "refreshErrorTitle": "更新失敗"
+  },
+  "joined": {
+    "headerTitle": "已加入",
+    "tab_active": "進行中（{{count}}）",
+    "tab_inactive": "已結束（{{count}}）",
+    "tab_left": "已離開（{{count}}）",
+    "subtitle_active": "顯示你已加入、仍然有效嘅房間。",
+    "subtitle_inactive": "顯示已關閉／已到期嘅房間。",
+    "subtitle_left": "顯示你已離開嘅房間（只作紀錄）。",
+    "empty_active": "冇進行中嘅已加入房間。",
+    "empty_inactive": "冇已結束嘅已加入房間。",
+    "empty_left": "冇已離開嘅房間。",
+    "loadErrorTitle": "載入失敗",
+    "refreshErrorTitle": "更新失敗"
+  },
+  "room": {
+    "navTitle": "房間",
+    "fallbackRoomTitle": "房間",
+    "system": "系統",
+    "unknownUser": "未知",
+    "time_now": "而家",
+    "time_m": "{{count}} 分鐘",
+    "time_h": "{{count}} 小時",
+    "time_d": "{{count}} 日",
+    "section_today": "今日",
+    "section_yesterday": "昨日",
+    "membersCount": "成員 {{count}}",
+    "createdBadge": "建立者",
+    "closedBadge": "已關閉",
+    "expiredBadge": "已到期",
+    "leftTitle": "你已離開",
+    "leftBody": "你仍可查看紀錄。按「重新加入」即可再聊天。",
+    "readonlyTitle": "只讀",
+    "readonlyBody": "你仍可查看訊息。",
+    "joinToSee": "加入呢個邀請先可以查看同發訊息。",
+    "joinNotAvailableTitle": "不可加入",
+    "joinNotAvailableBody": "呢個邀請已關閉或已到期。",
+    "joinConfirmTitle": "加入呢個邀請？",
+    "joinConfirmBody": "確認後會加入房間。",
+    "leaveConfirmTitle": "離開呢個邀請？",
+    "leaveConfirmBody": "你會停止收到呢個房間嘅更新。",
+    "closeConfirmTitle": "關閉呢個邀請？",
+    "closeConfirmBody": "之後冇人可以加入或再發訊息。",
+    "closeNotAllowedTitle": "唔允許",
+    "closeNotAllowedBody": "只限建立者可以關閉邀請。",
+    "authRequiredTitle": "需要登入",
+    "authRequiredBody": "請重新登入。",
+    "readOnlyAlertTitle": "只讀",
+    "readOnlyAlertBody": "呢個邀請已關閉或已到期。",
+    "sendFailedTitle": "送出失敗",
+    "joinFailedTitle": "加入失敗",
+    "leaveFailedTitle": "離開失敗",
+    "closeFailedTitle": "關閉失敗",
+    "failedTitle": "失敗",
+    "quick": {
+      "imHere": "✅ 我到咗",
+      "late10": "⏱️ 遲 10 分鐘",
+      "cancel": "❌ 取消"
+    },
+    "placeholder": {
+      "message": "輸入訊息…",
+      "rejoinToChat": "重新加入先可以聊天",
+      "readonly": "只讀",
+      "joinToChat": "加入先可以聊天"
+    },
+    "menu": {
+      "title": "訊息",
+      "copy": "複製",
+      "report": "檢舉",
+      "cancel": "取消"
+    },
+    "clipboard": {
+      "copiedTitle": "已複製",
+      "copiedBody": "訊息已複製。",
+      "copyFailedTitle": "複製失敗",
+      "copyFailedBody": "剪貼簿不可用。",
+      "nativePlaceholderTitle": "複製",
+      "nativePlaceholderBody": "原生暫未支援（placeholder）。",
+      "reportPlaceholderTitle": "檢舉",
+      "reportPlaceholderBody": "暫未支援。"
+    }
+  },
+  "activityCard": {
+    "place_none": "未有地點",
+    "chip_created": "建立",
+    "chip_joined": "已加入",
+    "chip_left": "已離開",
+    "chip_time": "⏳ {{label}}",
+    "chip_pref": "偏好 {{value}}",
+    "chip_cap": "人數 {{value}}",
+    "noExpiry": "不設到期",
+    "expired": "已到期",
+    "menu": {
+      "edit": "編輯",
+      "delete": "刪除",
+      "share": "分享",
+      "report": "檢舉",
+      "cancel": "取消"
+    },
+    "notImplementedTitle_share": "分享",
+    "notImplementedTitle_report": "檢舉",
+    "notImplementedTitle_delete": "刪除",
+    "notImplementedBody": "暫未支援。"
+  },
+  "inviteForm": {
+    "titlePlaceholder": "標題（必填）",
+    "placePlaceholder": "搜尋地點（可選）",
+    "missingTitle": "未填",
+    "missingBody": "請輸入你想做咩。",
+    "selectPlaceTitle": "請選擇地點",
+    "selectPlaceBody": "喺清單揀一個結果，或者清除搜尋。",
+    "invalidTitle": "格式錯誤",
+    "invalidBody": "人數必須係 1 或以上嘅整數。",
+    "clearSelection": "清除已選地點",
+    "searching": "搜尋中…",
+    "noResults": "暫時冇結果。",
+    "gender_any": "any",
+    "gender_female": "female",
+    "gender_male": "male",
+    "expiryTitle": "到期",
+    "expiry_default": "預設",
+    "expiry_never": "永不",
+    "expiry_hint_never": "呢個邀請唔會到期。",
+    "expiry_hint_preset": "{{minutes}} 分鐘後到期。",
+    "expiry_hint_edit": "不更改到期設定。",
+    "expiry_hint_default": "預設為 30 日。",
+    "capacityPlaceholder": "人數上限（可選）",
+    "submitting": "提交中…",
+    "cancel": "取消"
+  },
+  "browseMap": {
+    "webNotSupported": "Web 版唔支援地圖模式，請切換到列表。",
+    "goToList": "返回列表",
+    "countInArea": "呢個範圍有 {{count}} 個邀請"
+  },
+  "rootNav": {
+    "login": "登入",
+    "register": "註冊",
+    "create": "建立",
+    "editInvite": "編輯邀請",
+    "room": "房間"
+  }
+}
