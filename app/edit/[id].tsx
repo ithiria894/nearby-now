@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { supabase } from "../../lib/supabase";
-import { requireUserId } from "../../lib/auth";
+import { supabase } from "../../lib/api/supabase";
+import { requireUserId } from "../../lib/domain/auth";
 import InviteForm, {
   type InviteFormPayload,
 } from "../../components/InviteForm";
-import { useT } from "../../lib/useT";
+import { useT } from "../../lib/i18n/useT";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
 
 type ActivityRow = {
   id: string;
@@ -47,6 +48,7 @@ function formatPlace(
 
 export default function EditActivityScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { t } = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
   const activityId = String(id);
@@ -230,7 +232,10 @@ export default function EditActivityScreen() {
   if (!activity) return null;
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScrollView
+      style={{ backgroundColor: theme.colors.bg }}
+      contentContainerStyle={{ padding: 16, gap: 12 }}
+    >
       <Text style={{ fontSize: 18, fontWeight: "800" }}>
         {t("edit.titlePrefix")}{" "}
         {activity.title_text ?? t("edit.fallbackInviteTitle")}

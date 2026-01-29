@@ -6,15 +6,19 @@ import ActivityCard, {
   type ActivityCardActivity,
 } from "../../components/ActivityCard";
 import BrowseMap from "../../components/BrowseMap";
-import { requireUserId } from "../../lib/auth";
-import { fetchMembershipRowsForUser, upsertJoin } from "../../lib/activities";
-import { supabase } from "../../lib/supabase";
-import { useT } from "../../lib/useT";
+import { requireUserId } from "../../lib/domain/auth";
+import {
+  fetchMembershipRowsForUser,
+  upsertJoin,
+} from "../../lib/domain/activities";
+import { supabase } from "../../lib/api/supabase";
+import { useT } from "../../lib/i18n/useT";
 import {
   formatCapacity,
   formatGenderPref,
   formatLocalDateTime,
-} from "../../lib/i18n_format";
+} from "../../lib/i18n/i18n_format";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
 
 function isJoinable(a: ActivityCardActivity, joinedSet: Set<string>): boolean {
   if (joinedSet.has(a.id)) return false;
@@ -27,7 +31,8 @@ function isJoinable(a: ActivityCardActivity, joinedSet: Set<string>): boolean {
 // :zap: CHANGE 1: Browse = joinable open + not expired + not joined
 export default function BrowseScreen() {
   const router = useRouter();
-  const { t, i18n } = useT();
+  const theme = useTheme();
+  const { t } = useT();
 
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
@@ -209,6 +214,8 @@ export default function BrowseScreen() {
             paddingHorizontal: 12,
             borderRadius: 999,
             borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface,
             opacity: selected ? 1 : 0.6,
           }}
         >
@@ -229,11 +236,11 @@ export default function BrowseScreen() {
         <Text style={{ opacity: 0.7 }}>{t("browse.subtitle")}</Text>
       </View>
     );
-  }, [viewMode, t]);
+  }, [viewMode, t, theme.colors.border, theme.colors.surface]);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: 16 }}>
+      <View style={{ flex: 1, padding: 16, backgroundColor: theme.colors.bg }}>
         <Text>{t("common.loading")}</Text>
       </View>
     );
@@ -241,7 +248,7 @@ export default function BrowseScreen() {
 
   if (viewMode === "map") {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
         {header}
         <BrowseMap
           items={items}
@@ -256,6 +263,7 @@ export default function BrowseScreen() {
     <FlatList
       data={items}
       keyExtractor={(x) => x.id}
+      style={{ backgroundColor: theme.colors.bg }}
       ListHeaderComponent={header}
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}

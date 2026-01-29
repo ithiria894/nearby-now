@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import type { ActivityCardActivity } from "./ActivityCard";
-import { useT } from "../lib/useT";
+import { useT } from "../lib/i18n/useT";
+import { useTheme } from "../src/ui/theme/ThemeProvider";
 
 type Props = {
   items: ActivityCardActivity[];
@@ -10,8 +11,16 @@ type Props = {
 
 export default function BrowseMap({ onRequestList }: Props) {
   const { t } = useT();
+  const theme = useTheme();
   return (
-    <View style={{ flex: 1, padding: 16, gap: 10 }}>
+    <View
+      style={{
+        flex: 1,
+        padding: 16,
+        gap: 10,
+        backgroundColor: theme.colors.bg,
+      }}
+    >
       <Text style={{ opacity: 0.8 }}>{t("browseMap.webNotSupported")}</Text>
       <Pressable
         onPress={onRequestList}
@@ -20,6 +29,8 @@ export default function BrowseMap({ onRequestList }: Props) {
           paddingHorizontal: 12,
           borderRadius: 10,
           borderWidth: 1,
+          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.surface,
           alignSelf: "flex-start",
         }}
       >

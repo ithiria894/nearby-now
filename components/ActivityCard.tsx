@@ -13,12 +13,13 @@ import {
   BlurMask,
   DashPathEffect,
 } from "@shopify/react-native-skia";
-import { useT } from "../lib/useT";
+import { useT } from "../lib/i18n/useT";
 import {
   formatCapacity,
   formatExpiryLabel,
   formatGenderPref,
-} from "../lib/i18n_format";
+} from "../lib/i18n/i18n_format";
+import { useTheme } from "../src/ui/theme/ThemeProvider";
 
 /* =======================
  * Types
@@ -49,35 +50,6 @@ type Props = {
   onPressEdit?: () => void;
 };
 
-/* =======================
- * Design Tokens
- * ======================= */
-const TOKENS = {
-  title: "#111827",
-  text: "#1F2937",
-  subtext: "#6B7280",
-
-  chipBg: "rgba(255,255,255,0.82)",
-  chipBorder: "rgba(17,24,39,0.10)",
-
-  createdBg: "rgba(219,234,254,0.92)",
-  createdBorder: "rgba(191,219,254,0.90)",
-  createdText: "#1D4ED8",
-
-  joinedBg: "rgba(220,252,231,0.92)",
-  joinedBorder: "rgba(187,247,208,0.90)",
-  joinedText: "#166534",
-
-  expiredBg: "rgba(254,226,226,0.94)",
-  expiredBorder: "rgba(254,202,202,0.92)",
-  expiredText: "#991B1B",
-
-  soonBg: "rgba(254,243,199,0.94)",
-  soonBorder: "rgba(253,230,138,0.92)",
-  soonText: "#92400E",
-
-  overlay: "rgba(0,0,0,0.28)",
-} as const;
 /* =======================
  * Font Tokens (Cute)
  * ======================= */
@@ -537,6 +509,8 @@ export default function ActivityCard({
   onPressCard,
   onPressEdit,
 }: Props) {
+  const theme = useTheme();
+  const TOKENS = theme.colors;
   const { t } = useT();
   const isCreator = !!currentUserId && a.creator_id === currentUserId;
 
@@ -822,11 +796,11 @@ export default function ActivityCard({
           <Pressable
             onPress={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: TOKENS.surface,
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               borderWidth: 1,
-              borderColor: "rgba(229,231,235,1)",
+              borderColor: TOKENS.border,
               paddingTop: 10,
               paddingBottom: 12,
             }}

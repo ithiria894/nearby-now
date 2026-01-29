@@ -5,10 +5,11 @@ import { useRouter } from "expo-router";
 import ActivityCard, {
   type ActivityCardActivity,
 } from "../../components/ActivityCard";
-import { requireUserId } from "../../lib/auth";
-import { supabase } from "../../lib/supabase";
-import { fetchMembershipRowsForUser } from "../../lib/activities";
-import { useT } from "../../lib/useT";
+import { requireUserId } from "../../lib/domain/auth";
+import { supabase } from "../../lib/api/supabase";
+import { fetchMembershipRowsForUser } from "../../lib/domain/activities";
+import { useT } from "../../lib/i18n/useT";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
 
 // :zap: CHANGE 1: Helper to decide "active" activities.
 function isActiveActivity(a: ActivityCardActivity): boolean {
@@ -23,6 +24,7 @@ function isActiveActivity(a: ActivityCardActivity): boolean {
 // :zap: CHANGE 1: Created = activities.creator_id = me
 export default function CreatedScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { t } = useT();
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -122,6 +124,8 @@ export default function CreatedScreen() {
             paddingHorizontal: 12,
             borderRadius: 999,
             borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface,
             opacity: selected ? 1 : 0.6,
           }}
         >
@@ -154,11 +158,18 @@ export default function CreatedScreen() {
         </Text>
       </View>
     );
-  }, [tab, activeItems.length, inactiveItems.length, t]);
+  }, [
+    tab,
+    activeItems.length,
+    inactiveItems.length,
+    t,
+    theme.colors.border,
+    theme.colors.surface,
+  ]);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: 16 }}>
+      <View style={{ flex: 1, padding: 16, backgroundColor: theme.colors.bg }}>
         <Text>{t("common.loading")}</Text>
       </View>
     );
@@ -168,6 +179,7 @@ export default function CreatedScreen() {
     <FlatList
       data={dataToShow}
       keyExtractor={(x) => x.id}
+      style={{ backgroundColor: theme.colors.bg }}
       ListHeaderComponent={header}
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}

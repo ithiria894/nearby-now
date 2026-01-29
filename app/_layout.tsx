@@ -1,11 +1,12 @@
 // app/_layout.tsx
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/api/supabase";
 import "fast-text-encoding"; // ✅ provides TextDecoder/TextEncoder
 import "react-native-url-polyfill/auto"; // ✅ provides URL, URLSearchParams
-import { initI18n } from "../lib/i18n";
-import { useT } from "../lib/useT";
+import { initI18n } from "../lib/i18n/i18n";
+import { useT } from "../lib/i18n/useT";
+import { ThemeProvider } from "../src/ui/theme/ThemeProvider";
 
 // :zap: CHANGE 1: Load Google fonts via expo-font + expo-google-fonts
 import { useFonts } from "expo-font";
@@ -89,22 +90,24 @@ export default function RootLayout() {
 
   // :zap: CHANGE 6: While fonts aren't loaded, keep splash (render Stack but splash covers it)
   return (
-    <Stack>
-      <Stack.Screen
-        name="login"
-        options={{ title: t("rootNav.login"), headerShown: false }}
-      />
-      <Stack.Screen
-        name="register"
-        options={{ title: t("rootNav.register") }}
-      />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="create" options={{ title: t("rootNav.create") }} />
-      <Stack.Screen
-        name="edit/[id]"
-        options={{ title: t("rootNav.editInvite") }}
-      />
-      <Stack.Screen name="room/[id]" options={{ title: t("rootNav.room") }} />
-    </Stack>
+    <ThemeProvider>
+      <Stack>
+        <Stack.Screen
+          name="login"
+          options={{ title: t("rootNav.login"), headerShown: false }}
+        />
+        <Stack.Screen
+          name="register"
+          options={{ title: t("rootNav.register") }}
+        />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="create" options={{ title: t("rootNav.create") }} />
+        <Stack.Screen
+          name="edit/[id]"
+          options={{ title: t("rootNav.editInvite") }}
+        />
+        <Stack.Screen name="room/[id]" options={{ title: t("rootNav.room") }} />
+      </Stack>
+    </ThemeProvider>
   );
 }

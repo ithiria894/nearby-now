@@ -1,0 +1,209 @@
+export type ThemeTokens = {
+  isDark: boolean;
+  colors: {
+    bg: string;
+    surface: string;
+    surfaceAlt: string;
+    border: string;
+    title: string;
+    text: string;
+    subtext: string;
+    primary: string;
+    overlay: string;
+
+    chipBg: string;
+    chipBorder: string;
+
+    createdBg: string;
+    createdBorder: string;
+    createdText: string;
+
+    joinedBg: string;
+    joinedBorder: string;
+    joinedText: string;
+
+    expiredBg: string;
+    expiredBorder: string;
+    expiredText: string;
+
+    soonBg: string;
+    soonBorder: string;
+    soonText: string;
+
+    mineBg: string;
+    mineBorder: string;
+
+    otherBg: string;
+    otherBorder: string;
+
+    systemText: string;
+    systemBg: string;
+    systemBorder: string;
+
+    dangerText: string;
+    dangerBg: string;
+    dangerBorder: string;
+
+    okText: string;
+    okBg: string;
+    okBorder: string;
+  };
+  spacing: {
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+  };
+  radius: {
+    sm: number;
+    md: number;
+    lg: number;
+    pill: number;
+  };
+  typography: {
+    title: { fontSize: number; fontWeight: "700" | "800" | "900" };
+    body: { fontSize: number; fontWeight: "500" | "600" | "700" };
+    subtext: { fontSize: number; fontWeight: "500" | "600" };
+  };
+};
+
+export const lightTheme: ThemeTokens = {
+  isDark: false,
+  colors: {
+    bg: "#FFFFFF",
+    surface: "#FFFFFF",
+    surfaceAlt: "#F3F4F6",
+    border: "#E5E7EB",
+    title: "#111827",
+    text: "#111827",
+    subtext: "#6B7280",
+    primary: "#111827",
+    overlay: "rgba(0,0,0,0.28)",
+
+    chipBg: "rgba(255,255,255,0.82)",
+    chipBorder: "rgba(17,24,39,0.10)",
+
+    createdBg: "rgba(219,234,254,0.92)",
+    createdBorder: "rgba(191,219,254,0.90)",
+    createdText: "#1D4ED8",
+
+    joinedBg: "rgba(220,252,231,0.92)",
+    joinedBorder: "rgba(187,247,208,0.90)",
+    joinedText: "#166534",
+
+    expiredBg: "rgba(254,226,226,0.94)",
+    expiredBorder: "rgba(254,202,202,0.92)",
+    expiredText: "#991B1B",
+
+    soonBg: "rgba(254,243,199,0.94)",
+    soonBorder: "rgba(253,230,138,0.92)",
+    soonText: "#92400E",
+
+    mineBg: "#DCFCE7",
+    mineBorder: "#BBF7D0",
+
+    otherBg: "#F3F4F6",
+    otherBorder: "#E5E7EB",
+
+    systemText: "#6B7280",
+    systemBg: "#F3F4F6",
+    systemBorder: "#E5E7EB",
+
+    dangerText: "#991B1B",
+    dangerBg: "#FEE2E2",
+    dangerBorder: "#FECACA",
+
+    okText: "#166534",
+    okBg: "#DCFCE7",
+    okBorder: "#BBF7D0",
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+  },
+  radius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    pill: 999,
+  },
+  typography: {
+    title: { fontSize: 18, fontWeight: "800" },
+    body: { fontSize: 14, fontWeight: "600" },
+    subtext: { fontSize: 12, fontWeight: "500" },
+  },
+};
+
+export const darkTheme: ThemeTokens = {
+  isDark: true,
+  colors: {
+    bg: "#0B0F14",
+    surface: "#0F172A",
+    surfaceAlt: "#111827",
+    border: "#1F2937",
+    title: "#F9FAFB",
+    text: "#F9FAFB",
+    subtext: "#9CA3AF",
+    primary: "#F9FAFB",
+    overlay: "rgba(0,0,0,0.6)",
+
+    chipBg: "rgba(17,24,39,0.75)",
+    chipBorder: "rgba(148,163,184,0.25)",
+
+    createdBg: "rgba(30,64,175,0.25)",
+    createdBorder: "rgba(59,130,246,0.35)",
+    createdText: "#93C5FD",
+
+    joinedBg: "rgba(16,185,129,0.18)",
+    joinedBorder: "rgba(16,185,129,0.35)",
+    joinedText: "#6EE7B7",
+
+    expiredBg: "rgba(239,68,68,0.2)",
+    expiredBorder: "rgba(239,68,68,0.35)",
+    expiredText: "#FCA5A5",
+
+    soonBg: "rgba(245,158,11,0.2)",
+    soonBorder: "rgba(245,158,11,0.35)",
+    soonText: "#FCD34D",
+
+    mineBg: "rgba(16,185,129,0.2)",
+    mineBorder: "rgba(16,185,129,0.35)",
+
+    otherBg: "rgba(148,163,184,0.12)",
+    otherBorder: "rgba(148,163,184,0.25)",
+
+    systemText: "#9CA3AF",
+    systemBg: "rgba(148,163,184,0.12)",
+    systemBorder: "rgba(148,163,184,0.25)",
+
+    dangerText: "#FCA5A5",
+    dangerBg: "rgba(239,68,68,0.2)",
+    dangerBorder: "rgba(239,68,68,0.35)",
+
+    okText: "#6EE7B7",
+    okBg: "rgba(16,185,129,0.18)",
+    okBorder: "rgba(16,185,129,0.35)",
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+  },
+  radius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    pill: 999,
+  },
+  typography: {
+    title: { fontSize: 18, fontWeight: "800" },
+    body: { fontSize: 14, fontWeight: "600" },
+    subtext: { fontSize: 12, fontWeight: "500" },
+  },
+};
