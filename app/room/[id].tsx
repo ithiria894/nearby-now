@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { requireUserId } from "../../lib/auth";
 import { useT } from "../../lib/useT";
+import { formatChangeValue } from "../../lib/i18n_format";
 
 type ActivityRow = {
   id: string;
@@ -218,61 +219,33 @@ function formatChangeLabel(
   switch (change.kind) {
     case "title":
       return t("room.change.title", {
-        from: String(change.from ?? ""),
-        to: String(change.to ?? ""),
+        from: formatChangeValue("title", change.from, t),
+        to: formatChangeValue("title", change.to, t),
       });
     case "place":
       return t("room.change.place", {
-        from: formatPlaceValue(t, change.from),
-        to: formatPlaceValue(t, change.to),
+        from: formatChangeValue("place", change.from, t),
+        to: formatChangeValue("place", change.to, t),
       });
     case "gender":
       return t("room.change.gender", {
-        from: formatGenderValue(t, change.from),
-        to: formatGenderValue(t, change.to),
+        from: formatChangeValue("gender_pref", change.from, t),
+        to: formatChangeValue("gender_pref", change.to, t),
       });
     case "capacity":
       return t("room.change.capacity", {
-        from: formatCapacityValue(t, change.from),
-        to: formatCapacityValue(t, change.to),
+        from: formatChangeValue("capacity", change.from, t),
+        to: formatChangeValue("capacity", change.to, t),
       });
     case "expires": {
       if (change.toMode === "never") return t("room.change.expires.never");
       const iso = change.iso ?? change.to;
-      if (!iso) return t("room.change.expires.datetime", { to: "" });
-      const label = new Date(iso).toLocaleString(lang);
+      const label = formatChangeValue("expires_at", iso, t);
       return t("room.change.expires.datetime", { to: label });
     }
     default:
       return "";
   }
-}
-
-function formatGenderValue(
-  t: (key: string) => string,
-  value: string | null | undefined
-): string {
-  const v = (value ?? "").toString().toLowerCase();
-  if (v === "any" || v === "female" || v === "male") {
-    return t(`gender.${v}`);
-  }
-  return value ? String(value) : "";
-}
-
-function formatCapacityValue(
-  t: (key: string) => string,
-  value: number | null | undefined
-): string {
-  if (value == null) return t("capacity.unlimited");
-  return String(value);
-}
-
-function formatPlaceValue(
-  t: (key: string) => string,
-  value: string | null | undefined
-): string {
-  const v = (value ?? "").toString().trim();
-  return v ? v : t("place.none");
 }
 
 function computeRoomState(activity: ActivityRow | null) {

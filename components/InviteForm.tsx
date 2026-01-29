@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, Text, TextInput, View } from "react-native";
 import { searchPlacesNominatim, type PlaceCandidate } from "../lib/places";
 import { useT } from "../lib/useT";
+import { formatExpiryLabel } from "../lib/i18n_format";
 
 type GenderPref = "any" | "female" | "male";
 
@@ -246,7 +247,13 @@ export default function InviteForm(props: Props) {
     expiryMode === "never"
       ? t("inviteForm.expiry_hint_never")
       : expiryMode === "preset" && expiryMinutes != null
-        ? t("inviteForm.expiry_hint_preset", { minutes: expiryMinutes })
+        ? t("inviteForm.expiry_hint_preset", {
+            when: formatExpiryLabel(
+              new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString(),
+              Date.now(),
+              t
+            ),
+          })
         : mode === "edit"
           ? t("inviteForm.expiry_hint_edit")
           : t("inviteForm.expiry_hint_default");
