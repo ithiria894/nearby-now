@@ -7,6 +7,7 @@ import {
   type SupportedLang,
 } from "../../lib/i18n/i18n";
 import { useT } from "../../lib/i18n/useT";
+import { Screen } from "../../src/ui/common";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 
 // :zap: CHANGE 1: Settings tab with Logout action
@@ -31,14 +32,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        padding: 16,
-        gap: 12,
-        backgroundColor: theme.colors.bg,
-      }}
-    >
+    <Screen>
       <Text style={{ fontSize: 18, fontWeight: "800" }}>
         {t("settings.title")}
       </Text>
@@ -112,6 +106,6 @@ export default function SettingsScreen() {
       >
         <Text style={{ fontWeight: "800" }}>{t("settings.logout")}</Text>
       </Pressable>
-    </View>
+    </Screen>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { Alert, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import ActivityCard, {
@@ -13,7 +13,7 @@ import {
 } from "../../lib/domain/activities";
 import { supabase } from "../../lib/api/supabase";
 import { useT } from "../../lib/i18n/useT";
-import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { Screen, SegmentedTabs } from "../../src/ui/common";
 
 function isActive(a: ActivityCardActivity): boolean {
   if (a.status !== "open") return false;
@@ -24,7 +24,6 @@ function isActive(a: ActivityCardActivity): boolean {
 
 export default function JoinedScreen() {
   const router = useRouter();
-  const theme = useTheme();
   const { t } = useT();
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -142,52 +141,30 @@ export default function JoinedScreen() {
 
   // :zap: CHANGE 4: Header tabs UI (Active / Inactive / Left).
   const header = useMemo(() => {
-    const TabButton = ({
-      value,
-      label,
-    }: {
-      value: "active" | "inactive" | "left";
-      label: string;
-    }) => {
-      const selected = tab === value;
-      return (
-        <Pressable
-          onPress={() => setTab(value)}
-          style={{
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            backgroundColor: theme.colors.surface,
-            opacity: selected ? 1 : 0.6,
-          }}
-        >
-          <Text style={{ fontWeight: "800" }}>{label}</Text>
-        </Pressable>
-      );
-    };
-
     return (
       <View style={{ padding: 16, gap: 12 }}>
         <Text style={{ fontSize: 18, fontWeight: "800" }}>
           {t("joined.headerTitle")}
         </Text>
 
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <TabButton
-            value="active"
-            label={t("joined.tab_active", { count: activeJoined.length })}
-          />
-          <TabButton
-            value="inactive"
-            label={t("joined.tab_inactive", { count: inactiveJoined.length })}
-          />
-          <TabButton
-            value="left"
-            label={t("joined.tab_left", { count: leftRooms.length })}
-          />
-        </View>
+        <SegmentedTabs
+          value={tab}
+          onChange={setTab}
+          items={[
+            {
+              value: "active",
+              label: t("joined.tab_active", { count: activeJoined.length }),
+            },
+            {
+              value: "inactive",
+              label: t("joined.tab_inactive", { count: inactiveJoined.length }),
+            },
+            {
+              value: "left",
+              label: t("joined.tab_left", { count: leftRooms.length }),
+            },
+          ]}
+        />
 
         <Text style={{ opacity: 0.7 }}>
           {tab === "active" && t("joined.subtitle_active")}
@@ -196,21 +173,13 @@ export default function JoinedScreen() {
         </Text>
       </View>
     );
-  }, [
-    tab,
-    activeJoined.length,
-    inactiveJoined.length,
-    leftRooms.length,
-    t,
-    theme.colors.border,
-    theme.colors.surface,
-  ]);
+  }, [tab, activeJoined.length, inactiveJoined.length, leftRooms.length, t]);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: 16, backgroundColor: theme.colors.bg }}>
+      <Screen>
         <Text>{t("common.loading")}</Text>
-      </View>
+      </Screen>
     );
   }
 
@@ -218,7 +187,6 @@ export default function JoinedScreen() {
     <FlatList
       data={dataToShow}
       keyExtractor={(a) => a.id}
-      style={{ backgroundColor: theme.colors.bg }}
       ListHeaderComponent={header}
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}

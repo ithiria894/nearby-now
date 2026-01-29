@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { Alert, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 
 import ActivityCard, {
@@ -9,7 +9,7 @@ import { requireUserId } from "../../lib/domain/auth";
 import { supabase } from "../../lib/api/supabase";
 import { fetchMembershipRowsForUser } from "../../lib/domain/activities";
 import { useT } from "../../lib/i18n/useT";
-import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { Screen, SegmentedTabs } from "../../src/ui/common";
 
 // :zap: CHANGE 1: Helper to decide "active" activities.
 function isActiveActivity(a: ActivityCardActivity): boolean {
@@ -24,7 +24,6 @@ function isActiveActivity(a: ActivityCardActivity): boolean {
 // :zap: CHANGE 1: Created = activities.creator_id = me
 export default function CreatedScreen() {
   const router = useRouter();
-  const theme = useTheme();
   const { t } = useT();
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -108,48 +107,26 @@ export default function CreatedScreen() {
     const activeCount = activeItems.length;
     const inactiveCount = inactiveItems.length;
 
-    const TabButton = ({
-      value,
-      label,
-    }: {
-      value: "active" | "inactive";
-      label: string;
-    }) => {
-      const selected = tab === value;
-      return (
-        <Pressable
-          onPress={() => setTab(value)}
-          style={{
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            backgroundColor: theme.colors.surface,
-            opacity: selected ? 1 : 0.6,
-          }}
-        >
-          <Text style={{ fontWeight: "800" }}>{label}</Text>
-        </Pressable>
-      );
-    };
-
     return (
       <View style={{ padding: 16, gap: 12 }}>
         <Text style={{ fontSize: 18, fontWeight: "800" }}>
           {t("created.headerTitle")}
         </Text>
 
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <TabButton
-            value="active"
-            label={t("created.tab_active", { count: activeCount })}
-          />
-          <TabButton
-            value="inactive"
-            label={t("created.tab_inactive", { count: inactiveCount })}
-          />
-        </View>
+        <SegmentedTabs
+          value={tab}
+          onChange={setTab}
+          items={[
+            {
+              value: "active",
+              label: t("created.tab_active", { count: activeCount }),
+            },
+            {
+              value: "inactive",
+              label: t("created.tab_inactive", { count: inactiveCount }),
+            },
+          ]}
+        />
 
         <Text style={{ opacity: 0.7 }}>
           {tab === "active"
@@ -158,20 +135,13 @@ export default function CreatedScreen() {
         </Text>
       </View>
     );
-  }, [
-    tab,
-    activeItems.length,
-    inactiveItems.length,
-    t,
-    theme.colors.border,
-    theme.colors.surface,
-  ]);
+  }, [tab, activeItems.length, inactiveItems.length, t]);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: 16, backgroundColor: theme.colors.bg }}>
+      <Screen>
         <Text>{t("common.loading")}</Text>
-      </View>
+      </Screen>
     );
   }
 
@@ -179,7 +149,6 @@ export default function CreatedScreen() {
     <FlatList
       data={dataToShow}
       keyExtractor={(x) => x.id}
-      style={{ backgroundColor: theme.colors.bg }}
       ListHeaderComponent={header}
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
