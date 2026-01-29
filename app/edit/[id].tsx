@@ -24,6 +24,13 @@ type ActivityRow = {
   expires_at: string | null;
 };
 
+type InviteChange =
+  | { kind: "title"; from: string | null; to: string | null }
+  | { kind: "place"; from: string | null; to: string | null }
+  | { kind: "gender"; from: string | null; to: string | null }
+  | { kind: "capacity"; from: number | null; to: number | null }
+  | { kind: "expires"; toMode: "never" | "datetime"; iso?: string | null };
+
 function formatPlace(
   t: (key: string) => string,
   name?: string | null,
@@ -31,20 +38,11 @@ function formatPlace(
 ): string {
   const safeName = (name ?? "").trim();
   const safeAddress = (address ?? "").trim();
-  if (!safeName && !safeAddress) return t("activityCard.place_none");
+  if (!safeName && !safeAddress) return t("place.none");
   if (safeName && safeAddress && safeName !== safeAddress) {
     return `${safeName} / ${safeAddress}`;
   }
   return safeName || safeAddress;
-}
-
-function formatExpiryPreview(expiresAt: string | null): string {
-  if (expiresAt === null) return "expires: set -> never";
-  const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0) return "expires: now";
-  const mins = Math.round(ms / 60000);
-  if (mins < 60) return `expires: -> in ${mins}m`;
-  return `expires: -> in ${Math.round(mins / 60)}h`;
 }
 
 export default function EditActivityScreen() {
@@ -123,9 +121,13 @@ export default function EditActivityScreen() {
       updates.expires_at = payload.expires_at;
     }
 
-    const changes: string[] = [];
+    const changes: InviteChange[] = [];
     if (activity.title_text !== payload.title_text) {
-      changes.push(`title: ${activity.title_text} -> ${payload.title_text}`);
+      changes.push({
+        kind: "title",
+        from: activity.title_text ?? null,
+        to: payload.title_text ?? null,
+      });
     }
 
     const oldPlace = formatPlace(
@@ -135,25 +137,33 @@ export default function EditActivityScreen() {
     );
     const nextPlace = formatPlace(t, payload.place_name, payload.place_address);
     if (oldPlace !== nextPlace) {
-      changes.push(`place: ${oldPlace} -> ${nextPlace}`);
+      changes.push({ kind: "place", from: oldPlace, to: nextPlace });
     }
 
     if (activity.gender_pref !== payload.gender_pref) {
-      changes.push(`gender: ${activity.gender_pref} -> ${payload.gender_pref}`);
+      changes.push({
+        kind: "gender",
+        from: activity.gender_pref ?? null,
+        to: payload.gender_pref ?? null,
+      });
     }
     if ((activity.capacity ?? null) !== (payload.capacity ?? null)) {
-      changes.push(
-        `capacity: ${
-          activity.capacity ?? t("browse.capacity_unlimited")
-        } -> ${payload.capacity ?? t("browse.capacity_unlimited")}`
-      );
+      changes.push({
+        kind: "capacity",
+        from: activity.capacity ?? null,
+        to: payload.capacity ?? null,
+      });
     }
 
     if (payload.expires_at !== undefined) {
       if (payload.expires_at === null && activity.expires_at !== null) {
-        changes.push("expires: set -> never");
+        changes.push({ kind: "expires", toMode: "never" });
       } else if (payload.expires_at) {
-        changes.push(formatExpiryPreview(payload.expires_at));
+        changes.push({
+          kind: "expires",
+          toMode: "datetime",
+          iso: payload.expires_at,
+        });
       }
     }
 
@@ -189,8 +199,10 @@ export default function EditActivityScreen() {
           activity_id: activityId,
           user_id: userId,
           type: "system",
-          // Keep a readable diff for immediate room visibility.
-          content: `Updated invite — ${changes.join(", ")}`,
+          content: JSON.stringify({
+            k: "room.system.invite_updated",
+            p: { changes },
+          }),
         });
 
         if (evtErr) {
