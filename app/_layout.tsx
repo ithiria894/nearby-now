@@ -1,10 +1,10 @@
 // app/_layout.tsx
 import { Stack, useRouter, useSegments } from "expo-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import "fast-text-encoding"; // ✅ provides TextDecoder/TextEncoder
 import "react-native-url-polyfill/auto"; // ✅ provides URL, URLSearchParams
-import "../lib/i18n";
+import { initI18n } from "../lib/i18n";
 import { useT } from "../lib/useT";
 
 // :zap: CHANGE 1: Load Google fonts via expo-font + expo-google-fonts
@@ -20,6 +20,7 @@ export default function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { t } = useT();
+  const [i18nReady, setI18nReady] = useState(false);
 
   // :zap: CHANGE 3: Load fonts once at root
   const [fontsLoaded, fontError] = useFonts({
@@ -28,15 +29,27 @@ export default function RootLayout() {
     KalamBold: Kalam_700Bold,
   });
 
-  // :zap: CHANGE 4: Hide splash only when fonts are loaded
+  // :zap: CHANGE 4: Init i18n before rendering
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    let active = true;
+    (async () => {
+      await initI18n();
+      if (active) setI18nReady(true);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // :zap: CHANGE 5: Hide splash only when fonts + i18n are ready
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && i18nReady) {
       SplashScreen.hideAsync().catch(() => {});
     }
     if (fontError) {
       console.error("Font load error:", fontError);
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, i18nReady]);
 
   useEffect(() => {
     let isMounted = true;
@@ -72,7 +85,9 @@ export default function RootLayout() {
     };
   }, [router, segments]);
 
-  // :zap: CHANGE 5: While fonts aren't loaded, keep splash (render Stack but splash covers it)
+  if (!i18nReady) return null;
+
+  // :zap: CHANGE 6: While fonts aren't loaded, keep splash (render Stack but splash covers it)
   return (
     <Stack>
       <Stack.Screen

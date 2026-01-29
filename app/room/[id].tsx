@@ -132,7 +132,8 @@ function sectionLabelForIso(
  * Message content helpers
  * ======================= */
 function renderEventContent(
-  t: (key: string) => string,
+  t: (key: string, options?: Record<string, any>) => string,
+  lang: string,
   e: RoomEventRow
 ): string {
   if (e.type === "quick") {
@@ -147,6 +148,34 @@ function renderEventContent(
         return e.content;
     }
   }
+
+  if (e.type === "system") {
+    const parsed = safeParseSystemContent(e.content);
+    if (parsed?.k) {
+      if (parsed.k === "room.system.left") {
+        const name = getEventDisplayName(t, e);
+        return t(parsed.k, { ...(parsed.p ?? {}), name });
+      }
+
+      if (parsed.k === "room.system.invite_updated") {
+        const changes = Array.isArray(parsed.p?.changes)
+          ? parsed.p.changes
+          : [];
+        const labels = changes
+          .map((c) => formatChangeLabel(t, lang, c))
+          .filter((x) => x);
+        const joined = joinChangeLabels(labels, lang);
+        return t(parsed.k, { changes: joined });
+      }
+
+      if (parsed.k === "room.system.invite_closed") {
+        return t(parsed.k, parsed.p ?? {});
+      }
+
+      return t(parsed.k, parsed.p ?? {});
+    }
+  }
+
   return e.content;
 }
 
@@ -157,6 +186,93 @@ function getEventDisplayName(
   if (!e.user_id) return t("room.system");
   const name = (e.profiles?.display_name ?? "").trim();
   return name || t("room.unknownUser");
+}
+
+function safeParseSystemContent(
+  content: string
+): { k?: string; p?: Record<string, any> } | null {
+  try {
+    const parsed = JSON.parse(content);
+    if (parsed && typeof parsed === "object" && "k" in parsed) {
+      return parsed as { k?: string; p?: Record<string, any> };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function joinChangeLabels(labels: string[], lang: string): string {
+  const l = lang.toLowerCase();
+  const sep = l.startsWith("zh") || l.startsWith("ja") ? "、" : ", ";
+  return labels.join(sep);
+}
+
+function formatChangeLabel(
+  t: (key: string, options?: Record<string, any>) => string,
+  lang: string,
+  change: any
+): string {
+  if (!change || typeof change !== "object") return "";
+
+  switch (change.kind) {
+    case "title":
+      return t("room.change.title", {
+        from: String(change.from ?? ""),
+        to: String(change.to ?? ""),
+      });
+    case "place":
+      return t("room.change.place", {
+        from: formatPlaceValue(t, change.from),
+        to: formatPlaceValue(t, change.to),
+      });
+    case "gender":
+      return t("room.change.gender", {
+        from: formatGenderValue(t, change.from),
+        to: formatGenderValue(t, change.to),
+      });
+    case "capacity":
+      return t("room.change.capacity", {
+        from: formatCapacityValue(t, change.from),
+        to: formatCapacityValue(t, change.to),
+      });
+    case "expires": {
+      if (change.toMode === "never") return t("room.change.expires.never");
+      const iso = change.iso ?? change.to;
+      if (!iso) return t("room.change.expires.datetime", { to: "" });
+      const label = new Date(iso).toLocaleString(lang);
+      return t("room.change.expires.datetime", { to: label });
+    }
+    default:
+      return "";
+  }
+}
+
+function formatGenderValue(
+  t: (key: string) => string,
+  value: string | null | undefined
+): string {
+  const v = (value ?? "").toString().toLowerCase();
+  if (v === "any" || v === "female" || v === "male") {
+    return t(`gender.${v}`);
+  }
+  return value ? String(value) : "";
+}
+
+function formatCapacityValue(
+  t: (key: string) => string,
+  value: number | null | undefined
+): string {
+  if (value == null) return t("capacity.unlimited");
+  return String(value);
+}
+
+function formatPlaceValue(
+  t: (key: string) => string,
+  value: string | null | undefined
+): string {
+  const v = (value ?? "").toString().trim();
+  return v ? v : t("place.none");
 }
 
 function computeRoomState(activity: ActivityRow | null) {
@@ -511,7 +627,7 @@ export default function RoomScreen() {
           activity_id: activityId,
           user_id: userId,
           type: "system",
-          content: "Left the invite",
+          content: JSON.stringify({ k: "room.system.left" }),
         });
       }
 
@@ -603,7 +719,7 @@ export default function RoomScreen() {
         activity_id: activityId,
         user_id: userId,
         type: "system",
-        content: "Invite closed by creator",
+        content: JSON.stringify({ k: "room.system.invite_closed" }),
       });
 
       await loadAll(userId);
@@ -770,7 +886,7 @@ export default function RoomScreen() {
                 fontWeight: "700",
               }}
             >
-              {renderEventContent(t, e)}
+              {renderEventContent(t, i18n.language, e)}
             </Text>
           </View>
         </View>
@@ -779,7 +895,7 @@ export default function RoomScreen() {
 
     const isMine = !!userId && e.user_id === userId;
     const name = getEventDisplayName(t, e);
-    const content = renderEventContent(t, e);
+    const content = renderEventContent(t, i18n.language, e);
 
     // :zap: CHANGE 4: IG-ish layout: name closer + smaller gap, time near bubble
     return (
@@ -1176,7 +1292,7 @@ export default function RoomScreen() {
               </Text>
               {menuTarget ? (
                 <Text style={{ color: TOKENS.subtext }} numberOfLines={2}>
-                  {renderEventContent(t, menuTarget)}
+                  {renderEventContent(t, i18n.language, menuTarget)}
                 </Text>
               ) : null}
             </View>
@@ -1185,7 +1301,7 @@ export default function RoomScreen() {
               label={t("room.menu.copy")}
               onPress={async () => {
                 const text = menuTarget
-                  ? renderEventContent(t, menuTarget)
+                  ? renderEventContent(t, i18n.language, menuTarget)
                   : "";
                 setMenuOpen(false);
                 await copyToClipboard(text);
