@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, Text, TextInput, View } from "react-native";
 import { searchPlacesNominatim, type PlaceCandidate } from "../lib/places";
+import { useT } from "../lib/useT";
 
 type GenderPref = "any" | "female" | "male";
 
@@ -57,7 +58,8 @@ const EXPIRY_PRESETS = [
 ];
 
 function buildInitialPlace(
-  initialValues?: InviteFormInitialValues
+  initialValues: InviteFormInitialValues | undefined,
+  t: (key: string) => string
 ): SelectedPlace | null {
   const name = (initialValues?.place_name ?? "").trim();
   const address = (initialValues?.place_address ?? "").trim();
@@ -68,7 +70,7 @@ function buildInitialPlace(
 
   return {
     placeId: initialValues?.place_id ?? null,
-    name: name || address || "Selected place",
+    name: name || address || t("inviteForm.selectPlaceTitle"),
     address: address || name,
     lat: Number.isFinite(lat as number) ? (lat as number) : null,
     lng: Number.isFinite(lng as number) ? (lng as number) : null,
@@ -82,11 +84,14 @@ export default function InviteForm(props: Props) {
     onSubmit,
     onCancel,
     submitting = false,
-    submitLabel = "Submit",
+    submitLabel,
     mode = "create",
   } = props;
 
-  const initialPlace = buildInitialPlace(initialValues);
+  const { t } = useT();
+  const initialPlace = buildInitialPlace(initialValues, t);
+  const effectiveSubmitLabel =
+    submitLabel ?? (mode === "edit" ? t("edit.save") : t("create.submit"));
 
   const [title, setTitle] = useState(initialValues?.title_text ?? "");
   const [placeQuery, setPlaceQuery] = useState(initialPlace?.name ?? "");
@@ -173,14 +178,14 @@ export default function InviteForm(props: Props) {
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      Alert.alert("Missing", "Please type what you want to do.");
+      Alert.alert(t("inviteForm.missingTitle"), t("inviteForm.missingBody"));
       return;
     }
 
     if (placeQuery.trim() !== "" && !selectedPlace) {
       Alert.alert(
-        "Select a place",
-        "Pick a result from the list or clear the search."
+        t("inviteForm.selectPlaceTitle"),
+        t("inviteForm.selectPlaceBody")
       );
       return;
     }
@@ -190,7 +195,7 @@ export default function InviteForm(props: Props) {
     if (trimmedCapacity !== "") {
       const parsed = Number(trimmedCapacity);
       if (!Number.isInteger(parsed) || parsed < 1) {
-        Alert.alert("Invalid", "Capacity must be an integer of 1 or more.");
+        Alert.alert(t("inviteForm.invalidTitle"), t("inviteForm.invalidBody"));
         return;
       }
       capacityNum = parsed;
@@ -239,19 +244,19 @@ export default function InviteForm(props: Props) {
 
   const expiryHint =
     expiryMode === "never"
-      ? "This invite will not expire."
+      ? t("inviteForm.expiry_hint_never")
       : expiryMode === "preset" && expiryMinutes != null
-        ? `Expires in ${expiryMinutes} minutes.`
+        ? t("inviteForm.expiry_hint_preset", { minutes: expiryMinutes })
         : mode === "edit"
-          ? "No change to expiry."
-          : "Default is 30 days.";
+          ? t("inviteForm.expiry_hint_edit")
+          : t("inviteForm.expiry_hint_default");
 
   return (
     <View style={{ gap: 12 }}>
       <TextInput
         value={title}
         onChangeText={setTitle}
-        placeholder="Title (required)"
+        placeholder={t("inviteForm.titlePlaceholder")}
         style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
       />
 
@@ -259,7 +264,7 @@ export default function InviteForm(props: Props) {
         <TextInput
           value={placeQuery}
           onChangeText={onChangePlaceQuery}
-          placeholder="Search place (optional)"
+          placeholder={t("inviteForm.placePlaceholder")}
           style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
         />
 
@@ -287,12 +292,16 @@ export default function InviteForm(props: Props) {
                 alignSelf: "flex-start",
               }}
             >
-              <Text style={{ fontWeight: "600" }}>Clear selection</Text>
+              <Text style={{ fontWeight: "600" }}>
+                {t("inviteForm.clearSelection")}
+              </Text>
             </Pressable>
           </View>
         ) : null}
 
-        {searching ? <Text style={{ opacity: 0.7 }}>Searching...</Text> : null}
+        {searching ? (
+          <Text style={{ opacity: 0.7 }}>{t("inviteForm.searching")}</Text>
+        ) : null}
 
         {!selectedPlace && candidates.length > 0 ? (
           <View style={{ borderWidth: 1, borderRadius: 10 }}>
@@ -319,7 +328,7 @@ export default function InviteForm(props: Props) {
         !searching &&
         placeQuery.trim().length >= 3 &&
         candidates.length === 0 ? (
-          <Text style={{ opacity: 0.7 }}>No results yet.</Text>
+          <Text style={{ opacity: 0.7 }}>{t("inviteForm.noResults")}</Text>
         ) : null}
       </View>
 
@@ -336,12 +345,14 @@ export default function InviteForm(props: Props) {
               opacity: genderPref === v ? 1 : 0.6,
             }}
           >
-            <Text style={{ fontWeight: "600" }}>{v}</Text>
+            <Text style={{ fontWeight: "600" }}>
+              {t(`inviteForm.gender_${v}`)}
+            </Text>
           </Pressable>
         ))}
       </View>
 
-      <Text style={{ fontWeight: "800" }}>Expiry</Text>
+      <Text style={{ fontWeight: "800" }}>{t("inviteForm.expiryTitle")}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         <Pressable
           onPress={() => {
@@ -356,7 +367,9 @@ export default function InviteForm(props: Props) {
             opacity: expiryMode === "default" ? 1 : 0.6,
           }}
         >
-          <Text style={{ fontWeight: "600" }}>Default</Text>
+          <Text style={{ fontWeight: "600" }}>
+            {t("inviteForm.expiry_default")}
+          </Text>
         </Pressable>
 
         {EXPIRY_PRESETS.map((p) => (
@@ -394,7 +407,9 @@ export default function InviteForm(props: Props) {
             opacity: expiryMode === "never" ? 1 : 0.6,
           }}
         >
-          <Text style={{ fontWeight: "600" }}>Never</Text>
+          <Text style={{ fontWeight: "600" }}>
+            {t("inviteForm.expiry_never")}
+          </Text>
         </Pressable>
       </View>
       <Text style={{ opacity: 0.7 }}>{expiryHint}</Text>
@@ -403,7 +418,7 @@ export default function InviteForm(props: Props) {
         value={capacity}
         onChangeText={setCapacity}
         keyboardType="number-pad"
-        placeholder="Capacity (optional)"
+        placeholder={t("inviteForm.capacityPlaceholder")}
         style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
       />
 
@@ -421,7 +436,7 @@ export default function InviteForm(props: Props) {
           }}
         >
           <Text style={{ fontWeight: "800" }}>
-            {submitting ? "Submitting..." : submitLabel}
+            {submitting ? t("inviteForm.submitting") : effectiveSubmitLabel}
           </Text>
         </Pressable>
 
@@ -437,7 +452,7 @@ export default function InviteForm(props: Props) {
               opacity: submitting ? 0.6 : 1,
             }}
           >
-            <Text style={{ fontWeight: "700" }}>Cancel</Text>
+            <Text style={{ fontWeight: "700" }}>{t("inviteForm.cancel")}</Text>
           </Pressable>
         ) : null}
       </View>

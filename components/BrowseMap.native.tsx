@@ -1,6 +1,7 @@
 import { Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import type { ActivityCardActivity } from "./ActivityCard";
+import { useT } from "../lib/useT";
 
 type Props = {
   items: ActivityCardActivity[];
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export default function BrowseMap({ items, onPressCard }: Props) {
+  const { t } = useT();
   const mapRegion = {
     latitude: 49.2827,
     longitude: -123.1207,
@@ -51,7 +53,7 @@ export default function BrowseMap({ items, onPressCard }: Props) {
         }}
       >
         <Text style={{ fontWeight: "700" }}>
-          {mappable.length} invites in this area
+          {t("browseMap.countInArea", { count: mappable.length })}
         </Text>
       </View>
     </View>

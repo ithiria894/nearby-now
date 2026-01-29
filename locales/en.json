@@ -1,0 +1,249 @@
+{
+  "app": {
+    "name": "Nearby Now"
+  },
+  "tabs": {
+    "browse": "Browse",
+    "joined": "Joined",
+    "created": "Created",
+    "settings": "Settings"
+  },
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "join": "Join",
+    "leave": "Leave",
+    "close": "Close",
+    "send": "Send",
+    "copy": "Copy",
+    "report": "Report",
+    "rejoin": "Re-join",
+    "ok": "OK"
+  },
+  "auth": {
+    "login": {
+      "title": "Nearby Now",
+      "emailPlaceholder": "Email",
+      "passwordPlaceholder": "Password",
+      "missingTitle": "Missing",
+      "missingBody": "Please enter email and password.",
+      "submitIdle": "Sign In",
+      "submitBusy": "Signing in…",
+      "errorTitle": "Login failed",
+      "goRegister": "Create an account"
+    },
+    "register": {
+      "title": "Create account",
+      "emailPlaceholder": "Email",
+      "passwordPlaceholder": "Password (min 6 chars)",
+      "missingTitle": "Missing",
+      "missingBody": "Please enter email and password.",
+      "weakTitle": "Weak password",
+      "weakBody": "Password must be at least 6 characters.",
+      "submitIdle": "Create",
+      "submitBusy": "Creating…",
+      "successTitle": "Success",
+      "successBody": "Account created. Please sign in.",
+      "errorTitle": "Register failed",
+      "backToLogin": "Back to login"
+    }
+  },
+  "create": {
+    "navTitle": "Create",
+    "title": "Create an invite",
+    "submit": "Post now",
+    "errorTitle": "Create failed"
+  },
+  "edit": {
+    "navTitle": "Edit Invite",
+    "titlePrefix": "Edit:",
+    "fallbackInviteTitle": "Invite",
+    "loadErrorTitle": "Load failed",
+    "save": "Save",
+    "saveErrorTitle": "Save failed",
+    "notAllowedTitle": "Not allowed",
+    "notAllowedBody": "Only the creator can edit this invite."
+  },
+  "settings": {
+    "title": "Settings",
+    "logout": "Log out",
+    "logoutErrorTitle": "Logout failed",
+    "language": "Language",
+    "language_en": "English",
+    "language_zhHK": "繁體中文（香港）"
+  },
+  "browse": {
+    "headerTitle": "Browse",
+    "mode_list": "List",
+    "mode_map": "Map",
+    "subtitle": "Open invites you can join right now.",
+    "empty": "No joinable invites right now.",
+    "loadErrorTitle": "Load failed",
+    "refreshErrorTitle": "Refresh failed",
+    "joinConfirmTitle": "Join \"{{title}}\"?",
+    "mapJoinConfirmTitle": "Confirm join invite?",
+    "joinErrorTitle": "Join failed",
+    "place_none": "No place",
+    "expires_never": "Never",
+    "capacity_unlimited": "Unlimited",
+    "details": {
+      "goal": "🎯 {{title}}",
+      "place": "📍 {{placeName}}",
+      "address": "   {{placeAddress}}",
+      "genderPref": "👥 Gender preference: {{genderPref}}",
+      "capacity": "👤 Capacity: {{capacityLabel}}",
+      "expires": "⏳ Expires: {{expiresLabel}}"
+    }
+  },
+  "created": {
+    "headerTitle": "Created",
+    "tab_active": "Active ({{count}})",
+    "tab_inactive": "Inactive ({{count}})",
+    "subtitle_active": "Showing active invites you created.",
+    "subtitle_inactive": "Showing expired/closed invites you created.",
+    "empty": "You haven’t posted any invites yet.",
+    "loadErrorTitle": "Load failed",
+    "refreshErrorTitle": "Refresh failed"
+  },
+  "joined": {
+    "headerTitle": "Joined",
+    "tab_active": "Active ({{count}})",
+    "tab_inactive": "Inactive ({{count}})",
+    "tab_left": "Left ({{count}})",
+    "subtitle_active": "Showing active rooms you joined.",
+    "subtitle_inactive": "Showing closed/expired rooms you joined.",
+    "subtitle_left": "Showing rooms you left (history view only).",
+    "empty_active": "No active joined rooms.",
+    "empty_inactive": "No inactive joined rooms.",
+    "empty_left": "No left rooms.",
+    "loadErrorTitle": "Load failed",
+    "refreshErrorTitle": "Refresh failed"
+  },
+  "room": {
+    "navTitle": "Room",
+    "fallbackRoomTitle": "Room",
+    "system": "System",
+    "unknownUser": "Unknown",
+    "time_now": "now",
+    "time_m": "{{count}}m",
+    "time_h": "{{count}}h",
+    "time_d": "{{count}}d",
+    "section_today": "Today",
+    "section_yesterday": "Yesterday",
+    "membersCount": "Members {{count}}",
+    "createdBadge": "Created",
+    "closedBadge": "Closed",
+    "expiredBadge": "Expired",
+    "leftTitle": "You left",
+    "leftBody": "You can view history. Tap Re-join to chat again.",
+    "readonlyTitle": "Read-only",
+    "readonlyBody": "You can still view messages.",
+    "joinToSee": "Join this invite to see and send messages.",
+    "joinNotAvailableTitle": "Not available",
+    "joinNotAvailableBody": "This invite is closed or expired.",
+    "joinConfirmTitle": "Join this invite?",
+    "joinConfirmBody": "Confirm to join this room.",
+    "leaveConfirmTitle": "Leave this invite?",
+    "leaveConfirmBody": "You will stop receiving updates from this room.",
+    "closeConfirmTitle": "Close this invite?",
+    "closeConfirmBody": "No one can join or send messages anymore.",
+    "closeNotAllowedTitle": "Not allowed",
+    "closeNotAllowedBody": "Only the creator can close this invite.",
+    "authRequiredTitle": "Auth required",
+    "authRequiredBody": "Please log in again.",
+    "readOnlyAlertTitle": "Read-only",
+    "readOnlyAlertBody": "This invite is closed or expired.",
+    "sendFailedTitle": "Send failed",
+    "joinFailedTitle": "Join failed",
+    "leaveFailedTitle": "Leave failed",
+    "closeFailedTitle": "Close failed",
+    "failedTitle": "Failed",
+    "quick": {
+      "imHere": "✅ I'm here",
+      "late10": "⏱️ 10 min late",
+      "cancel": "❌ Cancel"
+    },
+    "placeholder": {
+      "message": "Message…",
+      "rejoinToChat": "Re-join to chat",
+      "readonly": "Read-only",
+      "joinToChat": "Join to chat"
+    },
+    "menu": {
+      "title": "Message",
+      "copy": "Copy",
+      "report": "Report",
+      "cancel": "Cancel"
+    },
+    "clipboard": {
+      "copiedTitle": "Copied",
+      "copiedBody": "Message copied.",
+      "copyFailedTitle": "Copy failed",
+      "copyFailedBody": "Clipboard not available.",
+      "nativePlaceholderTitle": "Copy",
+      "nativePlaceholderBody": "Not implemented yet on native (placeholder).",
+      "reportPlaceholderTitle": "Report",
+      "reportPlaceholderBody": "Not implemented yet."
+    }
+  },
+  "activityCard": {
+    "place_none": "No place",
+    "chip_created": "Created",
+    "chip_joined": "Joined",
+    "chip_left": "Left",
+    "chip_time": "⏳ {{label}}",
+    "chip_pref": "Pref {{value}}",
+    "chip_cap": "Cap {{value}}",
+    "noExpiry": "No expiry",
+    "expired": "Expired",
+    "menu": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "share": "Share",
+      "report": "Report",
+      "cancel": "Cancel"
+    },
+    "notImplementedTitle_share": "Share",
+    "notImplementedTitle_report": "Report",
+    "notImplementedTitle_delete": "Delete",
+    "notImplementedBody": "Not implemented yet."
+  },
+  "inviteForm": {
+    "titlePlaceholder": "Title (required)",
+    "placePlaceholder": "Search place (optional)",
+    "missingTitle": "Missing",
+    "missingBody": "Please type what you want to do.",
+    "selectPlaceTitle": "Select a place",
+    "selectPlaceBody": "Pick a result from the list or clear the search.",
+    "invalidTitle": "Invalid",
+    "invalidBody": "Capacity must be an integer of 1 or more.",
+    "clearSelection": "Clear selection",
+    "searching": "Searching...",
+    "noResults": "No results yet.",
+    "gender_any": "any",
+    "gender_female": "female",
+    "gender_male": "male",
+    "expiryTitle": "Expiry",
+    "expiry_default": "Default",
+    "expiry_never": "Never",
+    "expiry_hint_never": "This invite will not expire.",
+    "expiry_hint_preset": "Expires in {{minutes}} minutes.",
+    "expiry_hint_edit": "No change to expiry.",
+    "expiry_hint_default": "Default is 30 days.",
+    "capacityPlaceholder": "Capacity (optional)",
+    "submitting": "Submitting...",
+    "cancel": "Cancel"
+  },
+  "browseMap": {
+    "webNotSupported": "Map view is not supported on web. Switch to List to continue.",
+    "goToList": "Go to List",
+    "countInArea": "{{count}} invites in this area"
+  },
+  "rootNav": {
+    "login": "Login",
+    "register": "Register",
+    "create": "Create",
+    "editInvite": "Edit Invite",
+    "room": "Room"
+  }
+}

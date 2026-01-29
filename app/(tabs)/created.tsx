@@ -8,6 +8,7 @@ import ActivityCard, {
 import { requireUserId } from "../../lib/auth";
 import { supabase } from "../../lib/supabase";
 import { fetchMembershipRowsForUser } from "../../lib/activities";
+import { useT } from "../../lib/useT";
 
 // :zap: CHANGE 1: Helper to decide "active" activities.
 function isActiveActivity(a: ActivityCardActivity): boolean {
@@ -22,6 +23,7 @@ function isActiveActivity(a: ActivityCardActivity): boolean {
 // :zap: CHANGE 1: Created = activities.creator_id = me
 export default function CreatedScreen() {
   const router = useRouter();
+  const { t } = useT();
 
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
@@ -63,7 +65,7 @@ export default function CreatedScreen() {
         await load();
       } catch (e: any) {
         console.error(e);
-        Alert.alert("Load failed", e?.message ?? "Unknown error");
+        Alert.alert(t("created.loadErrorTitle"), e?.message ?? "Unknown error");
         router.replace("/login");
       } finally {
         setLoading(false);
@@ -77,7 +79,10 @@ export default function CreatedScreen() {
       await load();
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Refresh failed", e?.message ?? "Unknown error");
+      Alert.alert(
+        t("created.refreshErrorTitle"),
+        e?.message ?? "Unknown error"
+      );
     } finally {
       setRefreshing(false);
     }
@@ -127,26 +132,34 @@ export default function CreatedScreen() {
 
     return (
       <View style={{ padding: 16, gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>Created</Text>
+        <Text style={{ fontSize: 18, fontWeight: "800" }}>
+          {t("created.headerTitle")}
+        </Text>
 
         <View style={{ flexDirection: "row", gap: 10 }}>
-          <TabButton value="active" label={`Active (${activeCount})`} />
-          <TabButton value="inactive" label={`Inactive (${inactiveCount})`} />
+          <TabButton
+            value="active"
+            label={t("created.tab_active", { count: activeCount })}
+          />
+          <TabButton
+            value="inactive"
+            label={t("created.tab_inactive", { count: inactiveCount })}
+          />
         </View>
 
         <Text style={{ opacity: 0.7 }}>
           {tab === "active"
-            ? "Showing active invites you created."
-            : "Showing expired/closed invites you created."}
+            ? t("created.subtitle_active")
+            : t("created.subtitle_inactive")}
         </Text>
       </View>
     );
-  }, [tab, activeItems.length, inactiveItems.length]);
+  }, [tab, activeItems.length, inactiveItems.length, t]);
 
   if (loading) {
     return (
       <View style={{ flex: 1, padding: 16 }}>
-        <Text>Loading...</Text>
+        <Text>{t("common.loading")}</Text>
       </View>
     );
   }
@@ -173,9 +186,7 @@ export default function CreatedScreen() {
       )}
       ListEmptyComponent={
         <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
-          <Text style={{ opacity: 0.8 }}>
-            You haven’t posted any invites yet.
-          </Text>
+          <Text style={{ opacity: 0.8 }}>{t("created.empty")}</Text>
         </View>
       }
     />

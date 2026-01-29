@@ -14,6 +14,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { supabase } from "../../lib/supabase";
 import { requireUserId } from "../../lib/auth";
+import { useT } from "../../lib/useT";
 
 type ActivityRow = {
   id: string;
@@ -83,15 +84,18 @@ const TOKENS = {
 /* =======================
  * Time helpers
  * ======================= */
-function timeAgo(iso: string): string {
+function timeAgo(
+  t: (key: string, options?: { count?: number }) => string,
+  iso: string
+): string {
   const ms = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(ms / 60000);
-  if (mins < 1) return "now";
-  if (mins < 60) return `${mins}m`;
+  if (mins < 1) return t("room.time_now");
+  if (mins < 60) return t("room.time_m", { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
+  if (hrs < 24) return t("room.time_h", { count: hrs });
   const days = Math.floor(hrs / 24);
-  return `${days}d`;
+  return t("room.time_d", { count: days });
 }
 
 function hhmm(iso: string): string {
@@ -105,33 +109,40 @@ function startOfLocalDayMs(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 
-function sectionLabelForIso(iso: string): string {
-  const t = new Date(iso);
+function sectionLabelForIso(
+  t: (key: string) => string,
+  lang: string,
+  iso: string
+): string {
+  const d = new Date(iso);
   const now = new Date();
-  const t0 = startOfLocalDayMs(t);
+  const t0 = startOfLocalDayMs(d);
   const n0 = startOfLocalDayMs(now);
 
   const diffDays = Math.round((t0 - n0) / 86400000);
-  if (diffDays === 0) return "Today";
-  if (diffDays === -1) return "Yesterday";
+  if (diffDays === 0) return t("room.section_today");
+  if (diffDays === -1) return t("room.section_yesterday");
 
   // older: show date like "Jan 26"
-  const month = t.toLocaleString(undefined, { month: "short" });
-  return `${month} ${t.getDate()}`;
+  const month = d.toLocaleString(lang, { month: "short" });
+  return `${month} ${d.getDate()}`;
 }
 
 /* =======================
  * Message content helpers
  * ======================= */
-function renderEventContent(e: RoomEventRow): string {
+function renderEventContent(
+  t: (key: string) => string,
+  e: RoomEventRow
+): string {
   if (e.type === "quick") {
     switch (e.content) {
       case "IM_HERE":
-        return "✅ I'm here";
+        return t("room.quick.imHere");
       case "LATE_10":
-        return "⏱️ 10 min late";
+        return t("room.quick.late10");
       case "CANCEL":
-        return "❌ Cancel";
+        return t("room.quick.cancel");
       default:
         return e.content;
     }
@@ -139,10 +150,13 @@ function renderEventContent(e: RoomEventRow): string {
   return e.content;
 }
 
-function getEventDisplayName(e: RoomEventRow): string {
-  if (!e.user_id) return "System";
+function getEventDisplayName(
+  t: (key: string) => string,
+  e: RoomEventRow
+): string {
+  if (!e.user_id) return t("room.system");
   const name = (e.profiles?.display_name ?? "").trim();
-  return name || "Unknown";
+  return name || t("room.unknownUser");
 }
 
 function computeRoomState(activity: ActivityRow | null) {
@@ -153,17 +167,17 @@ function computeRoomState(activity: ActivityRow | null) {
   const isExpired = expiresAtMs != null && expiresAtMs <= Date.now();
   const isReadOnly = isClosed || isExpired;
 
-  let label: string | null = null;
-  if (isClosed) label = "Closed";
-  else if (isExpired) label = "Expired";
+  let labelKey: "closed" | "expired" | null = null;
+  if (isClosed) labelKey = "closed";
+  else if (isExpired) labelKey = "expired";
 
-  return { isClosed, isExpired, isReadOnly, label };
+  return { isClosed, isExpired, isReadOnly, labelKey };
 }
 
-function friendlyDbError(message: string): string {
+function friendlyDbError(t: (key: string) => string, message: string): string {
   const lower = message.toLowerCase();
   if (lower.includes("row-level security")) {
-    return "This invite is closed or expired. You can still read messages.";
+    return t("room.readOnlyAlertBody");
   }
   return message;
 }
@@ -276,6 +290,7 @@ function SheetItem({
  * ======================= */
 export default function RoomScreen() {
   const router = useRouter();
+  const { t, i18n } = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
   const activityId = String(id);
 
@@ -378,7 +393,7 @@ export default function RoomScreen() {
         setUserId(uid);
         await loadAll(uid);
       } catch (_e: any) {
-        Alert.alert("Auth required", "Please log in again.");
+        Alert.alert(t("room.authRequiredTitle"), t("room.authRequiredBody"));
         router.replace("/login");
       }
     })();
@@ -453,14 +468,17 @@ export default function RoomScreen() {
   async function join() {
     if (!userId) return;
     if (roomState.isReadOnly) {
-      Alert.alert("Not available", "This invite is closed or expired.");
+      Alert.alert(
+        t("room.joinNotAvailableTitle"),
+        t("room.joinNotAvailableBody")
+      );
       return;
     }
 
-    Alert.alert("Join this invite?", "Confirm to join this room.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("room.joinConfirmTitle"), t("room.joinConfirmBody"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Join",
+        text: t("common.join"),
         onPress: async () => {
           const { error } = await supabase.from("activity_members").upsert({
             activity_id: activityId,
@@ -469,7 +487,11 @@ export default function RoomScreen() {
             state: "joined",
           });
 
-          if (error) Alert.alert("Join failed", friendlyDbError(error.message));
+          if (error)
+            Alert.alert(
+              t("room.joinFailedTitle"),
+              friendlyDbError(t, error.message)
+            );
           else {
             await loadAll(userId);
             scrollToBottom(false);
@@ -505,33 +527,36 @@ export default function RoomScreen() {
       router.back();
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Leave failed", e?.message ?? "Unknown error");
+      Alert.alert(t("room.leaveFailedTitle"), e?.message ?? "Unknown error");
     }
   }
 
   function confirmLeave() {
     if (Platform.OS === "web") {
       const ok = globalThis.confirm?.(
-        "Leave this invite?\n\nYou will stop receiving updates from this room."
+        `${t("room.leaveConfirmTitle")}\n\n${t("room.leaveConfirmBody")}`
       );
       if (ok) doLeave();
       return;
     }
 
-    Alert.alert(
-      "Leave this invite?",
-      "You will stop receiving updates from this room.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Leave", style: "destructive", onPress: () => doLeave() },
-      ]
-    );
+    Alert.alert(t("room.leaveConfirmTitle"), t("room.leaveConfirmBody"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.leave"),
+        style: "destructive",
+        onPress: () => doLeave(),
+      },
+    ]);
   }
 
   async function closeInvite() {
     if (!userId || !activity) return;
     if (!isCreator) {
-      Alert.alert("Not allowed", "Only the creator can close this invite.");
+      Alert.alert(
+        t("room.closeNotAllowedTitle"),
+        t("room.closeNotAllowedBody")
+      );
       return;
     }
     if (roomState.isReadOnly) return;
@@ -539,20 +564,20 @@ export default function RoomScreen() {
     const ok =
       Platform.OS === "web"
         ? globalThis.confirm?.(
-            "Close this invite?\n\nNo one can join or send messages anymore."
+            `${t("room.closeConfirmTitle")}\n\n${t("room.closeConfirmBody")}`
           )
         : await new Promise<boolean>((resolve) => {
             Alert.alert(
-              "Close this invite?",
-              "No one can join or send messages anymore.",
+              t("room.closeConfirmTitle"),
+              t("room.closeConfirmBody"),
               [
                 {
-                  text: "Cancel",
+                  text: t("common.cancel"),
                   style: "cancel",
                   onPress: () => resolve(false),
                 },
                 {
-                  text: "Close",
+                  text: t("common.close"),
                   style: "destructive",
                   onPress: () => resolve(true),
                 },
@@ -584,14 +609,14 @@ export default function RoomScreen() {
       await loadAll(userId);
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Close failed", e?.message ?? "Unknown error");
+      Alert.alert(t("room.closeFailedTitle"), e?.message ?? "Unknown error");
     }
   }
 
   async function sendChat(text: string) {
     if (!userId) return;
     if (!canInteract) {
-      Alert.alert("Read-only", "This invite is closed or expired.");
+      Alert.alert(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
       return;
     }
 
@@ -605,7 +630,8 @@ export default function RoomScreen() {
       content: trimmed,
     });
 
-    if (error) Alert.alert("Send failed", friendlyDbError(error.message));
+    if (error)
+      Alert.alert(t("room.sendFailedTitle"), friendlyDbError(t, error.message));
     else {
       setMessage("");
       await loadAll(userId);
@@ -616,7 +642,7 @@ export default function RoomScreen() {
   async function sendQuick(code: string) {
     if (!userId) return;
     if (!canInteract) {
-      Alert.alert("Read-only", "This invite is closed or expired.");
+      Alert.alert(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
       return;
     }
 
@@ -627,7 +653,8 @@ export default function RoomScreen() {
       content: code,
     });
 
-    if (error) Alert.alert("Failed", friendlyDbError(error.message));
+    if (error)
+      Alert.alert(t("room.failedTitle"), friendlyDbError(t, error.message));
     else {
       await loadAll(userId);
       scrollToBottom(true);
@@ -635,7 +662,8 @@ export default function RoomScreen() {
   }
 
   const placeName =
-    (activity?.place_name ?? activity?.place_text ?? "").trim() || "No place";
+    (activity?.place_name ?? activity?.place_text ?? "").trim() ||
+    t("activityCard.place_none");
   const placeAddress = (activity?.place_address ?? "").trim();
 
   // :zap: CHANGE 1: Build "sectioned list items" (Today/Yesterday/Date)
@@ -644,7 +672,7 @@ export default function RoomScreen() {
     let lastLabel: string | null = null;
 
     for (const e of events) {
-      const label = sectionLabelForIso(e.created_at);
+      const label = sectionLabelForIso(t, i18n.language, e.created_at);
       if (label !== lastLabel) {
         items.push({ kind: "section", id: `section:${label}`, label });
         lastLabel = label;
@@ -653,7 +681,7 @@ export default function RoomScreen() {
     }
 
     return items;
-  }, [events]);
+  }, [events, i18n.language, t]);
 
   // :zap: CHANGE 2: Long-press handler for message
   function openMessageMenu(e: RoomEventRow) {
@@ -666,20 +694,32 @@ export default function RoomScreen() {
     if (Platform.OS === "web") {
       try {
         await navigator.clipboard.writeText(text);
-        Alert.alert("Copied", "Message copied.");
+        Alert.alert(
+          t("room.clipboard.copiedTitle"),
+          t("room.clipboard.copiedBody")
+        );
       } catch {
-        Alert.alert("Copy failed", "Clipboard not available.");
+        Alert.alert(
+          t("room.clipboard.copyFailedTitle"),
+          t("room.clipboard.copyFailedBody")
+        );
       }
       return;
     }
 
     // Native placeholder (so you can test UX now without adding deps)
     // If you want real native copy, tell me and I’ll add expo-clipboard cleanly.
-    Alert.alert("Copy", "Not implemented yet on native (placeholder).");
+    Alert.alert(
+      t("room.clipboard.nativePlaceholderTitle"),
+      t("room.clipboard.nativePlaceholderBody")
+    );
   }
 
   function reportMessage(_e: RoomEventRow) {
-    Alert.alert("Report", "Not implemented yet.");
+    Alert.alert(
+      t("room.clipboard.reportPlaceholderTitle"),
+      t("room.clipboard.reportPlaceholderBody")
+    );
   }
 
   function renderChatItem({ item }: { item: ChatItem }) {
@@ -730,7 +770,7 @@ export default function RoomScreen() {
                 fontWeight: "700",
               }}
             >
-              {renderEventContent(e)}
+              {renderEventContent(t, e)}
             </Text>
           </View>
         </View>
@@ -738,8 +778,8 @@ export default function RoomScreen() {
     }
 
     const isMine = !!userId && e.user_id === userId;
-    const name = getEventDisplayName(e);
-    const content = renderEventContent(e);
+    const name = getEventDisplayName(t, e);
+    const content = renderEventContent(t, e);
 
     // :zap: CHANGE 4: IG-ish layout: name closer + smaller gap, time near bubble
     return (
@@ -821,7 +861,7 @@ export default function RoomScreen() {
               <Text
                 style={{ fontSize: 18, fontWeight: "900", color: TOKENS.title }}
               >
-                {activity?.title_text ?? "Room"}
+                {activity?.title_text ?? t("room.fallbackRoomTitle")}
               </Text>
 
               <Text
@@ -865,7 +905,7 @@ export default function RoomScreen() {
                       color: TOKENS.text,
                     }}
                   >
-                    Members {members.length}
+                    {t("room.membersCount", { count: members.length })}
                   </Text>
                 </View>
 
@@ -887,12 +927,12 @@ export default function RoomScreen() {
                         color: TOKENS.okText,
                       }}
                     >
-                      Created
+                      {t("room.createdBadge")}
                     </Text>
                   </View>
                 ) : null}
 
-                {roomState.label ? (
+                {roomState.labelKey ? (
                   <View
                     style={{
                       paddingVertical: 4,
@@ -910,7 +950,9 @@ export default function RoomScreen() {
                         color: TOKENS.dangerText,
                       }}
                     >
-                      {roomState.label}
+                      {roomState.labelKey === "closed"
+                        ? t("room.closedBadge")
+                        : t("room.expiredBadge")}
                     </Text>
                   </View>
                 ) : null}
@@ -921,17 +963,25 @@ export default function RoomScreen() {
             <View style={{ gap: 8, alignItems: "flex-end" }}>
               {!joined ? (
                 <IconButton
-                  label={myMembershipState === "left" ? "Re-join" : "Join"}
+                  label={
+                    myMembershipState === "left"
+                      ? t("common.rejoin")
+                      : t("common.join")
+                  }
                   onPress={join}
                   disabled={roomState.isReadOnly}
                 />
               ) : (
-                <IconButton label="Leave" onPress={confirmLeave} destructive />
+                <IconButton
+                  label={t("common.leave")}
+                  onPress={confirmLeave}
+                  destructive
+                />
               )}
 
               {isCreator ? (
                 <IconButton
-                  label="Close"
+                  label={t("common.close")}
                   onPress={closeInvite}
                   disabled={roomState.isReadOnly}
                   destructive
@@ -952,15 +1002,15 @@ export default function RoomScreen() {
               }}
             >
               <Text style={{ fontWeight: "900", color: TOKENS.text }}>
-                You left
+                {t("room.leftTitle")}
               </Text>
               <Text style={{ color: TOKENS.subtext }}>
-                You can view history. Tap Re-join to chat again.
+                {t("room.leftBody")}
               </Text>
             </View>
           ) : null}
 
-          {roomState.label ? (
+          {roomState.labelKey ? (
             <View
               style={{
                 padding: 10,
@@ -972,10 +1022,10 @@ export default function RoomScreen() {
               }}
             >
               <Text style={{ fontWeight: "900", color: TOKENS.dangerText }}>
-                Read-only
+                {t("room.readonlyTitle")}
               </Text>
               <Text style={{ color: TOKENS.dangerText, opacity: 0.9 }}>
-                You can still view messages.
+                {t("room.readonlyBody")}
               </Text>
             </View>
           ) : null}
@@ -995,9 +1045,7 @@ export default function RoomScreen() {
           }}
         >
           {!canReadEvents ? (
-            <Text style={{ color: TOKENS.subtext }}>
-              Join this invite to see and send messages.
-            </Text>
+            <Text style={{ color: TOKENS.subtext }}>{t("room.joinToSee")}</Text>
           ) : (
             <FlatList
               ref={(r) => (listRef.current = r)}
@@ -1015,17 +1063,17 @@ export default function RoomScreen() {
         {/* Quick actions (near input, like IG quick reactions) */}
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
           <QuickChip
-            label="✅ I'm here"
+            label={t("room.quick.imHere")}
             onPress={() => sendQuick("IM_HERE")}
             disabled={!canInteract}
           />
           <QuickChip
-            label="⏱️ 10 min late"
+            label={t("room.quick.late10")}
             onPress={() => sendQuick("LATE_10")}
             disabled={!canInteract}
           />
           <QuickChip
-            label="❌ Cancel"
+            label={t("room.quick.cancel")}
             onPress={() => sendQuick("CANCEL")}
             disabled={!canInteract}
           />
@@ -1039,12 +1087,12 @@ export default function RoomScreen() {
             onChangeText={setMessage}
             placeholder={
               canInteract
-                ? "Message…"
+                ? t("room.placeholder.message")
                 : myMembershipState === "left"
-                  ? "Re-join to chat"
+                  ? t("room.placeholder.rejoinToChat")
                   : roomState.isReadOnly
-                    ? "Read-only"
-                    : "Join to chat"
+                    ? t("room.placeholder.readonly")
+                    : t("room.placeholder.joinToChat")
             }
             editable={canInteract}
             multiline
@@ -1077,7 +1125,9 @@ export default function RoomScreen() {
               opacity: !canInteract ? 0.5 : pressed ? 0.85 : 1,
             })}
           >
-            <Text style={{ fontWeight: "900", color: TOKENS.text }}>Send</Text>
+            <Text style={{ fontWeight: "900", color: TOKENS.text }}>
+              {t("common.send")}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -1122,25 +1172,27 @@ export default function RoomScreen() {
 
             <View style={{ paddingHorizontal: 16, paddingBottom: 8, gap: 4 }}>
               <Text style={{ fontWeight: "900", color: TOKENS.text }}>
-                Message
+                {t("room.menu.title")}
               </Text>
               {menuTarget ? (
                 <Text style={{ color: TOKENS.subtext }} numberOfLines={2}>
-                  {renderEventContent(menuTarget)}
+                  {renderEventContent(t, menuTarget)}
                 </Text>
               ) : null}
             </View>
 
             <SheetItem
-              label="Copy"
+              label={t("room.menu.copy")}
               onPress={async () => {
-                const t = menuTarget ? renderEventContent(menuTarget) : "";
+                const text = menuTarget
+                  ? renderEventContent(t, menuTarget)
+                  : "";
                 setMenuOpen(false);
-                await copyToClipboard(t);
+                await copyToClipboard(text);
               }}
             />
             <SheetItem
-              label="Report"
+              label={t("room.menu.report")}
               onPress={() => {
                 if (!menuTarget) return;
                 setMenuOpen(false);
@@ -1149,7 +1201,10 @@ export default function RoomScreen() {
             />
 
             <View style={{ height: 8 }} />
-            <SheetItem label="Cancel" onPress={() => setMenuOpen(false)} />
+            <SheetItem
+              label={t("room.menu.cancel")}
+              onPress={() => setMenuOpen(false)}
+            />
           </Pressable>
         </Pressable>
       </Modal>

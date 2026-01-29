@@ -9,6 +9,7 @@ import BrowseMap from "../../components/BrowseMap";
 import { requireUserId } from "../../lib/auth";
 import { fetchMembershipRowsForUser, upsertJoin } from "../../lib/activities";
 import { supabase } from "../../lib/supabase";
+import { useT } from "../../lib/useT";
 
 function isJoinable(a: ActivityCardActivity, joinedSet: Set<string>): boolean {
   if (joinedSet.has(a.id)) return false;
@@ -21,6 +22,7 @@ function isJoinable(a: ActivityCardActivity, joinedSet: Set<string>): boolean {
 // :zap: CHANGE 1: Browse = joinable open + not expired + not joined
 export default function BrowseScreen() {
   const router = useRouter();
+  const { t, i18n } = useT();
 
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
@@ -63,7 +65,7 @@ export default function BrowseScreen() {
         await load();
       } catch (e: any) {
         console.error(e);
-        Alert.alert("Load failed", e?.message ?? "Unknown error");
+        Alert.alert(t("browse.loadErrorTitle"), e?.message ?? "Unknown error");
         router.replace("/login");
       } finally {
         setLoading(false);
@@ -125,7 +127,7 @@ export default function BrowseScreen() {
       await load();
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Refresh failed", e?.message ?? "Unknown error");
+      Alert.alert(t("browse.refreshErrorTitle"), e?.message ?? "Unknown error");
     } finally {
       setRefreshing(false);
     }
@@ -139,12 +141,13 @@ export default function BrowseScreen() {
     }
 
     const title = a.title_text;
-    const placeName = (a.place_name ?? a.place_text ?? "").trim() || "No place";
+    const placeName =
+      (a.place_name ?? a.place_text ?? "").trim() || t("browse.place_none");
     const placeAddress = (a.place_address ?? "").trim();
     const expiresLabel = a.expires_at
-      ? new Date(a.expires_at).toLocaleString()
-      : "Never";
-    const capacityLabel = a.capacity ?? "Unlimited";
+      ? new Date(a.expires_at).toLocaleString(i18n.language)
+      : t("browse.expires_never");
+    const capacityLabel = a.capacity ?? t("browse.capacity_unlimited");
 
     const confirmJoin = async () => {
       setJoiningId(a.id);
@@ -154,7 +157,7 @@ export default function BrowseScreen() {
         router.push(`/room/${a.id}`);
       } catch (e: any) {
         console.error(e);
-        Alert.alert("Join failed", e?.message ?? "Unknown error");
+        Alert.alert(t("browse.joinErrorTitle"), e?.message ?? "Unknown error");
       } finally {
         setJoiningId(null);
       }
@@ -162,26 +165,26 @@ export default function BrowseScreen() {
 
     if (viewMode === "map") {
       const details = [
-        `🎯 ${title}`,
-        `📍 ${placeName}`,
-        placeAddress ? `   ${placeAddress}` : null,
-        `👥 性別偏好: ${a.gender_pref}`,
-        `👤 人數: ${capacityLabel}`,
-        `⏳ 到期: ${expiresLabel}`,
+        t("browse.details.goal", { title }),
+        t("browse.details.place", { placeName }),
+        placeAddress ? t("browse.details.address", { placeAddress }) : null,
+        t("browse.details.genderPref", { genderPref: a.gender_pref }),
+        t("browse.details.capacity", { capacityLabel }),
+        t("browse.details.expires", { expiresLabel }),
       ]
         .filter(Boolean)
         .join("\n");
 
-      Alert.alert("確認加入邀請？", details, [
-        { text: "Cancel", style: "cancel" },
-        { text: "Join", style: "default", onPress: confirmJoin },
+      Alert.alert(t("browse.mapJoinConfirmTitle"), details, [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("common.join"), style: "default", onPress: confirmJoin },
       ]);
       return;
     }
 
-    Alert.alert(`Join "${title}"?`, "", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Join", style: "default", onPress: confirmJoin },
+    Alert.alert(t("browse.joinConfirmTitle", { title }), "", [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("common.join"), style: "default", onPress: confirmJoin },
     ]);
   }
 
@@ -212,22 +215,22 @@ export default function BrowseScreen() {
 
     return (
       <View style={{ padding: 16, gap: 10 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>Browse</Text>
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <ToggleButton value="list" label="List" />
-          <ToggleButton value="map" label="Map" />
-        </View>
-        <Text style={{ opacity: 0.7 }}>
-          Open invites you can join right now.
+        <Text style={{ fontSize: 18, fontWeight: "800" }}>
+          {t("browse.headerTitle")}
         </Text>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <ToggleButton value="list" label={t("browse.mode_list")} />
+          <ToggleButton value="map" label={t("browse.mode_map")} />
+        </View>
+        <Text style={{ opacity: 0.7 }}>{t("browse.subtitle")}</Text>
       </View>
     );
-  }, [viewMode]);
+  }, [viewMode, t]);
 
   if (loading) {
     return (
       <View style={{ flex: 1, padding: 16 }}>
-        <Text>Loading...</Text>
+        <Text>{t("common.loading")}</Text>
       </View>
     );
   }
@@ -271,7 +274,7 @@ export default function BrowseScreen() {
       )}
       ListEmptyComponent={
         <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
-          <Text style={{ opacity: 0.8 }}>No joinable invites right now.</Text>
+          <Text style={{ opacity: 0.8 }}>{t("browse.empty")}</Text>
         </View>
       }
     />
