@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -15,6 +15,7 @@ import {
 import { isActiveActivity } from "../../lib/domain/activities";
 import { useT } from "../../lib/i18n/useT";
 import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
+import { handleError } from "../../lib/ui/handleError";
 
 // :zap: CHANGE 1: Created = activities.creator_id = me
 export default function CreatedScreen() {
@@ -85,11 +86,7 @@ export default function CreatedScreen() {
       setCursor(page.cursor);
       setHasMore(page.hasMore);
     } catch (e: any) {
-      console.error(e);
-      Alert.alert(
-        t("created.refreshErrorTitle"),
-        e?.message ?? "Unknown error"
-      );
+      handleError(t("created.refreshErrorTitle"), e);
     } finally {
       setLoadingMore(false);
     }
@@ -100,8 +97,7 @@ export default function CreatedScreen() {
       try {
         await loadInitial();
       } catch (e: any) {
-        console.error(e);
-        Alert.alert(t("created.loadErrorTitle"), e?.message ?? "Unknown error");
+        handleError(t("created.loadErrorTitle"), e);
         router.replace("/login");
       } finally {
         setLoading(false);
@@ -113,11 +109,7 @@ export default function CreatedScreen() {
     useCallback(() => {
       if (loading) return;
       loadInitial().catch((e: any) => {
-        console.error(e);
-        Alert.alert(
-          t("created.refreshErrorTitle"),
-          e?.message ?? "Unknown error"
-        );
+        handleError(t("created.refreshErrorTitle"), e);
       });
     }, [loadInitial, loading, t])
   );
@@ -127,11 +119,7 @@ export default function CreatedScreen() {
     try {
       await loadInitial();
     } catch (e: any) {
-      console.error(e);
-      Alert.alert(
-        t("created.refreshErrorTitle"),
-        e?.message ?? "Unknown error"
-      );
+      handleError(t("created.refreshErrorTitle"), e);
     } finally {
       setRefreshing(false);
     }
