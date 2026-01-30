@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Alert, Pressable, Text, TextInput, View } from "react-native";
-import { searchPlacesNominatim, type PlaceCandidate } from "../lib/places";
+import { searchPlacesNominatim, type PlaceCandidate } from "../lib/api/places";
+import { useT } from "../lib/i18n/useT";
+import { formatExpiryLabel } from "../lib/i18n/i18n_format";
+import { useTheme } from "../src/ui/theme/ThemeProvider";
 
 type GenderPref = "any" | "female" | "male";
 
@@ -57,7 +60,8 @@ const EXPIRY_PRESETS = [
 ];
 
 function buildInitialPlace(
-  initialValues?: InviteFormInitialValues
+  initialValues: InviteFormInitialValues | undefined,
+  t: (key: string) => string
 ): SelectedPlace | null {
   const name = (initialValues?.place_name ?? "").trim();
   const address = (initialValues?.place_address ?? "").trim();
@@ -68,7 +72,7 @@ function buildInitialPlace(
 
   return {
     placeId: initialValues?.place_id ?? null,
-    name: name || address || "Selected place",
+    name: name || address || t("inviteForm.selectPlaceTitle"),
     address: address || name,
     lat: Number.isFinite(lat as number) ? (lat as number) : null,
     lng: Number.isFinite(lng as number) ? (lng as number) : null,
@@ -82,11 +86,15 @@ export default function InviteForm(props: Props) {
     onSubmit,
     onCancel,
     submitting = false,
-    submitLabel = "Submit",
+    submitLabel,
     mode = "create",
   } = props;
 
-  const initialPlace = buildInitialPlace(initialValues);
+  const theme = useTheme();
+  const { t } = useT();
+  const initialPlace = buildInitialPlace(initialValues, t);
+  const effectiveSubmitLabel =
+    submitLabel ?? (mode === "edit" ? t("edit.save") : t("create.submit"));
 
   const [title, setTitle] = useState(initialValues?.title_text ?? "");
   const [placeQuery, setPlaceQuery] = useState(initialPlace?.name ?? "");
@@ -173,14 +181,14 @@ export default function InviteForm(props: Props) {
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      Alert.alert("Missing", "Please type what you want to do.");
+      Alert.alert(t("inviteForm.missingTitle"), t("inviteForm.missingBody"));
       return;
     }
 
     if (placeQuery.trim() !== "" && !selectedPlace) {
       Alert.alert(
-        "Select a place",
-        "Pick a result from the list or clear the search."
+        t("inviteForm.selectPlaceTitle"),
+        t("inviteForm.selectPlaceBody")
       );
       return;
     }
@@ -190,7 +198,7 @@ export default function InviteForm(props: Props) {
     if (trimmedCapacity !== "") {
       const parsed = Number(trimmedCapacity);
       if (!Number.isInteger(parsed) || parsed < 1) {
-        Alert.alert("Invalid", "Capacity must be an integer of 1 or more.");
+        Alert.alert(t("inviteForm.invalidTitle"), t("inviteForm.invalidBody"));
         return;
       }
       capacityNum = parsed;
@@ -239,37 +247,57 @@ export default function InviteForm(props: Props) {
 
   const expiryHint =
     expiryMode === "never"
-      ? "This invite will not expire."
+      ? t("inviteForm.expiry_hint_never")
       : expiryMode === "preset" && expiryMinutes != null
-        ? `Expires in ${expiryMinutes} minutes.`
+        ? t("inviteForm.expiry_hint_preset", {
+            when: formatExpiryLabel(
+              new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString(),
+              Date.now(),
+              t
+            ),
+          })
         : mode === "edit"
-          ? "No change to expiry."
-          : "Default is 30 days.";
+          ? t("inviteForm.expiry_hint_edit")
+          : t("inviteForm.expiry_hint_default");
 
   return (
     <View style={{ gap: 12 }}>
       <TextInput
         value={title}
         onChangeText={setTitle}
-        placeholder="Title (required)"
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
+        placeholder={t("inviteForm.titlePlaceholder")}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 10,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+        }}
       />
 
       <View style={{ gap: 8 }}>
         <TextInput
           value={placeQuery}
           onChangeText={onChangePlaceQuery}
-          placeholder="Search place (optional)"
-          style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
+          placeholder={t("inviteForm.placePlaceholder")}
+          style={{
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            borderRadius: 10,
+            padding: 12,
+            backgroundColor: theme.colors.surface,
+          }}
         />
 
         {selectedPlace ? (
           <View
             style={{
               borderWidth: 1,
+              borderColor: theme.colors.border,
               borderRadius: 10,
               padding: 10,
               gap: 4,
+              backgroundColor: theme.colors.surface,
             }}
           >
             <Text style={{ fontSize: 15, fontWeight: "700" }}>
@@ -284,18 +312,31 @@ export default function InviteForm(props: Props) {
                 paddingHorizontal: 10,
                 borderRadius: 8,
                 borderWidth: 1,
+                borderColor: theme.colors.border,
                 alignSelf: "flex-start",
+                backgroundColor: theme.colors.surface,
               }}
             >
-              <Text style={{ fontWeight: "600" }}>Clear selection</Text>
+              <Text style={{ fontWeight: "600" }}>
+                {t("inviteForm.clearSelection")}
+              </Text>
             </Pressable>
           </View>
         ) : null}
 
-        {searching ? <Text style={{ opacity: 0.7 }}>Searching...</Text> : null}
+        {searching ? (
+          <Text style={{ opacity: 0.7 }}>{t("inviteForm.searching")}</Text>
+        ) : null}
 
         {!selectedPlace && candidates.length > 0 ? (
-          <View style={{ borderWidth: 1, borderRadius: 10 }}>
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              borderRadius: 10,
+              backgroundColor: theme.colors.surface,
+            }}
+          >
             {candidates.map((c) => (
               <Pressable
                 key={c.placeId}
@@ -304,6 +345,7 @@ export default function InviteForm(props: Props) {
                   paddingVertical: 10,
                   paddingHorizontal: 12,
                   borderBottomWidth: 1,
+                  borderBottomColor: theme.colors.border,
                 }}
               >
                 <Text style={{ fontSize: 15, fontWeight: "700" }}>
@@ -319,7 +361,7 @@ export default function InviteForm(props: Props) {
         !searching &&
         placeQuery.trim().length >= 3 &&
         candidates.length === 0 ? (
-          <Text style={{ opacity: 0.7 }}>No results yet.</Text>
+          <Text style={{ opacity: 0.7 }}>{t("inviteForm.noResults")}</Text>
         ) : null}
       </View>
 
@@ -333,15 +375,19 @@ export default function InviteForm(props: Props) {
               paddingHorizontal: 12,
               borderRadius: 10,
               borderWidth: 1,
+              borderColor: theme.colors.border,
               opacity: genderPref === v ? 1 : 0.6,
+              backgroundColor: theme.colors.surface,
             }}
           >
-            <Text style={{ fontWeight: "600" }}>{v}</Text>
+            <Text style={{ fontWeight: "600" }}>
+              {t(`inviteForm.gender_${v}`)}
+            </Text>
           </Pressable>
         ))}
       </View>
 
-      <Text style={{ fontWeight: "800" }}>Expiry</Text>
+      <Text style={{ fontWeight: "800" }}>{t("inviteForm.expiryTitle")}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         <Pressable
           onPress={() => {
@@ -353,10 +399,14 @@ export default function InviteForm(props: Props) {
             paddingHorizontal: 12,
             borderRadius: 10,
             borderWidth: 1,
+            borderColor: theme.colors.border,
             opacity: expiryMode === "default" ? 1 : 0.6,
+            backgroundColor: theme.colors.surface,
           }}
         >
-          <Text style={{ fontWeight: "600" }}>Default</Text>
+          <Text style={{ fontWeight: "600" }}>
+            {t("inviteForm.expiry_default")}
+          </Text>
         </Pressable>
 
         {EXPIRY_PRESETS.map((p) => (
@@ -371,10 +421,12 @@ export default function InviteForm(props: Props) {
               paddingHorizontal: 12,
               borderRadius: 10,
               borderWidth: 1,
+              borderColor: theme.colors.border,
               opacity:
                 expiryMode === "preset" && expiryMinutes === p.minutes
                   ? 1
                   : 0.6,
+              backgroundColor: theme.colors.surface,
             }}
           >
             <Text style={{ fontWeight: "600" }}>{p.label}</Text>
@@ -391,10 +443,14 @@ export default function InviteForm(props: Props) {
             paddingHorizontal: 12,
             borderRadius: 10,
             borderWidth: 1,
+            borderColor: theme.colors.border,
             opacity: expiryMode === "never" ? 1 : 0.6,
+            backgroundColor: theme.colors.surface,
           }}
         >
-          <Text style={{ fontWeight: "600" }}>Never</Text>
+          <Text style={{ fontWeight: "600" }}>
+            {t("inviteForm.expiry_never")}
+          </Text>
         </Pressable>
       </View>
       <Text style={{ opacity: 0.7 }}>{expiryHint}</Text>
@@ -403,8 +459,14 @@ export default function InviteForm(props: Props) {
         value={capacity}
         onChangeText={setCapacity}
         keyboardType="number-pad"
-        placeholder="Capacity (optional)"
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
+        placeholder={t("inviteForm.capacityPlaceholder")}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 10,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+        }}
       />
 
       <View style={{ flexDirection: "row", gap: 8 }}>
@@ -416,12 +478,14 @@ export default function InviteForm(props: Props) {
             padding: 12,
             borderRadius: 10,
             borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface,
             alignItems: "center",
             opacity: submitting ? 0.6 : 1,
           }}
         >
           <Text style={{ fontWeight: "800" }}>
-            {submitting ? "Submitting..." : submitLabel}
+            {submitting ? t("inviteForm.submitting") : effectiveSubmitLabel}
           </Text>
         </Pressable>
 
@@ -433,11 +497,13 @@ export default function InviteForm(props: Props) {
               padding: 12,
               borderRadius: 10,
               borderWidth: 1,
+              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surface,
               alignItems: "center",
               opacity: submitting ? 0.6 : 1,
             }}
           >
-            <Text style={{ fontWeight: "700" }}>Cancel</Text>
+            <Text style={{ fontWeight: "700" }}>{t("inviteForm.cancel")}</Text>
           </Pressable>
         ) : null}
       </View>

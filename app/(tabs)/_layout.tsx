@@ -1,5 +1,6 @@
 import { Tabs, useRouter } from "expo-router";
 import { Pressable, Text } from "react-native";
+import { useT } from "../../lib/i18n/useT";
 
 // :zap: CHANGE 1: Shared header button for navigating to Create screen
 function HeaderCreateButton() {
@@ -17,21 +18,29 @@ function HeaderCreateButton() {
 }
 
 export default function TabsLayout() {
+  const { t } = useT();
+
   return (
     <Tabs screenOptions={{ headerShown: true }}>
       {/* :zap: CHANGE 2: Show Create button only on these tabs */}
       <Tabs.Screen
         name="browse"
-        options={{ title: "Browse", headerRight: () => <HeaderCreateButton /> }}
+        options={{
+          title: t("tabs.browse"),
+          headerRight: () => <HeaderCreateButton />,
+        }}
       />
       <Tabs.Screen
         name="joined"
-        options={{ title: "Joined", headerRight: () => <HeaderCreateButton /> }}
+        options={{
+          title: t("tabs.joined"),
+          headerRight: () => <HeaderCreateButton />,
+        }}
       />
       <Tabs.Screen
         name="created"
         options={{
-          title: "Created",
+          title: t("tabs.created"),
           headerRight: () => <HeaderCreateButton />,
         }}
       />
@@ -39,7 +48,7 @@ export default function TabsLayout() {
       {/* :zap: CHANGE 3: Hide Create button on History/Settings */}
       <Tabs.Screen
         name="settings"
-        options={{ title: "Settings", headerRight: () => null }}
+        options={{ title: t("tabs.settings"), headerRight: () => null }}
       />
     </Tabs>
   );

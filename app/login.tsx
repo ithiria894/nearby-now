@@ -1,22 +1,25 @@
 // app/login.tsx
 import { useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, Text, TextInput } from "react-native";
 import { useRouter } from "expo-router";
-import { supabase } from "../lib/supabase";
-import { ensureProfile } from "../lib/auth";
+import { supabase } from "../lib/api/supabase";
+import { ensureProfile } from "../lib/domain/auth";
+import { useT } from "../lib/i18n/useT";
+import { Screen, PrimaryButton } from "../src/ui/common";
 
 // :zap: CHANGE 1: Keep imports at top (ESM/Metro requirement). Log inside component instead.
 export default function LoginScreen() {
   console.log("LOGIN SCREEN RENDER");
 
   const router = useRouter();
+  const { t } = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function onLogin() {
     if (!email.trim() || !password) {
-      Alert.alert("Missing", "Please enter email and password.");
+      Alert.alert(t("auth.login.missingTitle"), t("auth.login.missingBody"));
       return;
     }
 
@@ -34,20 +37,22 @@ export default function LoginScreen() {
       router.replace("/");
     } catch (_e: any) {
       console.error(_e);
-      Alert.alert("Login failed", _e?.message ?? "Unknown error");
+      Alert.alert(t("auth.login.errorTitle"), _e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <View style={{ flex: 1, padding: 16, gap: 12, justifyContent: "center" }}>
-      <Text style={{ fontSize: 22, fontWeight: "800" }}>Nearby Now</Text>
+    <Screen center>
+      <Text style={{ fontSize: 22, fontWeight: "800" }}>
+        {t("auth.login.title")}
+      </Text>
 
       <TextInput
         value={email}
         onChangeText={setEmail}
-        placeholder="Email"
+        placeholder={t("auth.login.emailPlaceholder")}
         autoCapitalize="none"
         keyboardType="email-address"
         style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
@@ -56,33 +61,25 @@ export default function LoginScreen() {
       <TextInput
         value={password}
         onChangeText={setPassword}
-        placeholder="Password"
+        placeholder={t("auth.login.passwordPlaceholder")}
         secureTextEntry
         style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
       />
 
-      <Pressable
+      <PrimaryButton
+        label={
+          submitting ? t("auth.login.submitBusy") : t("auth.login.submitIdle")
+        }
         onPress={onLogin}
         disabled={submitting}
-        style={{
-          padding: 12,
-          borderRadius: 10,
-          borderWidth: 1,
-          alignItems: "center",
-          opacity: submitting ? 0.6 : 1,
-        }}
-      >
-        <Text style={{ fontWeight: "800" }}>
-          {submitting ? "Signing in…" : "Sign In"}
-        </Text>
-      </Pressable>
+      />
 
       <Pressable
         onPress={() => router.push("/register")}
         style={{ padding: 10, alignItems: "center" }}
       >
-        <Text style={{ fontWeight: "700" }}>Create an account</Text>
+        <Text style={{ fontWeight: "700" }}>{t("auth.login.goRegister")}</Text>
       </Pressable>
-    </View>
+    </Screen>
   );
 }

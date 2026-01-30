@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, ScrollView, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { supabase } from "../../lib/supabase";
-import { requireUserId } from "../../lib/auth";
+import { supabase } from "../../lib/api/supabase";
+import { requireUserId } from "../../lib/domain/auth";
+import type { InviteChange } from "../../lib/domain/room";
 import InviteForm, {
   type InviteFormPayload,
 } from "../../components/InviteForm";
+import { useT } from "../../lib/i18n/useT";
+import { Screen } from "../../src/ui/common";
 
 type ActivityRow = {
   id: string;
@@ -23,27 +26,23 @@ type ActivityRow = {
   expires_at: string | null;
 };
 
-function formatPlace(name?: string | null, address?: string | null): string {
+function formatPlace(
+  t: (key: string) => string,
+  name?: string | null,
+  address?: string | null
+): string {
   const safeName = (name ?? "").trim();
   const safeAddress = (address ?? "").trim();
-  if (!safeName && !safeAddress) return "none";
+  if (!safeName && !safeAddress) return t("place.none");
   if (safeName && safeAddress && safeName !== safeAddress) {
     return `${safeName} / ${safeAddress}`;
   }
   return safeName || safeAddress;
 }
 
-function formatExpiryPreview(expiresAt: string | null): string {
-  if (expiresAt === null) return "expires: set -> never";
-  const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0) return "expires: now";
-  const mins = Math.round(ms / 60000);
-  if (mins < 60) return `expires: -> in ${mins}m`;
-  return `expires: -> in ${Math.round(mins / 60)}h`;
-}
-
 export default function EditActivityScreen() {
   const router = useRouter();
+  const { t } = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
   const activityId = String(id);
 
@@ -76,7 +75,7 @@ export default function EditActivityScreen() {
 
         const a = data as ActivityRow;
         if (a.creator_id !== uid) {
-          Alert.alert("Not allowed", "Only the creator can edit this invite.");
+          Alert.alert(t("edit.notAllowedTitle"), t("edit.notAllowedBody"));
           router.back();
           return;
         }
@@ -84,7 +83,7 @@ export default function EditActivityScreen() {
         setActivity(a);
       } catch (e: any) {
         console.error(e);
-        Alert.alert("Load failed", e?.message ?? "Unknown error");
+        Alert.alert(t("edit.loadErrorTitle"), e?.message ?? "Unknown error");
         router.back();
       } finally {
         setLoading(false);
@@ -97,7 +96,7 @@ export default function EditActivityScreen() {
   async function onSave(payload: InviteFormPayload) {
     if (!userId || !activity) return;
     if (!isCreator) {
-      Alert.alert("Not allowed", "Only the creator can edit this invite.");
+      Alert.alert(t("edit.notAllowedTitle"), t("edit.notAllowedBody"));
       return;
     }
 
@@ -117,36 +116,49 @@ export default function EditActivityScreen() {
       updates.expires_at = payload.expires_at;
     }
 
-    const changes: string[] = [];
+    const changes: InviteChange[] = [];
     if (activity.title_text !== payload.title_text) {
-      changes.push(`title: ${activity.title_text} -> ${payload.title_text}`);
+      changes.push({
+        kind: "title",
+        from: activity.title_text ?? null,
+        to: payload.title_text ?? null,
+      });
     }
 
     const oldPlace = formatPlace(
+      t,
       activity.place_name ?? activity.place_text,
       activity.place_address
     );
-    const nextPlace = formatPlace(payload.place_name, payload.place_address);
+    const nextPlace = formatPlace(t, payload.place_name, payload.place_address);
     if (oldPlace !== nextPlace) {
-      changes.push(`place: ${oldPlace} -> ${nextPlace}`);
+      changes.push({ kind: "place", from: oldPlace, to: nextPlace });
     }
 
     if (activity.gender_pref !== payload.gender_pref) {
-      changes.push(`gender: ${activity.gender_pref} -> ${payload.gender_pref}`);
+      changes.push({
+        kind: "gender",
+        from: activity.gender_pref ?? null,
+        to: payload.gender_pref ?? null,
+      });
     }
     if ((activity.capacity ?? null) !== (payload.capacity ?? null)) {
-      changes.push(
-        `capacity: ${activity.capacity ?? "unlimited"} -> ${
-          payload.capacity ?? "unlimited"
-        }`
-      );
+      changes.push({
+        kind: "capacity",
+        from: activity.capacity ?? null,
+        to: payload.capacity ?? null,
+      });
     }
 
     if (payload.expires_at !== undefined) {
       if (payload.expires_at === null && activity.expires_at !== null) {
-        changes.push("expires: set -> never");
+        changes.push({ kind: "expires", toMode: "never" });
       } else if (payload.expires_at) {
-        changes.push(formatExpiryPreview(payload.expires_at));
+        changes.push({
+          kind: "expires",
+          toMode: "datetime",
+          iso: payload.expires_at,
+        });
       }
     }
 
@@ -182,8 +194,10 @@ export default function EditActivityScreen() {
           activity_id: activityId,
           user_id: userId,
           type: "system",
-          // Keep a readable diff for immediate room visibility.
-          content: `Updated invite — ${changes.join(", ")}`,
+          content: JSON.stringify({
+            k: "room.system.invite_updated",
+            p: { changes },
+          }),
         });
 
         if (evtErr) {
@@ -194,7 +208,7 @@ export default function EditActivityScreen() {
       router.replace("/");
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Save failed", e?.message ?? "Unknown error");
+      Alert.alert(t("edit.saveErrorTitle"), e?.message ?? "Unknown error");
     } finally {
       setSaving(false);
     }
@@ -203,7 +217,7 @@ export default function EditActivityScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, padding: 16 }}>
-        <Text>Loading...</Text>
+        <Text>{t("common.loading")}</Text>
       </View>
     );
   }
@@ -211,15 +225,16 @@ export default function EditActivityScreen() {
   if (!activity) return null;
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <Screen scroll>
       <Text style={{ fontSize: 18, fontWeight: "800" }}>
-        Edit: {activity.title_text ?? "Invite"}
+        {t("edit.titlePrefix")}{" "}
+        {activity.title_text ?? t("edit.fallbackInviteTitle")}
       </Text>
 
       <InviteForm
         mode="edit"
         submitting={saving}
-        submitLabel="Save"
+        submitLabel={t("edit.save")}
         onSubmit={onSave}
         onCancel={() => router.back()}
         initialValues={{
@@ -235,6 +250,6 @@ export default function EditActivityScreen() {
           expires_at: activity.expires_at,
         }}
       />
-    </ScrollView>
+    </Screen>
   );
 }
