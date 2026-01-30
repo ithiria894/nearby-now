@@ -17,6 +17,7 @@ export function subscribeToBrowseActivities(onChange: (payload: any) => void) {
 
 export function subscribeToJoinedActivityChanges(
   userId: string,
+  activityIdSet: Set<string>,
   onChange: () => void
 ) {
   const channel = supabase
@@ -34,7 +35,10 @@ export function subscribeToJoinedActivityChanges(
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "activities" },
-      () => onChange()
+      (payload) => {
+        const activityId = (payload.new as { id?: string })?.id;
+        if (activityId && activityIdSet.has(activityId)) onChange();
+      }
     )
     .subscribe();
 

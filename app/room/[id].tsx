@@ -16,11 +16,11 @@ import { supabase } from "../../lib/api/supabase";
 import { requireUserId } from "../../lib/domain/auth";
 import { joinWithSystemMessage } from "../../lib/domain/activities";
 import {
-  getRoomEventById,
-  getRoomEventsPage,
+  fetchRoomEventById,
+  fetchRoomEventsPage,
   type RoomEventCursor,
   type RoomEventRow,
-} from "../../lib/domain/room_events";
+} from "../../lib/repo/room_repo";
 import { useT } from "../../lib/i18n/useT";
 import {
   computeRoomState,
@@ -262,7 +262,7 @@ export default function RoomScreen() {
         return;
       }
 
-      const page = await getRoomEventsPage({
+      const page = await fetchRoomEventsPage({
         activityId,
         limit: CHAT_PAGE_SIZE,
         cursor: null,
@@ -281,7 +281,7 @@ export default function RoomScreen() {
     if (!chatHasMore || loadingOlder || !chatCursor) return;
     setLoadingOlder(true);
     try {
-      const page = await getRoomEventsPage({
+      const page = await fetchRoomEventsPage({
         activityId,
         limit: CHAT_PAGE_SIZE,
         cursor: chatCursor,
@@ -368,7 +368,7 @@ export default function RoomScreen() {
       onEventInsert: (payload) => {
         const id = (payload.new as { id?: string })?.id;
         if (!id) return;
-        getRoomEventById(id)
+        fetchRoomEventById(id)
           .then((evt) => {
             if (!evt) return;
             if (myMembershipState === "left" && leftAt) {
@@ -613,7 +613,7 @@ export default function RoomScreen() {
   // :zap: CHANGE 1: Build "sectioned list items" (Today/Yesterday/Date)
   const chatItems: ChatItem[] = useMemo(() => {
     const items: ChatItem[] = [];
-    let lastLabel: string | null = null;
+    let currentLabel: string | null = null;
 
     const ordered = [...events].sort((a, b) => {
       const ta = new Date(a.created_at).getTime();
@@ -624,11 +624,24 @@ export default function RoomScreen() {
 
     for (const e of ordered) {
       const label = sectionLabelForIso(t, i18n.language, e.created_at);
-      if (label !== lastLabel) {
-        items.push({ kind: "section", id: `section:${label}`, label });
-        lastLabel = label;
+      if (label !== currentLabel && currentLabel) {
+        // For inverted list: place section AFTER its group's messages
+        items.push({
+          kind: "section",
+          id: `section:${currentLabel}`,
+          label: currentLabel,
+        });
       }
+      currentLabel = label;
       items.push({ kind: "event", id: e.id, e });
+    }
+
+    if (currentLabel) {
+      items.push({
+        kind: "section",
+        id: `section:${currentLabel}`,
+        label: currentLabel,
+      });
     }
 
     return items;

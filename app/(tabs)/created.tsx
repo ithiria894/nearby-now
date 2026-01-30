@@ -8,11 +8,11 @@ import ActivityCard, {
 } from "../../components/ActivityCard";
 import { requireUserId } from "../../lib/domain/auth";
 import {
-  fetchCreatedActivitiesPage,
-  fetchMembershipRowsForUser,
-  isActiveActivity,
-  type ActivityCursor,
-} from "../../lib/domain/activities";
+  getCreatedPage,
+  getMembershipForUser,
+  type ActivitiesPage,
+} from "../../lib/repo/activities_repo";
+import { isActiveActivity } from "../../lib/domain/activities";
 import { useT } from "../../lib/i18n/useT";
 import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
 
@@ -31,14 +31,14 @@ export default function CreatedScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [cursor, setCursor] = useState<ActivityCursor | null>(null);
+  const [cursor, setCursor] = useState<ActivitiesPage["cursor"]>(null);
   const [hasMore, setHasMore] = useState(true);
 
   const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
     setUserId(uid);
 
-    const memberships = await fetchMembershipRowsForUser(uid);
+    const memberships = await getMembershipForUser(uid);
     setJoinedSet(
       new Set(
         memberships
@@ -47,29 +47,32 @@ export default function CreatedScreen() {
       )
     );
 
-    const rows = await fetchCreatedActivitiesPage(uid, null, PAGE_SIZE);
-    setItems(rows);
-    const last = rows[rows.length - 1];
-    const nextCursor =
-      rows.length > 0 && last?.created_at
-        ? { created_at: last.created_at, id: last.id }
-        : null;
-    setCursor(nextCursor);
-    setHasMore(rows.length === PAGE_SIZE);
+    const page = await getCreatedPage({
+      userId: uid,
+      cursor: null,
+      limit: PAGE_SIZE,
+    });
+    setItems(page.rows);
+    setCursor(page.cursor);
+    setHasMore(page.hasMore);
   }, []);
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore || !userId) return;
     setLoadingMore(true);
     try {
-      const rows = await fetchCreatedActivitiesPage(userId, cursor, PAGE_SIZE);
-      if (rows.length === 0) {
+      const page = await getCreatedPage({
+        userId,
+        cursor,
+        limit: PAGE_SIZE,
+      });
+      if (page.rows.length === 0) {
         setHasMore(false);
         return;
       }
       setItems((prev) => {
         const map = new Map(prev.map((x) => [x.id, x]));
-        for (const a of rows) map.set(a.id, a);
+        for (const a of page.rows) map.set(a.id, a);
         const arr = Array.from(map.values());
         arr.sort((a, b) => {
           const ta = new Date(a.created_at ?? 0).getTime();
@@ -79,13 +82,8 @@ export default function CreatedScreen() {
         });
         return arr;
       });
-      const last = rows[rows.length - 1];
-      const nextCursor =
-        rows.length > 0 && last?.created_at
-          ? { created_at: last.created_at, id: last.id }
-          : null;
-      setCursor(nextCursor);
-      setHasMore(rows.length === PAGE_SIZE);
+      setCursor(page.cursor);
+      setHasMore(page.hasMore);
     } catch (e: any) {
       console.error(e);
       Alert.alert(
@@ -143,11 +141,9 @@ export default function CreatedScreen() {
   const { activeItems, inactiveItems } = useMemo(() => {
     const active: ActivityCardActivity[] = [];
     const inactive: ActivityCardActivity[] = [];
-
     for (const a of items) {
       (isActiveActivity(a) ? active : inactive).push(a);
     }
-
     return { activeItems: active, inactiveItems: inactive };
   }, [items]);
 

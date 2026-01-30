@@ -9,12 +9,12 @@ import ActivityCard, {
 import BrowseMap from "../../components/BrowseMap";
 import { requireUserId } from "../../lib/domain/auth";
 import {
-  fetchOpenActivitiesPage,
-  fetchMembershipRowsForUser,
-  joinWithSystemMessage,
-  isJoinableActivity,
-  type ActivityCursor,
-} from "../../lib/domain/activities";
+  getBrowsePage,
+  getMembershipForUser,
+  joinActivity,
+  type ActivitiesPage,
+} from "../../lib/repo/activities_repo";
+import { isJoinableActivity } from "../../lib/domain/activities";
 import { subscribeToBrowseActivities } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
 import {
@@ -39,7 +39,7 @@ export default function BrowseScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [cursor, setCursor] = useState<ActivityCursor | null>(null);
+  const [cursor, setCursor] = useState<ActivitiesPage["cursor"]>(null);
   const [hasMore, setHasMore] = useState(true);
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
@@ -48,38 +48,39 @@ export default function BrowseScreen() {
     const uid = await requireUserId();
     setUserId(uid);
 
-    const memberships = await fetchMembershipRowsForUser(uid);
+    const memberships = await getMembershipForUser(uid);
     const joined = new Set(
       memberships.filter((m) => m.state === "joined").map((m) => m.activity_id)
     );
     setJoinedSet(joined);
 
-    const rows = await fetchOpenActivitiesPage(null, PAGE_SIZE);
-    const joinable = rows.filter((a) => isJoinableActivity(a, joined));
+    const page = await getBrowsePage({
+      cursor: null,
+      limit: PAGE_SIZE,
+      joinedSet: joined,
+    });
 
-    setItems(joinable);
-    const last = rows[rows.length - 1];
-    const nextCursor =
-      rows.length > 0 && last?.created_at
-        ? { created_at: last.created_at, id: last.id }
-        : null;
-    setCursor(nextCursor);
-    setHasMore(rows.length === PAGE_SIZE);
+    setItems(page.rows);
+    setCursor(page.cursor);
+    setHasMore(page.hasMore);
   }, []);
 
   const loadMore = useCallback(async () => {
     if (loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const rows = await fetchOpenActivitiesPage(cursor, PAGE_SIZE);
-      if (rows.length === 0) {
+      const page = await getBrowsePage({
+        cursor,
+        limit: PAGE_SIZE,
+        joinedSet,
+      });
+      if (page.rows.length === 0) {
         setHasMore(false);
         return;
       }
-      const joinable = rows.filter((a) => isJoinableActivity(a, joinedSet));
       setItems((prev) => {
         const map = new Map(prev.map((x) => [x.id, x]));
-        for (const a of joinable) map.set(a.id, a);
+        for (const a of page.rows) map.set(a.id, a);
         const arr = Array.from(map.values());
         arr.sort((a, b) => {
           const ta = new Date(a.created_at ?? 0).getTime();
@@ -89,13 +90,8 @@ export default function BrowseScreen() {
         });
         return arr;
       });
-      const last = rows[rows.length - 1];
-      const nextCursor =
-        rows.length > 0 && last?.created_at
-          ? { created_at: last.created_at, id: last.id }
-          : null;
-      setCursor(nextCursor);
-      setHasMore(rows.length === PAGE_SIZE);
+      setCursor(page.cursor);
+      setHasMore(page.hasMore);
     } catch (e: any) {
       console.error(e);
       Alert.alert(t("browse.refreshErrorTitle"), e?.message ?? "Unknown error");
@@ -203,7 +199,7 @@ export default function BrowseScreen() {
     const confirmJoin = async () => {
       setJoiningId(a.id);
       try {
-        await joinWithSystemMessage(a.id, userId);
+        await joinActivity(a.id, userId);
         setJoinedSet((prev) => new Set([...prev, a.id]));
         setItems((prev) => prev.filter((x) => x.id !== a.id));
         router.push(`/room/${a.id}`);
