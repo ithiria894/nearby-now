@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 import ActivityCard, {
   type ActivityCardActivity,
@@ -12,7 +13,7 @@ import {
   isActiveActivity,
 } from "../../lib/domain/activities";
 import { useT } from "../../lib/i18n/useT";
-import { Screen, SegmentedTabs } from "../../src/ui/common";
+import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
 
 // :zap: CHANGE 1: Created = activities.creator_id = me
 export default function CreatedScreen() {
@@ -57,6 +58,19 @@ export default function CreatedScreen() {
       }
     })();
   }, [load, router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (loading) return;
+      load().catch((e: any) => {
+        console.error(e);
+        Alert.alert(
+          t("created.refreshErrorTitle"),
+          e?.message ?? "Unknown error"
+        );
+      });
+    }, [load, loading, t])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -137,6 +151,11 @@ export default function CreatedScreen() {
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      initialNumToRender={6}
+      windowSize={5}
+      maxToRenderPerBatch={8}
+      updateCellsBatchingPeriod={50}
+      removeClippedSubviews
       renderItem={({ item }) => (
         <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
           <ActivityCard
@@ -150,8 +169,12 @@ export default function CreatedScreen() {
         </View>
       )}
       ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
           <Text style={{ opacity: 0.8 }}>{t("created.empty")}</Text>
+          <PrimaryButton
+            label={t("created.empty_cta")}
+            onPress={() => router.push("/create")}
+          />
         </View>
       }
     />

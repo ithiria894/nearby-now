@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 import ActivityCard, {
   type ActivityCardActivity,
@@ -20,12 +21,14 @@ import {
   formatGenderPref,
   formatLocalDateTime,
 } from "../../lib/i18n/i18n_format";
-import { Screen, SegmentedTabs } from "../../src/ui/common";
+import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
 
 // :zap: CHANGE 1: Browse = joinable open + not expired + not joined
 export default function BrowseScreen() {
   const router = useRouter();
   const { t } = useT();
+  const theme = useTheme();
 
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
@@ -64,6 +67,19 @@ export default function BrowseScreen() {
       }
     })();
   }, [load, router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (loading) return;
+      load().catch((e: any) => {
+        console.error(e);
+        Alert.alert(
+          t("browse.refreshErrorTitle"),
+          e?.message ?? "Unknown error"
+        );
+      });
+    }, [load, loading, t])
+  );
 
   // :zap: CHANGE 9: Realtime updates for Browse list.
   useEffect(() => {
@@ -145,6 +161,7 @@ export default function BrowseScreen() {
       try {
         await upsertJoin(a.id, userId);
         setJoinedSet((prev) => new Set([...prev, a.id]));
+        setItems((prev) => prev.filter((x) => x.id !== a.id));
         router.push(`/room/${a.id}`);
       } catch (e: any) {
         console.error(e);
@@ -208,14 +225,14 @@ export default function BrowseScreen() {
 
   if (viewMode === "map") {
     return (
-      <Screen>
+      <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
         {header}
         <BrowseMap
           items={items}
           onPressCard={onPressCard}
           onRequestList={() => setViewMode("list")}
         />
-      </Screen>
+      </View>
     );
   }
 
@@ -227,6 +244,11 @@ export default function BrowseScreen() {
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      initialNumToRender={6}
+      windowSize={5}
+      maxToRenderPerBatch={8}
+      updateCellsBatchingPeriod={50}
+      removeClippedSubviews
       renderItem={({ item }) => (
         <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
           <ActivityCard
@@ -244,8 +266,12 @@ export default function BrowseScreen() {
         </View>
       )}
       ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
           <Text style={{ opacity: 0.8 }}>{t("browse.empty")}</Text>
+          <PrimaryButton
+            label={t("browse.empty_cta")}
+            onPress={() => router.push("/create")}
+          />
         </View>
       }
     />
