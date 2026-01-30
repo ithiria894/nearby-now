@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -17,6 +17,7 @@ import { isActiveActivity } from "../../lib/domain/activities";
 import { subscribeToJoinedActivityChanges } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
 import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
+import { handleError } from "../../lib/ui/handleError";
 
 export default function JoinedScreen() {
   const router = useRouter();
@@ -96,8 +97,7 @@ export default function JoinedScreen() {
       setCursor(page.cursor);
       setHasMore(page.hasMore);
     } catch (e: any) {
-      console.error(e);
-      Alert.alert(t("joined.refreshErrorTitle"), e?.message ?? "Unknown error");
+      handleError(t("joined.refreshErrorTitle"), e);
     } finally {
       setLoadingMore(false);
     }
@@ -108,8 +108,7 @@ export default function JoinedScreen() {
       try {
         await loadInitial();
       } catch (e: any) {
-        console.error(e);
-        Alert.alert(t("joined.loadErrorTitle"), e?.message ?? "Unknown error");
+        handleError(t("joined.loadErrorTitle"), e);
         router.replace("/login");
       } finally {
         setLoading(false);
@@ -121,11 +120,7 @@ export default function JoinedScreen() {
     useCallback(() => {
       if (loading) return;
       loadInitial().catch((e: any) => {
-        console.error(e);
-        Alert.alert(
-          t("joined.refreshErrorTitle"),
-          e?.message ?? "Unknown error"
-        );
+        handleError(t("joined.refreshErrorTitle"), e);
       });
     }, [loadInitial, loading, t])
   );
@@ -135,8 +130,7 @@ export default function JoinedScreen() {
     try {
       await loadInitial();
     } catch (e: any) {
-      console.error(e);
-      Alert.alert(t("joined.refreshErrorTitle"), e?.message ?? "Unknown error");
+      handleError(t("joined.refreshErrorTitle"), e);
     } finally {
       setRefreshing(false);
     }

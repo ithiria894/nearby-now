@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -24,6 +24,7 @@ import {
 } from "../../lib/i18n/i18n_format";
 import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
 import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { handleError } from "../../lib/ui/handleError";
 
 // :zap: CHANGE 1: Browse = joinable open + not expired + not joined
 export default function BrowseScreen() {
@@ -93,8 +94,7 @@ export default function BrowseScreen() {
       setCursor(page.cursor);
       setHasMore(page.hasMore);
     } catch (e: any) {
-      console.error(e);
-      Alert.alert(t("browse.refreshErrorTitle"), e?.message ?? "Unknown error");
+      handleError(t("browse.refreshErrorTitle"), e);
     } finally {
       setLoadingMore(false);
     }
@@ -105,8 +105,7 @@ export default function BrowseScreen() {
       try {
         await loadInitial();
       } catch (e: any) {
-        console.error(e);
-        Alert.alert(t("browse.loadErrorTitle"), e?.message ?? "Unknown error");
+        handleError(t("browse.loadErrorTitle"), e);
         router.replace("/login");
       } finally {
         setLoading(false);
@@ -118,11 +117,7 @@ export default function BrowseScreen() {
     useCallback(() => {
       if (loading) return;
       loadInitial().catch((e: any) => {
-        console.error(e);
-        Alert.alert(
-          t("browse.refreshErrorTitle"),
-          e?.message ?? "Unknown error"
-        );
+        handleError(t("browse.refreshErrorTitle"), e);
       });
     }, [loadInitial, loading, t])
   );
@@ -174,8 +169,7 @@ export default function BrowseScreen() {
     try {
       await loadInitial();
     } catch (e: any) {
-      console.error(e);
-      Alert.alert(t("browse.refreshErrorTitle"), e?.message ?? "Unknown error");
+      handleError(t("browse.refreshErrorTitle"), e);
     } finally {
       setRefreshing(false);
     }
@@ -204,8 +198,7 @@ export default function BrowseScreen() {
         setItems((prev) => prev.filter((x) => x.id !== a.id));
         router.push(`/room/${a.id}`);
       } catch (e: any) {
-        console.error(e);
-        Alert.alert(t("browse.joinErrorTitle"), e?.message ?? "Unknown error");
+        handleError(t("browse.joinErrorTitle"), e);
       } finally {
         setJoiningId(null);
       }
