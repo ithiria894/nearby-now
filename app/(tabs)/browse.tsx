@@ -13,6 +13,7 @@ import {
   fetchMembershipRowsForUser,
   joinWithSystemMessage,
   isJoinableActivity,
+  type ActivityCursor,
 } from "../../lib/domain/activities";
 import { supabase } from "../../lib/api/supabase";
 import { useT } from "../../lib/i18n/useT";
@@ -38,7 +39,7 @@ export default function BrowseScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [cursor, setCursor] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<ActivityCursor | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
@@ -57,8 +58,11 @@ export default function BrowseScreen() {
     const joinable = rows.filter((a) => isJoinableActivity(a, joined));
 
     setItems(joinable);
+    const last = rows[rows.length - 1];
     const nextCursor =
-      rows.length > 0 ? (rows[rows.length - 1].created_at as string) : null;
+      rows.length > 0 && last?.created_at
+        ? { created_at: last.created_at, id: last.id }
+        : null;
     setCursor(nextCursor);
     setHasMore(rows.length === PAGE_SIZE);
   }, []);
@@ -76,10 +80,20 @@ export default function BrowseScreen() {
       setItems((prev) => {
         const map = new Map(prev.map((x) => [x.id, x]));
         for (const a of joinable) map.set(a.id, a);
-        return Array.from(map.values());
+        const arr = Array.from(map.values());
+        arr.sort((a, b) => {
+          const ta = new Date(a.created_at ?? 0).getTime();
+          const tb = new Date(b.created_at ?? 0).getTime();
+          if (tb !== ta) return tb - ta;
+          return String(b.id).localeCompare(String(a.id));
+        });
+        return arr;
       });
+      const last = rows[rows.length - 1];
       const nextCursor =
-        rows.length > 0 ? (rows[rows.length - 1].created_at as string) : null;
+        rows.length > 0 && last?.created_at
+          ? { created_at: last.created_at, id: last.id }
+          : null;
       setCursor(nextCursor);
       setHasMore(rows.length === PAGE_SIZE);
     } catch (e: any) {
