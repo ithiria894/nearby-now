@@ -71,7 +71,15 @@ export default function RootLayout() {
           name="edit/[id]"
           options={{ title: t("rootNav.editInvite") }}
         />
-        <Stack.Screen name="room/[id]" options={{ title: t("rootNav.room") }} />
+        <Stack.Screen
+          name="room/[id]"
+          options={{
+            title: t("rootNav.room"),
+            headerBackTitleVisible: false,
+            headerBackTitle: "",
+            headerBackButtonDisplayMode: "minimal",
+          }}
+        />
       </Stack>
     </ThemeProvider>
   );

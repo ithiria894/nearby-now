@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 import ActivityCard, {
   type ActivityCardActivity,
@@ -14,7 +15,7 @@ import {
 } from "../../lib/domain/activities";
 import { supabase } from "../../lib/api/supabase";
 import { useT } from "../../lib/i18n/useT";
-import { Screen, SegmentedTabs } from "../../src/ui/common";
+import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
 
 export default function JoinedScreen() {
   const router = useRouter();
@@ -29,6 +30,8 @@ export default function JoinedScreen() {
   >(new Map());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     const uid = await requireUserId();
@@ -64,6 +67,19 @@ export default function JoinedScreen() {
     })();
   }, [load, router]);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (loading) return;
+      load().catch((e: any) => {
+        console.error(e);
+        Alert.alert(
+          t("joined.refreshErrorTitle"),
+          e?.message ?? "Unknown error"
+        );
+      });
+    }, [load, loading, t])
+  );
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -74,6 +90,14 @@ export default function JoinedScreen() {
     } finally {
       setRefreshing(false);
     }
+  }, [load]);
+
+  const scheduleReload = useCallback(() => {
+    if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = setTimeout(() => {
+      load();
+      reloadTimerRef.current = null;
+    }, 250);
   }, [load]);
 
   // :zap: CHANGE 3: Realtime updates (membership + activities).
@@ -90,19 +114,20 @@ export default function JoinedScreen() {
           table: "activity_members",
           filter: `user_id=eq.${userId}`,
         },
-        () => load()
+        () => scheduleReload()
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "activities" },
-        () => load()
+        () => scheduleReload()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
     };
-  }, [userId, load]);
+  }, [userId, scheduleReload]);
 
   // :zap: CHANGE 2: Split joined into Active / Inactive / Left lists.
   const { activeJoined, inactiveJoined, leftRooms } = useMemo(() => {
@@ -185,6 +210,11 @@ export default function JoinedScreen() {
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      initialNumToRender={6}
+      windowSize={5}
+      maxToRenderPerBatch={8}
+      updateCellsBatchingPeriod={50}
+      removeClippedSubviews
       renderItem={({ item: a }) => {
         const membershipState: MembershipState =
           tab === "left" ? "left" : "joined";
@@ -207,12 +237,18 @@ export default function JoinedScreen() {
         );
       }}
       ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
           <Text style={{ opacity: 0.8 }}>
             {tab === "active" && t("joined.empty_active")}
             {tab === "inactive" && t("joined.empty_inactive")}
             {tab === "left" && t("joined.empty_left")}
           </Text>
+          {tab === "active" ? (
+            <PrimaryButton
+              label={t("joined.empty_active_cta")}
+              onPress={() => router.push("/(tabs)/browse")}
+            />
+          ) : null}
         </View>
       }
     />

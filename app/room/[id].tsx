@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -189,10 +189,13 @@ export default function RoomScreen() {
   const [myMembershipState, setMyMembershipState] = useState<
     "none" | "joined" | "left"
   >("none");
+  const [myDisplayName, setMyDisplayName] = useState<string | null>(null);
 
   // long-press menu state
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTarget, setMenuTarget] = useState<RoomEventRow | null>(null);
+
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const listRef = useRef<FlatList<ChatItem> | null>(null);
   const inputRef = useRef<TextInput | null>(null);
@@ -205,73 +208,76 @@ export default function RoomScreen() {
 
   const keyboardVerticalOffset = 100; // you said you already set this
 
-  async function loadAll(currentUserId?: string | null) {
-    const { data: a, error: aErr } = await supabase
-      .from("activities")
-      .select(
-        "id, title_text, place_text, place_name, place_address, expires_at, gender_pref, capacity, status, creator_id"
-      )
-      .eq("id", activityId)
-      .single();
+  const loadAll = useCallback(
+    async (currentUserId?: string | null) => {
+      const { data: a, error: aErr } = await supabase
+        .from("activities")
+        .select(
+          "id, title_text, place_text, place_name, place_address, expires_at, gender_pref, capacity, status, creator_id"
+        )
+        .eq("id", activityId)
+        .single();
 
-    if (aErr) console.error(aErr);
-    setActivity((a ?? null) as any);
+      if (aErr) console.error(aErr);
+      setActivity((a ?? null) as any);
 
-    const { data: m, error: mErr } = await supabase
-      .from("activity_members")
-      .select("*")
-      .eq("activity_id", activityId)
-      .eq("state", "joined")
-      .order("joined_at", { ascending: true });
-
-    if (mErr) console.error(mErr);
-    setMembers((m ?? []) as any);
-
-    const uid = currentUserId ?? userId;
-
-    let myState: "none" | "joined" | "left" = "none";
-    let leftAt: Date | null = null;
-    if (uid) {
-      const { data: me, error: meErr } = await supabase
+      const { data: m, error: mErr } = await supabase
         .from("activity_members")
-        .select("state,left_at")
+        .select("*")
         .eq("activity_id", activityId)
-        .eq("user_id", uid)
-        .maybeSingle();
+        .eq("state", "joined")
+        .order("joined_at", { ascending: true });
 
-      if (meErr) console.error(meErr);
-      const st = (me as any)?.state;
-      myState = st === "left" ? "left" : st === "joined" ? "joined" : "none";
-      leftAt = (me as any)?.left_at ? new Date((me as any).left_at) : null;
-    }
+      if (mErr) console.error(mErr);
+      setMembers((m ?? []) as any);
 
-    setMyMembershipState(myState);
+      const uid = currentUserId ?? userId;
 
-    const canReadEvents = myState === "joined" || myState === "left";
-    if (!canReadEvents) {
-      setEvents([]);
-      return;
-    }
+      let myState: "none" | "joined" | "left" = "none";
+      let leftAt: Date | null = null;
+      if (uid) {
+        const { data: me, error: meErr } = await supabase
+          .from("activity_members")
+          .select("state,left_at")
+          .eq("activity_id", activityId)
+          .eq("user_id", uid)
+          .maybeSingle();
 
-    let query = supabase
-      .from("room_events")
-      .select(
-        "id, activity_id, user_id, type, content, created_at, profiles(display_name)"
-      )
-      .eq("activity_id", activityId)
-      .order("created_at", { ascending: true })
-      .limit(200);
+        if (meErr) console.error(meErr);
+        const st = (me as any)?.state;
+        myState = st === "left" ? "left" : st === "joined" ? "joined" : "none";
+        leftAt = (me as any)?.left_at ? new Date((me as any).left_at) : null;
+      }
 
-    if (myState === "left" && leftAt) {
-      query = query.lte("created_at", leftAt.toISOString());
-    }
+      setMyMembershipState(myState);
 
-    const { data: e, error: eErr } = await query;
-    if (eErr) console.error(eErr);
-    setEvents((e ?? []) as any);
+      const canReadEvents = myState === "joined" || myState === "left";
+      if (!canReadEvents) {
+        setEvents([]);
+        return;
+      }
 
-    if ((e ?? []).length > 0) scrollToBottom(false);
-  }
+      let query = supabase
+        .from("room_events")
+        .select(
+          "id, activity_id, user_id, type, content, created_at, profiles(display_name)"
+        )
+        .eq("activity_id", activityId)
+        .order("created_at", { ascending: true })
+        .limit(200);
+
+      if (myState === "left" && leftAt) {
+        query = query.lte("created_at", leftAt.toISOString());
+      }
+
+      const { data: e, error: eErr } = await query;
+      if (eErr) console.error(eErr);
+      setEvents((e ?? []) as any);
+
+      if ((e ?? []).length > 0) scrollToBottom(false);
+    },
+    [activityId, userId]
+  );
 
   useEffect(() => {
     (async () => {
@@ -285,7 +291,31 @@ export default function RoomScreen() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId]);
+  }, [activityId, loadAll]);
+
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .single();
+      if (error) {
+        console.error(error);
+        return;
+      }
+      setMyDisplayName((data?.display_name ?? "").trim() || null);
+    })();
+  }, [userId]);
+
+  const scheduleReload = useCallback(() => {
+    if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = setTimeout(() => {
+      loadAll();
+      reloadTimerRef.current = null;
+    }, 200);
+  }, [loadAll]);
 
   useEffect(() => {
     if (myMembershipState !== "joined") return;
@@ -300,7 +330,7 @@ export default function RoomScreen() {
           table: "activity_members",
           filter: `activity_id=eq.${activityId}`,
         },
-        () => loadAll()
+        () => scheduleReload()
       )
       .on(
         "postgres_changes",
@@ -310,7 +340,7 @@ export default function RoomScreen() {
           table: "room_events",
           filter: `activity_id=eq.${activityId}`,
         },
-        () => loadAll()
+        () => scheduleReload()
       )
       .on(
         "postgres_changes",
@@ -320,15 +350,15 @@ export default function RoomScreen() {
           table: "activities",
           filter: `id=eq.${activityId}`,
         },
-        () => loadAll()
+        () => scheduleReload()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId, myMembershipState]);
+  }, [activityId, myMembershipState, scheduleReload]);
 
   useEffect(() => {
     const subShow = Keyboard.addListener("keyboardDidShow", () => {
@@ -665,7 +695,9 @@ export default function RoomScreen() {
     }
 
     const isMine = !!userId && e.user_id === userId;
-    const name = getEventDisplayName(t, e);
+    const name = isMine
+      ? myDisplayName?.trim() || t("room.you")
+      : getEventDisplayName(t, e);
     const content = renderEventContent(t, i18n.language, e);
 
     // :zap: CHANGE 4: IG-ish layout: name closer + smaller gap, time near bubble
@@ -946,6 +978,10 @@ export default function RoomScreen() {
               onContentSizeChange={() => scrollToBottom(false)}
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
+              initialNumToRender={12}
+              windowSize={7}
+              maxToRenderPerBatch={12}
+              updateCellsBatchingPeriod={40}
             />
           )}
         </View>
