@@ -11,8 +11,8 @@ import { requireUserId } from "../../lib/domain/auth";
 import {
   fetchOpenActivities,
   fetchMembershipRowsForUser,
+  joinWithSystemMessage,
   isJoinableActivity,
-  upsertJoin,
 } from "../../lib/domain/activities";
 import { supabase } from "../../lib/api/supabase";
 import { useT } from "../../lib/i18n/useT";
@@ -159,7 +159,7 @@ export default function BrowseScreen() {
     const confirmJoin = async () => {
       setJoiningId(a.id);
       try {
-        await upsertJoin(a.id, userId);
+        await joinWithSystemMessage(a.id, userId);
         setJoinedSet((prev) => new Set([...prev, a.id]));
         setItems((prev) => prev.filter((x) => x.id !== a.id));
         router.push(`/room/${a.id}`);

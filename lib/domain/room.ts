@@ -17,11 +17,13 @@ export type InviteChange =
 
 export type SystemEventKey =
   | "room.system.left"
+  | "room.system.joined"
   | "room.system.invite_updated"
   | "room.system.invite_closed";
 
 export type SystemEventContent =
   | { k: "room.system.left"; p?: Record<string, unknown> }
+  | { k: "room.system.joined"; p?: Record<string, unknown> }
   | { k: "room.system.invite_updated"; p?: { changes?: InviteChange[] } }
   | { k: "room.system.invite_closed"; p?: Record<string, unknown> }
   | { k: string; p?: Record<string, unknown> };
@@ -155,6 +157,11 @@ export function renderEventContent(
   if (e.type === "system") {
     const parsed = safeParseSystemContent(e.content);
     if (parsed?.k) {
+      if (parsed.k === "room.system.joined") {
+        const name = getEventDisplayName(t, e);
+        return t(parsed.k, { ...(parsed.p ?? {}), name });
+      }
+
       if (parsed.k === "room.system.left") {
         const name = getEventDisplayName(t, e);
         return t(parsed.k, { ...(parsed.p ?? {}), name });

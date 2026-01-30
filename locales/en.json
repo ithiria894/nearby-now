@@ -196,6 +196,7 @@
       "reportPlaceholderBody": "Not implemented yet."
     },
     "system": {
+      "joined": "{{name}} joined the invite",
       "left": "{{name}} left the invite",
       "invite_updated": "Updated invite — {{changes}}",
       "invite_closed": "Invite closed by creator"
