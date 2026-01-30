@@ -58,6 +58,16 @@ type RoomEventRow = {
   profiles?: { display_name: string | null } | null;
 };
 
+type RoomEventRpcRow = {
+  id: string;
+  activity_id: string;
+  user_id: string | null;
+  type: RoomEventType;
+  content: string;
+  created_at: string;
+  display_name: string | null;
+};
+
 type ChatItem =
   | { kind: "section"; id: string; label: string }
   | { kind: "event"; id: string; e: RoomEventRow };
@@ -192,7 +202,10 @@ export default function RoomScreen() {
   >("none");
   const [myDisplayName, setMyDisplayName] = useState<string | null>(null);
   const [leftAt, setLeftAt] = useState<Date | null>(null);
-  const [chatCursor, setChatCursor] = useState<string | null>(null);
+  const [chatCursor, setChatCursor] = useState<{
+    created_at: string;
+    id: string;
+  } | null>(null);
   const [chatHasMore, setChatHasMore] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
 
@@ -213,6 +226,18 @@ export default function RoomScreen() {
 
   const keyboardVerticalOffset = 100; // you said you already set this
   const CHAT_PAGE_SIZE = 50;
+
+  function mapRpcRow(row: RoomEventRpcRow): RoomEventRow {
+    return {
+      id: row.id,
+      activity_id: row.activity_id,
+      user_id: row.user_id,
+      type: row.type,
+      content: row.content,
+      created_at: row.created_at,
+      profiles: row.display_name ? { display_name: row.display_name } : null,
+    };
+  }
 
   const loadAll = useCallback(
     async (currentUserId?: string | null) => {
@@ -266,25 +291,25 @@ export default function RoomScreen() {
         return;
       }
 
-      let query = supabase
-        .from("room_events")
-        .select(
-          "id, activity_id, user_id, type, content, created_at, profiles(display_name)"
-        )
-        .eq("activity_id", activityId)
-        .order("created_at", { ascending: false })
-        .limit(CHAT_PAGE_SIZE);
-
-      if (myState === "left" && leftAtValue) {
-        query = query.lte("created_at", leftAtValue.toISOString());
-      }
-
-      const { data: e, error: eErr } = await query;
+      const { data: e, error: eErr } = await supabase.rpc(
+        "get_room_events_page",
+        {
+          p_activity_id: activityId,
+          p_limit: CHAT_PAGE_SIZE,
+          p_cursor_created_at: null,
+          p_cursor_id: null,
+          p_left_at: leftAtValue ? leftAtValue.toISOString() : null,
+        }
+      );
       if (eErr) console.error(eErr);
-      const rows = ((e ?? []) as any[]).slice().reverse();
-      setEvents(rows as any);
+      const mapped = ((e ?? []) as RoomEventRpcRow[]).map(mapRpcRow);
+      const rows = mapped.slice().reverse();
+      setEvents(rows);
+      const first = rows[0];
       const nextCursor =
-        rows.length > 0 ? (rows[0].created_at as string) : null;
+        rows.length > 0 && first?.created_at
+          ? { created_at: first.created_at, id: first.id }
+          : null;
       setChatCursor(nextCursor);
       setChatHasMore((e ?? []).length === CHAT_PAGE_SIZE);
 
@@ -297,23 +322,16 @@ export default function RoomScreen() {
     if (!chatHasMore || loadingOlder || !chatCursor) return;
     setLoadingOlder(true);
     try {
-      let query = supabase
-        .from("room_events")
-        .select(
-          "id, activity_id, user_id, type, content, created_at, profiles(display_name)"
-        )
-        .eq("activity_id", activityId)
-        .lt("created_at", chatCursor)
-        .order("created_at", { ascending: false })
-        .limit(CHAT_PAGE_SIZE);
-
-      if (myMembershipState === "left" && leftAt) {
-        query = query.lte("created_at", leftAt.toISOString());
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await supabase.rpc("get_room_events_page", {
+        p_activity_id: activityId,
+        p_limit: CHAT_PAGE_SIZE,
+        p_cursor_created_at: chatCursor.created_at,
+        p_cursor_id: chatCursor.id,
+        p_left_at: leftAt ? leftAt.toISOString() : null,
+      });
       if (error) throw error;
-      const rows = ((data ?? []) as any[]).slice().reverse();
+      const mapped = ((data ?? []) as RoomEventRpcRow[]).map(mapRpcRow);
+      const rows = mapped.slice().reverse();
       if (rows.length === 0) {
         setChatHasMore(false);
         return;
@@ -323,7 +341,7 @@ export default function RoomScreen() {
         const merged = rows.filter((r) => !existing.has(r.id)).concat(prev);
         return merged as any;
       });
-      setChatCursor(rows[0].created_at as string);
+      setChatCursor({ created_at: rows[0].created_at, id: rows[0].id });
       setChatHasMore((data ?? []).length === CHAT_PAGE_SIZE);
     } catch (e: any) {
       console.error(e);
@@ -338,6 +356,28 @@ export default function RoomScreen() {
     loadingOlder,
     myMembershipState,
   ]);
+
+  const fetchEventById = useCallback(async (eventId: string) => {
+    const { data, error } = await supabase.rpc("get_room_event_by_id", {
+      p_event_id: eventId,
+    });
+
+    if (error) {
+      console.error(error);
+      return null;
+    }
+    const rows = (data ?? []) as RoomEventRpcRow[];
+    if (!rows.length) return null;
+    return mapRpcRow(rows[0]);
+  }, []);
+
+  const appendEventIfMissing = useCallback((next: RoomEventRow) => {
+    setEvents((prev) => {
+      if (prev.some((e) => e.id === next.id)) return prev;
+      return [...prev, next];
+    });
+    scrollToBottom(true);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -400,7 +440,18 @@ export default function RoomScreen() {
           table: "room_events",
           filter: `activity_id=eq.${activityId}`,
         },
-        () => scheduleReload()
+        (payload) => {
+          const id = (payload.new as { id?: string })?.id;
+          if (!id) return;
+          fetchEventById(id).then((evt) => {
+            if (!evt) return;
+            if (myMembershipState === "left" && leftAt) {
+              const ts = new Date(evt.created_at).getTime();
+              if (ts > leftAt.getTime()) return;
+            }
+            appendEventIfMissing(evt);
+          });
+        }
       )
       .on(
         "postgres_changes",
@@ -418,7 +469,14 @@ export default function RoomScreen() {
       supabase.removeChannel(channel);
       if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
     };
-  }, [activityId, myMembershipState, scheduleReload]);
+  }, [
+    activityId,
+    appendEventIfMissing,
+    fetchEventById,
+    leftAt,
+    myMembershipState,
+    scheduleReload,
+  ]);
 
   useEffect(() => {
     const subShow = Keyboard.addListener("keyboardDidShow", () => {

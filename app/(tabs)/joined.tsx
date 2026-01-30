@@ -12,6 +12,7 @@ import {
   fetchMembershipRowsForUser,
   fetchActivitiesByIdsPage,
   isActiveActivity,
+  type ActivityCursor,
 } from "../../lib/domain/activities";
 import { supabase } from "../../lib/api/supabase";
 import { useT } from "../../lib/i18n/useT";
@@ -34,7 +35,7 @@ export default function JoinedScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [cursor, setCursor] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<ActivityCursor | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
   const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -58,9 +59,10 @@ export default function JoinedScreen() {
     // :zap: CHANGE 2: hard-exclude anything I created (even if role is wrong).
     const notMine = activities.filter((a) => a.creator_id !== uid);
     setItems(notMine);
+    const last = activities[activities.length - 1];
     const nextCursor =
-      activities.length > 0
-        ? (activities[activities.length - 1].created_at as string)
+      activities.length > 0 && last?.created_at
+        ? { created_at: last.created_at, id: last.id }
         : null;
     setCursor(nextCursor);
     setHasMore(activities.length === PAGE_SIZE);
@@ -84,11 +86,19 @@ export default function JoinedScreen() {
       setItems((prev) => {
         const map = new Map(prev.map((x) => [x.id, x]));
         for (const a of notMine) map.set(a.id, a);
-        return Array.from(map.values());
+        const arr = Array.from(map.values());
+        arr.sort((a, b) => {
+          const ta = new Date(a.created_at ?? 0).getTime();
+          const tb = new Date(b.created_at ?? 0).getTime();
+          if (tb !== ta) return tb - ta;
+          return String(b.id).localeCompare(String(a.id));
+        });
+        return arr;
       });
+      const last = activities[activities.length - 1];
       const nextCursor =
-        activities.length > 0
-          ? (activities[activities.length - 1].created_at as string)
+        activities.length > 0 && last?.created_at
+          ? { created_at: last.created_at, id: last.id }
           : null;
       setCursor(nextCursor);
       setHasMore(activities.length === PAGE_SIZE);

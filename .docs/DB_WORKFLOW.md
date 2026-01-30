@@ -1,3 +1,16 @@
+# QUICK:
+
+你而家應該做：
+Turn off cloudflare
+npx supabase start --debug
+本地先跑（唔清 data 就用）
+supabase migration up
+如果 OK，再推上 remote：
+npx supabase db push
+如果你唔介意清本地 data，可以用 npx supabase db reset，但你文件寫明「唔想清就用 migration up」。
+
+所以答案：先 supabase migration up，之後再 npx supabase db push。
+
 # Database & Migration Workflow
 
 This project uses Supabase migrations as the single source of truth.
@@ -56,6 +69,12 @@ Use migrations for:
 
 ## Step 3: Apply migrations locally
 
+把 migrations apply 到 local supabase (Not cleaning data use this one)
+
+supabase migration up
+
+To clean the db from scratch:
+
 npx supabase db reset
 
 This will:
@@ -63,12 +82,6 @@ This will:
 - Drop the local database
 - Replay all migrations from scratch
 - Verify migrations are reproducible
-
-Always do this before pushing.
-
-# 會把 migrations apply 到 local supabase
-
-supabase migration up
 
 ## （如果你係用 supabase db reset 會清 data；你而家唔想清就用 migration up。）
 
@@ -114,7 +127,46 @@ This applies new migrations to the remote Supabase database.
 
 ---
 
-5. Debugging checklist
+6. Dump remote data to local (for QA)
+
+---
+
+This will pull data from the remote Supabase project and load it into local.
+
+Prereqs:
+
+- You are logged in to Supabase CLI
+- You have the project ref
+
+Commands:
+
+1. Login + link (only once)
+   npx supabase login
+   npx supabase link --project-ref vvpkrbrirnfzdvyndmet
+
+2. Dump remote data (data-only)
+   npx supabase db dump --data-only -f /tmp/nearby_remote_data.sql
+
+3. (Optional) Reset local DB if you want a clean import
+   npx supabase db reset
+
+4. Import into local DB
+   psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f /tmp/nearby_remote_data.sql
+
+5. Quick sanity check
+   psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "select count(\*) from public.activities;"
+
+Tip:
+Use the helper script:
+scripts/dump_remote_to_local.sh
+
+---
+
+7. DB QA (quick checks)
+
+---
+
+See: .docs/QA_DB.md 5. Debugging checklist
 
 ---
 

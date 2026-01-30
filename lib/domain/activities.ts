@@ -11,8 +11,23 @@ export type MembershipRow = {
   joined_at: string | null;
 };
 
+export type ActivityCursor = { created_at: string; id: string };
+
 const ACTIVITY_SELECT =
   "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at";
+
+function applyCursor<T>(query: T, cursor?: ActivityCursor | null): T {
+  if (!cursor) return query;
+  return (query as any).or(
+    `created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`
+  );
+}
+
+function orderByCreatedId<T>(query: T, asc = false): T {
+  return (query as any)
+    .order("created_at", { ascending: asc })
+    .order("id", { ascending: asc });
+}
 
 export function isExpiredOrClosed(a: ActivityCardActivity): boolean {
   if (a.status && a.status !== "open") return true;
@@ -65,7 +80,7 @@ export async function fetchActivitiesByIds(
 
 export async function fetchActivitiesByIdsPage(
   activityIds: string[],
-  cursor?: string | null,
+  cursor?: ActivityCursor | null,
   limit = 50
 ): Promise<ActivityCardActivity[]> {
   if (activityIds.length === 0) return [];
@@ -73,13 +88,10 @@ export async function fetchActivitiesByIdsPage(
   let query = supabase
     .from("activities")
     .select(ACTIVITY_SELECT)
-    .in("id", activityIds)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .in("id", activityIds);
 
-  if (cursor) {
-    query = query.lt("created_at", cursor);
-  }
+  query = orderByCreatedId(query, false).limit(limit);
+  query = applyCursor(query, cursor);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -101,19 +113,16 @@ export async function fetchOpenActivities(
 }
 
 export async function fetchOpenActivitiesPage(
-  cursor?: string | null,
+  cursor?: ActivityCursor | null,
   limit = 50
 ): Promise<ActivityCardActivity[]> {
   let query = supabase
     .from("activities")
     .select(ACTIVITY_SELECT)
-    .eq("status", "open")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .eq("status", "open");
 
-  if (cursor) {
-    query = query.lt("created_at", cursor);
-  }
+  query = orderByCreatedId(query, false).limit(limit);
+  query = applyCursor(query, cursor);
 
   const { data, error } = await query;
   if (error) throw error;
@@ -137,19 +146,16 @@ export async function fetchCreatedActivities(
 
 export async function fetchCreatedActivitiesPage(
   userId: string,
-  cursor?: string | null,
+  cursor?: ActivityCursor | null,
   limit = 50
 ): Promise<ActivityCardActivity[]> {
   let query = supabase
     .from("activities")
     .select(ACTIVITY_SELECT)
-    .eq("creator_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .eq("creator_id", userId);
 
-  if (cursor) {
-    query = query.lt("created_at", cursor);
-  }
+  query = orderByCreatedId(query, false).limit(limit);
+  query = applyCursor(query, cursor);
 
   const { data, error } = await query;
   if (error) throw error;
