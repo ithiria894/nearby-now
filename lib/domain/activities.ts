@@ -116,3 +116,37 @@ export async function upsertJoin(activityId: string, userId: string) {
 
   if (error) throw error;
 }
+
+export async function joinWithSystemMessage(
+  activityId: string,
+  userId: string
+): Promise<void> {
+  const { data: existing, error: existingErr } = await supabase
+    .from("activity_members")
+    .select("state")
+    .eq("activity_id", activityId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (existingErr) throw existingErr;
+
+  const { error } = await supabase.from("activity_members").upsert({
+    activity_id: activityId,
+    user_id: userId,
+    role: "member",
+    state: "joined",
+  });
+
+  if (error) throw error;
+
+  if ((existing as any)?.state === "joined") return;
+
+  const { error: evtErr } = await supabase.from("room_events").insert({
+    activity_id: activityId,
+    user_id: userId,
+    type: "system",
+    content: JSON.stringify({ k: "room.system.joined" }),
+  });
+
+  if (evtErr) console.error("system join message insert failed:", evtErr);
+}

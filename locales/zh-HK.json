@@ -196,6 +196,7 @@
       "reportPlaceholderBody": "暫未支援。"
     },
     "system": {
+      "joined": "{{name}} 已加入邀請",
       "left": "{{name}} 已離開邀請",
       "invite_updated": "已更新邀請 — {{changes}}",
       "invite_closed": "邀請已由建立者關閉"

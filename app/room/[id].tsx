@@ -14,6 +14,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { supabase } from "../../lib/api/supabase";
 import { requireUserId } from "../../lib/domain/auth";
+import { joinWithSystemMessage } from "../../lib/domain/activities";
 import { useT } from "../../lib/i18n/useT";
 import {
   computeRoomState,
@@ -397,22 +398,16 @@ export default function RoomScreen() {
       {
         text: t("common.join"),
         onPress: async () => {
-          const { error } = await supabase.from("activity_members").upsert({
-            activity_id: activityId,
-            user_id: userId,
-            role: "member",
-            state: "joined",
-          });
-
-          if (error)
-            Alert.alert(
-              t("room.joinFailedTitle"),
-              friendlyDbError(t, error.message)
-            );
-          else {
+          try {
+            await joinWithSystemMessage(activityId, userId);
             await loadAll(userId);
             scrollToBottom(false);
             inputRef.current?.focus?.();
+          } catch (e: any) {
+            Alert.alert(
+              t("room.joinFailedTitle"),
+              friendlyDbError(t, e?.message ?? "Unknown error")
+            );
           }
         },
       },
