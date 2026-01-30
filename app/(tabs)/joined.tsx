@@ -14,7 +14,7 @@ import {
   isActiveActivity,
   type ActivityCursor,
 } from "../../lib/domain/activities";
-import { supabase } from "../../lib/api/supabase";
+import { subscribeToJoinedActivityChanges } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
 import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
 
@@ -161,27 +161,12 @@ export default function JoinedScreen() {
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase
-      .channel("joined-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "activity_members",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => scheduleReload()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "activities" },
-        () => scheduleReload()
-      )
-      .subscribe();
+    const unsubscribe = subscribeToJoinedActivityChanges(userId, () =>
+      scheduleReload()
+    );
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
       if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
     };
   }, [userId, scheduleReload]);
