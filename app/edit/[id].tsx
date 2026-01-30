@@ -3,6 +3,7 @@ import { Alert, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { supabase } from "../../lib/api/supabase";
 import { requireUserId } from "../../lib/domain/auth";
+import type { InviteChange } from "../../lib/domain/room";
 import InviteForm, {
   type InviteFormPayload,
 } from "../../components/InviteForm";
@@ -24,13 +25,6 @@ type ActivityRow = {
   capacity: number | null;
   expires_at: string | null;
 };
-
-type InviteChange =
-  | { kind: "title"; from: string | null; to: string | null }
-  | { kind: "place"; from: string | null; to: string | null }
-  | { kind: "gender"; from: string | null; to: string | null }
-  | { kind: "capacity"; from: number | null; to: number | null }
-  | { kind: "expires"; toMode: "never" | "datetime"; iso?: string | null };
 
 function formatPlace(
   t: (key: string) => string,

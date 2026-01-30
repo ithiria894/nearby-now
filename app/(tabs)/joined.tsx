@@ -10,17 +10,11 @@ import { requireUserId } from "../../lib/domain/auth";
 import {
   fetchMembershipRowsForUser,
   fetchActivitiesByIds,
+  isActiveActivity,
 } from "../../lib/domain/activities";
 import { supabase } from "../../lib/api/supabase";
 import { useT } from "../../lib/i18n/useT";
 import { Screen, SegmentedTabs } from "../../src/ui/common";
-
-function isActive(a: ActivityCardActivity): boolean {
-  if (a.status !== "open") return false;
-  if (a.expires_at && new Date(a.expires_at).getTime() <= Date.now())
-    return false;
-  return true;
-}
 
 export default function JoinedScreen() {
   const router = useRouter();
@@ -118,11 +112,11 @@ export default function JoinedScreen() {
     }));
 
     const active = withState
-      .filter((x) => x.state === "joined" && isActive(x.activity))
+      .filter((x) => x.state === "joined" && isActiveActivity(x.activity))
       .map((x) => x.activity);
 
     const inactive = withState
-      .filter((x) => x.state === "joined" && !isActive(x.activity))
+      .filter((x) => x.state === "joined" && !isActiveActivity(x.activity))
       .map((x) => x.activity);
 
     const left = withState

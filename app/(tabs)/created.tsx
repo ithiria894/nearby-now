@@ -6,20 +6,13 @@ import ActivityCard, {
   type ActivityCardActivity,
 } from "../../components/ActivityCard";
 import { requireUserId } from "../../lib/domain/auth";
-import { supabase } from "../../lib/api/supabase";
-import { fetchMembershipRowsForUser } from "../../lib/domain/activities";
+import {
+  fetchCreatedActivities,
+  fetchMembershipRowsForUser,
+  isActiveActivity,
+} from "../../lib/domain/activities";
 import { useT } from "../../lib/i18n/useT";
 import { Screen, SegmentedTabs } from "../../src/ui/common";
-
-// :zap: CHANGE 1: Helper to decide "active" activities.
-function isActiveActivity(a: ActivityCardActivity): boolean {
-  if (a.status && a.status !== "open") return false;
-  if (a.expires_at) {
-    const ts = new Date(a.expires_at).getTime();
-    if (!Number.isNaN(ts) && ts <= Date.now()) return false;
-  }
-  return true;
-}
 
 // :zap: CHANGE 1: Created = activities.creator_id = me
 export default function CreatedScreen() {
@@ -47,17 +40,8 @@ export default function CreatedScreen() {
       )
     );
 
-    const { data, error } = await supabase
-      .from("activities")
-      .select(
-        "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at"
-      )
-      .eq("creator_id", uid)
-      .order("created_at", { ascending: false })
-      .limit(200);
-
-    if (error) throw error;
-    setItems((data ?? []) as ActivityCardActivity[]);
+    const rows = await fetchCreatedActivities(uid, 200);
+    setItems(rows);
   }, []);
 
   useEffect(() => {
