@@ -11,10 +11,33 @@ export type MembershipRow = {
   joined_at: string | null;
 };
 
+const ACTIVITY_SELECT =
+  "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at";
+
 export function isExpiredOrClosed(a: ActivityCardActivity): boolean {
   if (a.status && a.status !== "open") return true;
   if (a.expires_at) return new Date(a.expires_at).getTime() <= Date.now();
   return false;
+}
+
+export function isActiveActivity(a: ActivityCardActivity): boolean {
+  if (a.status && a.status !== "open") return false;
+  if (a.expires_at) {
+    const ts = new Date(a.expires_at).getTime();
+    if (!Number.isNaN(ts) && ts <= Date.now()) return false;
+  }
+  return true;
+}
+
+export function isJoinableActivity(
+  a: ActivityCardActivity,
+  joinedSet: Set<string>
+): boolean {
+  if (joinedSet.has(a.id)) return false;
+  if (a.status !== "open") return false;
+  if (a.expires_at && new Date(a.expires_at).getTime() <= Date.now())
+    return false;
+  return true;
 }
 
 // :zap: CHANGE 1: Fetch activities by ids (two-step approach avoids relying on FK).
@@ -25,9 +48,7 @@ export async function fetchActivitiesByIds(
 
   const { data, error } = await supabase
     .from("activities")
-    .select(
-      "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at"
-    )
+    .select(ACTIVITY_SELECT)
     .in("id", activityIds);
 
   if (error) throw error;
@@ -40,6 +61,35 @@ export async function fetchActivitiesByIds(
   });
 
   return rows as ActivityCardActivity[];
+}
+
+export async function fetchOpenActivities(
+  limit = 200
+): Promise<ActivityCardActivity[]> {
+  const { data, error } = await supabase
+    .from("activities")
+    .select(ACTIVITY_SELECT)
+    .eq("status", "open")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as ActivityCardActivity[];
+}
+
+export async function fetchCreatedActivities(
+  userId: string,
+  limit = 200
+): Promise<ActivityCardActivity[]> {
+  const { data, error } = await supabase
+    .from("activities")
+    .select(ACTIVITY_SELECT)
+    .eq("creator_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []) as ActivityCardActivity[];
 }
 
 // :zap: CHANGE 2: Fetch membership rows for user.

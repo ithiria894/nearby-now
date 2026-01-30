@@ -1,10 +1,4 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { Text, TextInput, useColorScheme } from "react-native";
 import { darkTheme, lightTheme, type ThemeTokens } from "./tokens";
 import {
@@ -48,7 +42,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     void setStoredThemeMode(next);
   };
 
-  useMemo(() => {
+  useEffect(() => {
     const baseTextStyle = { color: theme.colors.text };
 
     Text.defaultProps = Text.defaultProps ?? {};

@@ -8,7 +8,9 @@ import ActivityCard, {
 import BrowseMap from "../../components/BrowseMap";
 import { requireUserId } from "../../lib/domain/auth";
 import {
+  fetchOpenActivities,
   fetchMembershipRowsForUser,
+  isJoinableActivity,
   upsertJoin,
 } from "../../lib/domain/activities";
 import { supabase } from "../../lib/api/supabase";
@@ -19,14 +21,6 @@ import {
   formatLocalDateTime,
 } from "../../lib/i18n/i18n_format";
 import { Screen, SegmentedTabs } from "../../src/ui/common";
-
-function isJoinable(a: ActivityCardActivity, joinedSet: Set<string>): boolean {
-  if (joinedSet.has(a.id)) return false;
-  if (a.status !== "open") return false;
-  if (a.expires_at && new Date(a.expires_at).getTime() <= Date.now())
-    return false;
-  return true;
-}
 
 // :zap: CHANGE 1: Browse = joinable open + not expired + not joined
 export default function BrowseScreen() {
@@ -51,19 +45,8 @@ export default function BrowseScreen() {
     );
     setJoinedSet(joined);
 
-    const { data, error } = await supabase
-      .from("activities")
-      .select(
-        "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at"
-      )
-      .eq("status", "open")
-      .order("created_at", { ascending: false })
-      .limit(200);
-
-    if (error) throw error;
-
-    const rows = (data ?? []) as ActivityCardActivity[];
-    const joinable = rows.filter((a) => isJoinable(a, joined));
+    const rows = await fetchOpenActivities(200);
+    const joinable = rows.filter((a) => isJoinableActivity(a, joined));
 
     setItems(joinable);
   }, []);
@@ -105,7 +88,7 @@ export default function BrowseScreen() {
 
             if (!next?.id) return prev;
 
-            const shouldShow = isJoinable(next, joinedSet);
+            const shouldShow = isJoinableActivity(next, joinedSet);
 
             if (!shouldShow) {
               map.delete(next.id);
