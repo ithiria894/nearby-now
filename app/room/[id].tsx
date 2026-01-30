@@ -191,6 +191,10 @@ export default function RoomScreen() {
     "none" | "joined" | "left"
   >("none");
   const [myDisplayName, setMyDisplayName] = useState<string | null>(null);
+  const [leftAt, setLeftAt] = useState<Date | null>(null);
+  const [chatCursor, setChatCursor] = useState<string | null>(null);
+  const [chatHasMore, setChatHasMore] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   // long-press menu state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -208,6 +212,7 @@ export default function RoomScreen() {
   }
 
   const keyboardVerticalOffset = 100; // you said you already set this
+  const CHAT_PAGE_SIZE = 50;
 
   const loadAll = useCallback(
     async (currentUserId?: string | null) => {
@@ -235,7 +240,7 @@ export default function RoomScreen() {
       const uid = currentUserId ?? userId;
 
       let myState: "none" | "joined" | "left" = "none";
-      let leftAt: Date | null = null;
+      let leftAtValue: Date | null = null;
       if (uid) {
         const { data: me, error: meErr } = await supabase
           .from("activity_members")
@@ -247,10 +252,13 @@ export default function RoomScreen() {
         if (meErr) console.error(meErr);
         const st = (me as any)?.state;
         myState = st === "left" ? "left" : st === "joined" ? "joined" : "none";
-        leftAt = (me as any)?.left_at ? new Date((me as any).left_at) : null;
+        leftAtValue = (me as any)?.left_at
+          ? new Date((me as any).left_at)
+          : null;
       }
 
       setMyMembershipState(myState);
+      setLeftAt(leftAtValue);
 
       const canReadEvents = myState === "joined" || myState === "left";
       if (!canReadEvents) {
@@ -264,21 +272,72 @@ export default function RoomScreen() {
           "id, activity_id, user_id, type, content, created_at, profiles(display_name)"
         )
         .eq("activity_id", activityId)
-        .order("created_at", { ascending: true })
-        .limit(200);
+        .order("created_at", { ascending: false })
+        .limit(CHAT_PAGE_SIZE);
 
-      if (myState === "left" && leftAt) {
-        query = query.lte("created_at", leftAt.toISOString());
+      if (myState === "left" && leftAtValue) {
+        query = query.lte("created_at", leftAtValue.toISOString());
       }
 
       const { data: e, error: eErr } = await query;
       if (eErr) console.error(eErr);
-      setEvents((e ?? []) as any);
+      const rows = ((e ?? []) as any[]).slice().reverse();
+      setEvents(rows as any);
+      const nextCursor =
+        rows.length > 0 ? (rows[0].created_at as string) : null;
+      setChatCursor(nextCursor);
+      setChatHasMore((e ?? []).length === CHAT_PAGE_SIZE);
 
-      if ((e ?? []).length > 0) scrollToBottom(false);
+      if (rows.length > 0) scrollToBottom(false);
     },
     [activityId, userId]
   );
+
+  const loadOlder = useCallback(async () => {
+    if (!chatHasMore || loadingOlder || !chatCursor) return;
+    setLoadingOlder(true);
+    try {
+      let query = supabase
+        .from("room_events")
+        .select(
+          "id, activity_id, user_id, type, content, created_at, profiles(display_name)"
+        )
+        .eq("activity_id", activityId)
+        .lt("created_at", chatCursor)
+        .order("created_at", { ascending: false })
+        .limit(CHAT_PAGE_SIZE);
+
+      if (myMembershipState === "left" && leftAt) {
+        query = query.lte("created_at", leftAt.toISOString());
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      const rows = ((data ?? []) as any[]).slice().reverse();
+      if (rows.length === 0) {
+        setChatHasMore(false);
+        return;
+      }
+      setEvents((prev) => {
+        const existing = new Set(prev.map((e) => e.id));
+        const merged = rows.filter((r) => !existing.has(r.id)).concat(prev);
+        return merged as any;
+      });
+      setChatCursor(rows[0].created_at as string);
+      setChatHasMore((data ?? []).length === CHAT_PAGE_SIZE);
+    } catch (e: any) {
+      console.error(e);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [
+    activityId,
+    chatCursor,
+    chatHasMore,
+    leftAt,
+    loadingOlder,
+    myMembershipState,
+  ]);
 
   useEffect(() => {
     (async () => {
@@ -971,6 +1030,21 @@ export default function RoomScreen() {
               renderItem={renderChatItem}
               contentContainerStyle={{ gap: 8, paddingBottom: 6 }}
               onContentSizeChange={() => scrollToBottom(false)}
+              onScroll={({ nativeEvent }) => {
+                if (nativeEvent.contentOffset.y <= 20) {
+                  loadOlder();
+                }
+              }}
+              scrollEventThrottle={16}
+              ListHeaderComponent={
+                chatHasMore ? (
+                  <View style={{ paddingVertical: 6 }}>
+                    <Text style={{ textAlign: "center", opacity: 0.5 }}>
+                      {loadingOlder ? t("common.loading") : ""}
+                    </Text>
+                  </View>
+                ) : null
+              }
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               initialNumToRender={12}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -8,7 +8,7 @@ import ActivityCard, {
 } from "../../components/ActivityCard";
 import { requireUserId } from "../../lib/domain/auth";
 import {
-  fetchCreatedActivities,
+  fetchCreatedActivitiesPage,
   fetchMembershipRowsForUser,
   isActiveActivity,
 } from "../../lib/domain/activities";
@@ -20,6 +20,8 @@ export default function CreatedScreen() {
   const router = useRouter();
   const { t } = useT();
 
+  const PAGE_SIZE = 30;
+
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
   // :zap: CHANGE 3: Simple tabs state.
@@ -27,8 +29,11 @@ export default function CreatedScreen() {
   const [joinedSet, setJoinedSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
-  const load = useCallback(async () => {
+  const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
     setUserId(uid);
 
@@ -41,14 +46,47 @@ export default function CreatedScreen() {
       )
     );
 
-    const rows = await fetchCreatedActivities(uid, 200);
+    const rows = await fetchCreatedActivitiesPage(uid, null, PAGE_SIZE);
     setItems(rows);
+    const nextCursor =
+      rows.length > 0 ? (rows[rows.length - 1].created_at as string) : null;
+    setCursor(nextCursor);
+    setHasMore(rows.length === PAGE_SIZE);
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || !userId) return;
+    setLoadingMore(true);
+    try {
+      const rows = await fetchCreatedActivitiesPage(userId, cursor, PAGE_SIZE);
+      if (rows.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      setItems((prev) => {
+        const map = new Map(prev.map((x) => [x.id, x]));
+        for (const a of rows) map.set(a.id, a);
+        return Array.from(map.values());
+      });
+      const nextCursor =
+        rows.length > 0 ? (rows[rows.length - 1].created_at as string) : null;
+      setCursor(nextCursor);
+      setHasMore(rows.length === PAGE_SIZE);
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert(
+        t("created.refreshErrorTitle"),
+        e?.message ?? "Unknown error"
+      );
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, hasMore, loadingMore, t, userId]);
 
   useEffect(() => {
     (async () => {
       try {
-        await load();
+        await loadInitial();
       } catch (e: any) {
         console.error(e);
         Alert.alert(t("created.loadErrorTitle"), e?.message ?? "Unknown error");
@@ -57,25 +95,25 @@ export default function CreatedScreen() {
         setLoading(false);
       }
     })();
-  }, [load, router]);
+  }, [loadInitial, router]);
 
   useFocusEffect(
     useCallback(() => {
       if (loading) return;
-      load().catch((e: any) => {
+      loadInitial().catch((e: any) => {
         console.error(e);
         Alert.alert(
           t("created.refreshErrorTitle"),
           e?.message ?? "Unknown error"
         );
       });
-    }, [load, loading, t])
+    }, [loadInitial, loading, t])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await load();
+      await loadInitial();
     } catch (e: any) {
       console.error(e);
       Alert.alert(
@@ -85,7 +123,7 @@ export default function CreatedScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [load]);
+  }, [loadInitial]);
 
   // :zap: CHANGE 2: Split items into active/inactive.
   const { activeItems, inactiveItems } = useMemo(() => {
@@ -151,6 +189,8 @@ export default function CreatedScreen() {
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.6}
       initialNumToRender={6}
       windowSize={5}
       maxToRenderPerBatch={8}
@@ -176,6 +216,19 @@ export default function CreatedScreen() {
             onPress={() => router.push("/create")}
           />
         </View>
+      }
+      ListFooterComponent={
+        loadingMore ? (
+          <View style={{ paddingVertical: 12 }}>
+            <ActivityIndicator />
+          </View>
+        ) : !hasMore && items.length > 0 ? (
+          <View style={{ paddingVertical: 12 }}>
+            <Text style={{ textAlign: "center", opacity: 0.6 }}>
+              {t("common.noMore")}
+            </Text>
+          </View>
+        ) : null
       }
     />
   );
