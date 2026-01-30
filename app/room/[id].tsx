@@ -270,7 +270,7 @@ export default function RoomScreen() {
       });
 
       setEvents(page.rows);
-      setChatCursor(page.nextCursor);
+      setChatCursor(page.cursor);
       setChatHasMore(page.hasMore);
       if (page.rows.length > 0) scrollToBottom(false);
     },
@@ -298,7 +298,7 @@ export default function RoomScreen() {
         const merged = rows.filter((r) => !existing.has(r.id)).concat(prev);
         return merged as any;
       });
-      setChatCursor(page.nextCursor);
+      setChatCursor(page.cursor);
       setChatHasMore(page.hasMore);
     } catch (e: any) {
       console.error(e);

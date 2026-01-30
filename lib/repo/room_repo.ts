@@ -17,7 +17,8 @@ export async function fetchRoomEventsPage(params: {
   cursor?: RoomEventCursor | null;
   leftAt?: Date | null;
 }): Promise<RoomEventsPage> {
-  return getRoomEventsPage(params);
+  const { rows, nextCursor, hasMore } = await getRoomEventsPage(params);
+  return { rows, cursor: nextCursor, hasMore };
 }
 
 export async function fetchRoomEventById(

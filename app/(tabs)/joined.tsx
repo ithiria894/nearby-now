@@ -139,10 +139,12 @@ export default function JoinedScreen() {
   const scheduleReload = useCallback(() => {
     if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
     reloadTimerRef.current = setTimeout(() => {
-      loadInitial();
+      void loadInitial().catch((e: any) =>
+        handleError(t("joined.refreshErrorTitle"), e)
+      );
       reloadTimerRef.current = null;
     }, 250);
-  }, [loadInitial]);
+  }, [loadInitial, t]);
 
   // :zap: CHANGE 3: Realtime updates (membership + activities).
   useEffect(() => {
