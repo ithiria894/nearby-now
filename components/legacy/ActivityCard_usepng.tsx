@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Alert, Image, Modal, Pressable, Text, View } from "react-native";
+import { useT } from "../lib/i18n/useT";
+import { useTheme } from "../src/ui/theme/ThemeProvider";
 
 /* =======================
  * Types
@@ -17,6 +19,7 @@ export type ActivityCardActivity = {
   gender_pref: string;
   capacity: number | null;
   status: string;
+  created_at?: string | null;
 };
 
 export type MembershipState = "none" | "joined" | "left";
@@ -29,37 +32,6 @@ type Props = {
   onPressCard: () => void;
   onPressEdit?: () => void;
 };
-
-/* =======================
- * Design Tokens
- * ======================= */
-const TOKENS = {
-  title: "#111827",
-  text: "#1F2937",
-  subtext: "#6B7280",
-
-  // sticker chip
-  chipBg: "rgba(255,255,255,0.82)",
-  chipBorder: "rgba(17,24,39,0.10)",
-
-  createdBg: "rgba(219,234,254,0.92)",
-  createdBorder: "rgba(191,219,254,0.90)",
-  createdText: "#1D4ED8",
-
-  joinedBg: "rgba(220,252,231,0.92)",
-  joinedBorder: "rgba(187,247,208,0.90)",
-  joinedText: "#166534",
-
-  expiredBg: "rgba(254,226,226,0.94)",
-  expiredBorder: "rgba(254,202,202,0.92)",
-  expiredText: "#991B1B",
-
-  soonBg: "rgba(254,243,199,0.94)",
-  soonBorder: "rgba(253,230,138,0.92)",
-  soonText: "#92400E",
-
-  overlay: "rgba(0,0,0,0.28)",
-} as const;
 
 /* =======================
  * Card Templates (3)
@@ -93,11 +65,13 @@ function shortGender(g: string) {
 }
 
 // :zap: CHANGE 4: Time + urgency
-function timeLeft(expiresAt: string | null) {
-  if (!expiresAt) return { label: "No expiry", urgency: "normal" as const };
+function timeLeft(t: (key: string) => string, expiresAt: string | null) {
+  if (!expiresAt)
+    return { label: t("activityCard.noExpiry"), urgency: "normal" as const };
 
   const ms = new Date(expiresAt).getTime() - Date.now();
-  if (ms <= 0) return { label: "Expired", urgency: "expired" as const };
+  if (ms <= 0)
+    return { label: t("activityCard.expired"), urgency: "expired" as const };
 
   const mins = Math.floor(ms / 60000);
   if (mins < 15) return { label: `${mins}m`, urgency: "critical" as const };
@@ -182,12 +156,16 @@ export default function ActivityCard({
   onPressCard,
   onPressEdit,
 }: Props) {
+  const theme = useTheme();
+  const TOKENS = theme.colors;
+  const { t } = useT();
   const isCreator = !!currentUserId && a.creator_id === currentUserId;
 
-  const placeName = (a.place_name ?? a.place_text ?? "").trim() || "No place";
+  const placeName =
+    (a.place_name ?? a.place_text ?? "").trim() || t("activityCard.place_none");
   const placeAddress = (a.place_address ?? "").trim();
 
-  const time = timeLeft(a.expires_at);
+  const time = timeLeft(t, a.expires_at);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const templateIdx = useMemo(() => pickTemplateIndex(a.id), [a.id]);
@@ -218,8 +196,9 @@ export default function ActivityCard({
     };
   }, [time.label, time.urgency]);
 
-  function notImplemented(name: string) {
-    Alert.alert(name, "Not implemented yet.");
+  function notImplemented(action: "share" | "report" | "delete") {
+    const titleKey = `activityCard.notImplementedTitle_${action}` as const;
+    Alert.alert(t(titleKey), t("activityCard.notImplementedBody"));
   }
 
   function runAction(action: "edit" | "share" | "report" | "delete") {
@@ -232,9 +211,9 @@ export default function ActivityCard({
       return;
     }
 
-    if (action === "share") return notImplemented("Share");
-    if (action === "report") return notImplemented("Report");
-    if (action === "delete") return notImplemented("Delete");
+    if (action === "share") return notImplemented("share");
+    if (action === "report") return notImplemented("report");
+    if (action === "delete") return notImplemented("delete");
   }
 
   return (
@@ -390,7 +369,7 @@ export default function ActivityCard({
                 >
                   {isCreator ? (
                     <Chip
-                      label="Created"
+                      label={t("activityCard.chip_created")}
                       bg={TOKENS.createdBg}
                       border={TOKENS.createdBorder}
                       color={TOKENS.createdText}
@@ -399,7 +378,7 @@ export default function ActivityCard({
                   ) : null}
 
                   <Chip
-                    label={`⏳ ${time.label}`}
+                    label={t("activityCard.chip_time", { label: time.label })}
                     bg={timeChipStyle.bg}
                     border={timeChipStyle.border}
                     color={timeChipStyle.color}
@@ -407,14 +386,18 @@ export default function ActivityCard({
                   />
 
                   <Chip
-                    label={`Pref ${shortGender(a.gender_pref)}`}
+                    label={t("activityCard.chip_pref", {
+                      value: shortGender(a.gender_pref),
+                    })}
                     bg={TOKENS.chipBg}
                     border={TOKENS.chipBorder}
                     color={TOKENS.text}
                   />
 
                   <Chip
-                    label={`Cap ${a.capacity ?? "∞"}`}
+                    label={t("activityCard.chip_cap", {
+                      value: a.capacity ?? "∞",
+                    })}
                     bg={TOKENS.chipBg}
                     border={TOKENS.chipBorder}
                     color={TOKENS.text}
@@ -422,7 +405,7 @@ export default function ActivityCard({
 
                   {membershipState === "joined" ? (
                     <Chip
-                      label="Joined"
+                      label={t("activityCard.chip_joined")}
                       bg={TOKENS.joinedBg}
                       border={TOKENS.joinedBorder}
                       color={TOKENS.joinedText}
@@ -430,7 +413,7 @@ export default function ActivityCard({
                     />
                   ) : membershipState === "left" ? (
                     <Chip
-                      label="Left"
+                      label={t("activityCard.chip_left")}
                       bg={TOKENS.chipBg}
                       border={TOKENS.chipBorder}
                       color={TOKENS.subtext}
@@ -461,11 +444,11 @@ export default function ActivityCard({
           <Pressable
             onPress={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: TOKENS.surface,
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               borderWidth: 1,
-              borderColor: "rgba(229,231,235,1)",
+              borderColor: TOKENS.border,
               paddingTop: 10,
               paddingBottom: 12,
             }}
@@ -483,20 +466,32 @@ export default function ActivityCard({
 
             {isCreator ? (
               <>
-                <MenuItem label="Edit" onPress={() => runAction("edit")} />
                 <MenuItem
-                  label="Delete"
+                  label={t("activityCard.menu.edit")}
+                  onPress={() => runAction("edit")}
+                />
+                <MenuItem
+                  label={t("activityCard.menu.delete")}
                   destructive
                   onPress={() => runAction("delete")}
                 />
               </>
             ) : null}
 
-            <MenuItem label="Share" onPress={() => runAction("share")} />
-            <MenuItem label="Report" onPress={() => runAction("report")} />
+            <MenuItem
+              label={t("activityCard.menu.share")}
+              onPress={() => runAction("share")}
+            />
+            <MenuItem
+              label={t("activityCard.menu.report")}
+              onPress={() => runAction("report")}
+            />
 
             <View style={{ height: 8 }} />
-            <MenuItem label="Cancel" onPress={() => setMenuOpen(false)} />
+            <MenuItem
+              label={t("activityCard.menu.cancel")}
+              onPress={() => setMenuOpen(false)}
+            />
           </Pressable>
         </Pressable>
       </Modal>

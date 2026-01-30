@@ -1,27 +1,29 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 import ActivityCard, {
   type ActivityCardActivity,
   type MembershipState,
 } from "../../components/ActivityCard";
-import { requireUserId } from "../../lib/auth";
+import { requireUserId } from "../../lib/domain/auth";
 import {
-  fetchMembershipRowsForUser,
-  fetchActivitiesByIds,
-} from "../../lib/activities";
-import { supabase } from "../../lib/supabase";
-
-function isActive(a: ActivityCardActivity): boolean {
-  if (a.status !== "open") return false;
-  if (a.expires_at && new Date(a.expires_at).getTime() <= Date.now())
-    return false;
-  return true;
-}
+  getJoinedPage,
+  getMembershipForUser,
+  type ActivitiesPage,
+} from "../../lib/repo/activities_repo";
+import { isActiveActivity } from "../../lib/domain/activities";
+import { subscribeToJoinedActivityChanges } from "../../lib/realtime/activities";
+import { useT } from "../../lib/i18n/useT";
+import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
+import { handleError } from "../../lib/ui/handleError";
 
 export default function JoinedScreen() {
   const router = useRouter();
+  const { t } = useT();
+
+  const PAGE_SIZE = 30;
 
   const [userId, setUserId] = useState<string | null>(null);
   // :zap: CHANGE 1: Tabs instead of Active-only switch.
@@ -30,14 +32,20 @@ export default function JoinedScreen() {
   const [membershipById, setMembershipById] = useState<
     Map<string, MembershipState>
   >(new Map());
+  const [membershipIds, setMembershipIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [cursor, setCursor] = useState<ActivitiesPage["cursor"]>(null);
+  const [hasMore, setHasMore] = useState(true);
 
-  const load = useCallback(async () => {
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
     setUserId(uid);
 
-    const memberships = await fetchMembershipRowsForUser(uid);
+    const memberships = await getMembershipForUser(uid);
     const relevant = memberships.filter((m) => m.role !== "creator");
 
     const map = new Map<string, MembershipState>();
@@ -47,65 +55,112 @@ export default function JoinedScreen() {
     setMembershipById(map);
 
     const ids = relevant.map((m) => m.activity_id);
-    const activities = await fetchActivitiesByIds(ids);
-    // :zap: CHANGE 2: hard-exclude anything I created (even if role is wrong).
-    const notMine = activities.filter((a) => a.creator_id !== uid);
-    setItems(notMine);
+    setMembershipIds(ids);
+    const page = await getJoinedPage({
+      activityIds: ids,
+      cursor: null,
+      limit: PAGE_SIZE,
+      excludeCreatorId: uid,
+    });
+    setItems(page.rows);
+    setCursor(page.cursor);
+    setHasMore(page.hasMore);
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || membershipIds.length === 0 || !userId)
+      return;
+    setLoadingMore(true);
+    try {
+      const page = await getJoinedPage({
+        activityIds: membershipIds,
+        cursor,
+        limit: PAGE_SIZE,
+        excludeCreatorId: userId,
+      });
+      if (page.rows.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      setItems((prev) => {
+        const map = new Map(prev.map((x) => [x.id, x]));
+        for (const a of page.rows) map.set(a.id, a);
+        const arr = Array.from(map.values());
+        arr.sort((a, b) => {
+          const ta = new Date(a.created_at ?? 0).getTime();
+          const tb = new Date(b.created_at ?? 0).getTime();
+          if (tb !== ta) return tb - ta;
+          return String(b.id).localeCompare(String(a.id));
+        });
+        return arr;
+      });
+      setCursor(page.cursor);
+      setHasMore(page.hasMore);
+    } catch (e: any) {
+      handleError(t("joined.refreshErrorTitle"), e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, hasMore, loadingMore, membershipIds, t, userId]);
 
   useEffect(() => {
     (async () => {
       try {
-        await load();
+        await loadInitial();
       } catch (e: any) {
-        console.error(e);
-        Alert.alert("Load failed", e?.message ?? "Unknown error");
+        handleError(t("joined.loadErrorTitle"), e);
         router.replace("/login");
       } finally {
         setLoading(false);
       }
     })();
-  }, [load, router]);
+  }, [loadInitial, router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (loading) return;
+      loadInitial().catch((e: any) => {
+        handleError(t("joined.refreshErrorTitle"), e);
+      });
+    }, [loadInitial, loading, t])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await load();
+      await loadInitial();
     } catch (e: any) {
-      console.error(e);
-      Alert.alert("Refresh failed", e?.message ?? "Unknown error");
+      handleError(t("joined.refreshErrorTitle"), e);
     } finally {
       setRefreshing(false);
     }
-  }, [load]);
+  }, [loadInitial]);
+
+  const scheduleReload = useCallback(() => {
+    if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = setTimeout(() => {
+      void loadInitial().catch((e: any) =>
+        handleError(t("joined.refreshErrorTitle"), e)
+      );
+      reloadTimerRef.current = null;
+    }, 250);
+  }, [loadInitial, t]);
 
   // :zap: CHANGE 3: Realtime updates (membership + activities).
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase
-      .channel("joined-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "activity_members",
-          filter: `user_id=eq.${userId}`,
-        },
-        () => load()
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "activities" },
-        () => load()
-      )
-      .subscribe();
+    const unsubscribe = subscribeToJoinedActivityChanges(
+      userId,
+      new Set(membershipIds),
+      () => scheduleReload()
+    );
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
     };
-  }, [userId, load]);
+  }, [userId, membershipIds, scheduleReload]);
 
   // :zap: CHANGE 2: Split joined into Active / Inactive / Left lists.
   const { activeJoined, inactiveJoined, leftRooms } = useMemo(() => {
@@ -115,11 +170,11 @@ export default function JoinedScreen() {
     }));
 
     const active = withState
-      .filter((x) => x.state === "joined" && isActive(x.activity))
+      .filter((x) => x.state === "joined" && isActiveActivity(x.activity))
       .map((x) => x.activity);
 
     const inactive = withState
-      .filter((x) => x.state === "joined" && !isActive(x.activity))
+      .filter((x) => x.state === "joined" && !isActiveActivity(x.activity))
       .map((x) => x.activity);
 
     const left = withState
@@ -138,57 +193,45 @@ export default function JoinedScreen() {
 
   // :zap: CHANGE 4: Header tabs UI (Active / Inactive / Left).
   const header = useMemo(() => {
-    const TabButton = ({
-      value,
-      label,
-    }: {
-      value: "active" | "inactive" | "left";
-      label: string;
-    }) => {
-      const selected = tab === value;
-      return (
-        <Pressable
-          onPress={() => setTab(value)}
-          style={{
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderRadius: 999,
-            borderWidth: 1,
-            opacity: selected ? 1 : 0.6,
-          }}
-        >
-          <Text style={{ fontWeight: "800" }}>{label}</Text>
-        </Pressable>
-      );
-    };
-
     return (
       <View style={{ padding: 16, gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>Joined</Text>
+        <Text style={{ fontSize: 18, fontWeight: "800" }}>
+          {t("joined.headerTitle")}
+        </Text>
 
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <TabButton value="active" label={`Active (${activeJoined.length})`} />
-          <TabButton
-            value="inactive"
-            label={`Inactive (${inactiveJoined.length})`}
-          />
-          <TabButton value="left" label={`Left (${leftRooms.length})`} />
-        </View>
+        <SegmentedTabs
+          value={tab}
+          onChange={setTab}
+          items={[
+            {
+              value: "active",
+              label: t("joined.tab_active", { count: activeJoined.length }),
+            },
+            {
+              value: "inactive",
+              label: t("joined.tab_inactive", { count: inactiveJoined.length }),
+            },
+            {
+              value: "left",
+              label: t("joined.tab_left", { count: leftRooms.length }),
+            },
+          ]}
+        />
 
         <Text style={{ opacity: 0.7 }}>
-          {tab === "active" && "Showing active rooms you joined."}
-          {tab === "inactive" && "Showing closed/expired rooms you joined."}
-          {tab === "left" && "Showing rooms you left (history view only)."}
+          {tab === "active" && t("joined.subtitle_active")}
+          {tab === "inactive" && t("joined.subtitle_inactive")}
+          {tab === "left" && t("joined.subtitle_left")}
         </Text>
       </View>
     );
-  }, [tab, activeJoined.length, inactiveJoined.length, leftRooms.length]);
+  }, [tab, activeJoined.length, inactiveJoined.length, leftRooms.length, t]);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: 16 }}>
-        <Text>Loading...</Text>
-      </View>
+      <Screen>
+        <Text>{t("common.loading")}</Text>
+      </Screen>
     );
   }
 
@@ -200,6 +243,13 @@ export default function JoinedScreen() {
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.6}
+      initialNumToRender={6}
+      windowSize={5}
+      maxToRenderPerBatch={8}
+      updateCellsBatchingPeriod={50}
+      removeClippedSubviews
       renderItem={({ item: a }) => {
         const membershipState: MembershipState =
           tab === "left" ? "left" : "joined";
@@ -222,13 +272,32 @@ export default function JoinedScreen() {
         );
       }}
       ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
           <Text style={{ opacity: 0.8 }}>
-            {tab === "active" && "No active joined rooms."}
-            {tab === "inactive" && "No inactive joined rooms."}
-            {tab === "left" && "No left rooms."}
+            {tab === "active" && t("joined.empty_active")}
+            {tab === "inactive" && t("joined.empty_inactive")}
+            {tab === "left" && t("joined.empty_left")}
           </Text>
+          {tab === "active" ? (
+            <PrimaryButton
+              label={t("joined.empty_active_cta")}
+              onPress={() => router.push("/(tabs)/browse")}
+            />
+          ) : null}
         </View>
+      }
+      ListFooterComponent={
+        loadingMore ? (
+          <View style={{ paddingVertical: 12 }}>
+            <ActivityIndicator />
+          </View>
+        ) : !hasMore && items.length > 0 ? (
+          <View style={{ paddingVertical: 12 }}>
+            <Text style={{ textAlign: "center", opacity: 0.6 }}>
+              {t("common.noMore")}
+            </Text>
+          </View>
+        ) : null
       }
     />
   );

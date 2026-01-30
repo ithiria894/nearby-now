@@ -127,3 +127,11 @@ Use Studio for:
 - Sanity checks
 
 Do NOT use Studio to manually change schema.
+
+---
+
+6. DB workflow
+
+---
+
+See: .docs/DB_WORKFLOW.md

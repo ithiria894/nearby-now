@@ -1,22 +1,28 @@
 import { useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, Text, TextInput } from "react-native";
 import { useRouter } from "expo-router";
-import { supabase } from "../lib/supabase";
-import { ensureProfile } from "../lib/auth";
+import { supabase } from "../lib/api/supabase";
+import { ensureProfile } from "../lib/domain/auth";
+import { useT } from "../lib/i18n/useT";
+import { Screen, PrimaryButton } from "../src/ui/common";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { t } = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function onRegister() {
     if (!email.trim() || !password) {
-      Alert.alert("Missing", "Please enter email and password.");
+      Alert.alert(
+        t("auth.register.missingTitle"),
+        t("auth.register.missingBody")
+      );
       return;
     }
     if (password.length < 6) {
-      Alert.alert("Weak password", "Password must be at least 6 characters.");
+      Alert.alert(t("auth.register.weakTitle"), t("auth.register.weakBody"));
       return;
     }
 
@@ -36,24 +42,32 @@ export default function RegisterScreen() {
         // ignore if not logged in yet
       }
 
-      Alert.alert("Success", "Account created. Please sign in.");
+      Alert.alert(
+        t("auth.register.successTitle"),
+        t("auth.register.successBody")
+      );
       router.replace("/login");
     } catch (_e: any) {
       console.error(_e);
-      Alert.alert("Register failed", _e?.message ?? "Unknown error");
+      Alert.alert(
+        t("auth.register.errorTitle"),
+        _e?.message ?? "Unknown error"
+      );
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <View style={{ flex: 1, padding: 16, gap: 12, justifyContent: "center" }}>
-      <Text style={{ fontSize: 22, fontWeight: "800" }}>Create account</Text>
+    <Screen center>
+      <Text style={{ fontSize: 22, fontWeight: "800" }}>
+        {t("auth.register.title")}
+      </Text>
 
       <TextInput
         value={email}
         onChangeText={setEmail}
-        placeholder="Email"
+        placeholder={t("auth.register.emailPlaceholder")}
         autoCapitalize="none"
         keyboardType="email-address"
         style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
@@ -62,33 +76,29 @@ export default function RegisterScreen() {
       <TextInput
         value={password}
         onChangeText={setPassword}
-        placeholder="Password (min 6 chars)"
+        placeholder={t("auth.register.passwordPlaceholder")}
         secureTextEntry
         style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
       />
 
-      <Pressable
+      <PrimaryButton
+        label={
+          submitting
+            ? t("auth.register.submitBusy")
+            : t("auth.register.submitIdle")
+        }
         onPress={onRegister}
         disabled={submitting}
-        style={{
-          padding: 12,
-          borderRadius: 10,
-          borderWidth: 1,
-          alignItems: "center",
-          opacity: submitting ? 0.6 : 1,
-        }}
-      >
-        <Text style={{ fontWeight: "800" }}>
-          {submitting ? "Creating…" : "Create"}
-        </Text>
-      </Pressable>
+      />
 
       <Pressable
         onPress={() => router.replace("/login")}
         style={{ padding: 10, alignItems: "center" }}
       >
-        <Text style={{ fontWeight: "700" }}>Back to login</Text>
+        <Text style={{ fontWeight: "700" }}>
+          {t("auth.register.backToLogin")}
+        </Text>
       </Pressable>
-    </View>
+    </Screen>
   );
 }

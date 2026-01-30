@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
@@ -12,8 +12,27 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { supabase } from "../../lib/supabase";
-import { requireUserId } from "../../lib/auth";
+import { supabase } from "../../lib/api/supabase";
+import { requireUserId } from "../../lib/domain/auth";
+import { joinWithSystemMessage } from "../../lib/domain/activities";
+import {
+  fetchRoomEventById,
+  fetchRoomEventsPage,
+  type RoomEventCursor,
+  type RoomEventRow,
+} from "../../lib/repo/room_repo";
+import { useT } from "../../lib/i18n/useT";
+import {
+  computeRoomState,
+  friendlyDbError,
+  getEventDisplayName,
+  hhmm,
+  renderEventContent,
+  sectionLabelForIso,
+} from "../../lib/domain/room";
+import { subscribeToRoom } from "../../lib/realtime/room";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import type { ThemeTokens } from "../../src/ui/theme/tokens";
 
 type ActivityRow = {
   id: string;
@@ -35,138 +54,9 @@ type MemberRow = {
   joined_at: string;
 };
 
-type RoomEventRow = {
-  id: string;
-  activity_id: string;
-  user_id: string | null;
-  type: string;
-  content: string;
-  created_at: string;
-  profiles?: { display_name: string | null } | null;
-};
-
 type ChatItem =
   | { kind: "section"; id: string; label: string }
   | { kind: "event"; id: string; e: RoomEventRow };
-
-const TOKENS = {
-  bg: "#FFFFFF",
-  border: "#E5E7EB",
-  title: "#111827",
-  text: "#111827",
-  subtext: "#6B7280",
-
-  cardBg: "#FFFFFF",
-
-  mineBg: "#DCFCE7",
-  mineBorder: "#BBF7D0",
-
-  otherBg: "#F3F4F6",
-  otherBorder: "#E5E7EB",
-
-  systemText: "#6B7280",
-  systemBg: "#F3F4F6",
-  systemBorder: "#E5E7EB",
-
-  primary: "#111827",
-  overlay: "rgba(0,0,0,0.28)",
-
-  dangerText: "#991B1B",
-  dangerBg: "#FEE2E2",
-  dangerBorder: "#FECACA",
-
-  okText: "#166534",
-  okBg: "#DCFCE7",
-  okBorder: "#BBF7D0",
-} as const;
-
-/* =======================
- * Time helpers
- * ======================= */
-function timeAgo(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(ms / 60000);
-  if (mins < 1) return "now";
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d`;
-}
-
-function hhmm(iso: string): string {
-  const d = new Date(iso);
-  const h = String(d.getHours()).padStart(2, "0");
-  const m = String(d.getMinutes()).padStart(2, "0");
-  return `${h}:${m}`;
-}
-
-function startOfLocalDayMs(d: Date) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-}
-
-function sectionLabelForIso(iso: string): string {
-  const t = new Date(iso);
-  const now = new Date();
-  const t0 = startOfLocalDayMs(t);
-  const n0 = startOfLocalDayMs(now);
-
-  const diffDays = Math.round((t0 - n0) / 86400000);
-  if (diffDays === 0) return "Today";
-  if (diffDays === -1) return "Yesterday";
-
-  // older: show date like "Jan 26"
-  const month = t.toLocaleString(undefined, { month: "short" });
-  return `${month} ${t.getDate()}`;
-}
-
-/* =======================
- * Message content helpers
- * ======================= */
-function renderEventContent(e: RoomEventRow): string {
-  if (e.type === "quick") {
-    switch (e.content) {
-      case "IM_HERE":
-        return "✅ I'm here";
-      case "LATE_10":
-        return "⏱️ 10 min late";
-      case "CANCEL":
-        return "❌ Cancel";
-      default:
-        return e.content;
-    }
-  }
-  return e.content;
-}
-
-function getEventDisplayName(e: RoomEventRow): string {
-  if (!e.user_id) return "System";
-  const name = (e.profiles?.display_name ?? "").trim();
-  return name || "Unknown";
-}
-
-function computeRoomState(activity: ActivityRow | null) {
-  const isClosed = !!activity && activity.status !== "open";
-  const expiresAtMs = activity?.expires_at
-    ? new Date(activity.expires_at).getTime()
-    : null;
-  const isExpired = expiresAtMs != null && expiresAtMs <= Date.now();
-  const isReadOnly = isClosed || isExpired;
-
-  let label: string | null = null;
-  if (isClosed) label = "Closed";
-  else if (isExpired) label = "Expired";
-
-  return { isClosed, isExpired, isReadOnly, label };
-}
-
-function friendlyDbError(message: string): string {
-  const lower = message.toLowerCase();
-  if (lower.includes("row-level security")) {
-    return "This invite is closed or expired. You can still read messages.";
-  }
-  return message;
-}
 
 /* =======================
  * UI components
@@ -176,11 +66,13 @@ function IconButton({
   onPress,
   disabled,
   destructive,
+  tokens,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   destructive?: boolean;
+  tokens: ThemeTokens["colors"];
 }) {
   return (
     <Pressable
@@ -192,15 +84,15 @@ function IconButton({
         paddingHorizontal: 10,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: destructive ? TOKENS.dangerBorder : TOKENS.border,
-        backgroundColor: destructive ? TOKENS.dangerBg : TOKENS.cardBg,
+        borderColor: destructive ? tokens.dangerBorder : tokens.border,
+        backgroundColor: destructive ? tokens.dangerBg : tokens.surface,
         opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
       })}
     >
       <Text
         style={{
           fontWeight: "900",
-          color: destructive ? TOKENS.dangerText : TOKENS.text,
+          color: destructive ? tokens.dangerText : tokens.text,
           fontSize: 12,
         }}
       >
@@ -214,10 +106,12 @@ function QuickChip({
   label,
   onPress,
   disabled,
+  tokens,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  tokens: ThemeTokens["colors"];
 }) {
   return (
     <Pressable
@@ -228,12 +122,12 @@ function QuickChip({
         paddingHorizontal: 12,
         borderRadius: 999,
         borderWidth: 1,
-        borderColor: TOKENS.border,
-        backgroundColor: TOKENS.cardBg,
+        borderColor: tokens.border,
+        backgroundColor: tokens.surface,
         opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
       })}
     >
-      <Text style={{ fontWeight: "800", color: TOKENS.text, fontSize: 13 }}>
+      <Text style={{ fontWeight: "800", color: tokens.text, fontSize: 13 }}>
         {label}
       </Text>
     </Pressable>
@@ -244,10 +138,12 @@ function SheetItem({
   label,
   onPress,
   destructive,
+  tokens,
 }: {
   label: string;
   onPress: () => void;
   destructive?: boolean;
+  tokens: ThemeTokens["colors"];
 }) {
   return (
     <Pressable
@@ -262,7 +158,7 @@ function SheetItem({
         style={{
           fontSize: 16,
           fontWeight: "900",
-          color: destructive ? TOKENS.dangerText : TOKENS.text,
+          color: destructive ? tokens.dangerText : tokens.text,
         }}
       >
         {label}
@@ -276,6 +172,9 @@ function SheetItem({
  * ======================= */
 export default function RoomScreen() {
   const router = useRouter();
+  const { t, i18n } = useT();
+  const theme = useTheme();
+  const TOKENS = theme.colors;
   const { id } = useLocalSearchParams<{ id: string }>();
   const activityId = String(id);
 
@@ -287,89 +186,140 @@ export default function RoomScreen() {
   const [myMembershipState, setMyMembershipState] = useState<
     "none" | "joined" | "left"
   >("none");
+  const [myDisplayName, setMyDisplayName] = useState<string | null>(null);
+  const [leftAt, setLeftAt] = useState<Date | null>(null);
+  const [chatCursor, setChatCursor] = useState<RoomEventCursor | null>(null);
+  const [chatHasMore, setChatHasMore] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
 
   // long-press menu state
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTarget, setMenuTarget] = useState<RoomEventRow | null>(null);
+
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const listRef = useRef<FlatList<ChatItem> | null>(null);
   const inputRef = useRef<TextInput | null>(null);
 
   function scrollToBottom(animated = true) {
     requestAnimationFrame(() => {
-      listRef.current?.scrollToEnd({ animated });
+      listRef.current?.scrollToOffset({ offset: 0, animated });
     });
   }
 
   const keyboardVerticalOffset = 100; // you said you already set this
+  const CHAT_PAGE_SIZE = 50;
 
-  async function loadAll(currentUserId?: string | null) {
-    const { data: a, error: aErr } = await supabase
-      .from("activities")
-      .select(
-        "id, title_text, place_text, place_name, place_address, expires_at, gender_pref, capacity, status, creator_id"
-      )
-      .eq("id", activityId)
-      .single();
+  const loadAll = useCallback(
+    async (currentUserId?: string | null) => {
+      const { data: a, error: aErr } = await supabase
+        .from("activities")
+        .select(
+          "id, title_text, place_text, place_name, place_address, expires_at, gender_pref, capacity, status, creator_id"
+        )
+        .eq("id", activityId)
+        .single();
 
-    if (aErr) console.error(aErr);
-    setActivity((a ?? null) as any);
+      if (aErr) console.error(aErr);
+      setActivity((a ?? null) as any);
 
-    const { data: m, error: mErr } = await supabase
-      .from("activity_members")
-      .select("*")
-      .eq("activity_id", activityId)
-      .eq("state", "joined")
-      .order("joined_at", { ascending: true });
-
-    if (mErr) console.error(mErr);
-    setMembers((m ?? []) as any);
-
-    const uid = currentUserId ?? userId;
-
-    let myState: "none" | "joined" | "left" = "none";
-    let leftAt: Date | null = null;
-    if (uid) {
-      const { data: me, error: meErr } = await supabase
+      const { data: m, error: mErr } = await supabase
         .from("activity_members")
-        .select("state,left_at")
+        .select("*")
         .eq("activity_id", activityId)
-        .eq("user_id", uid)
-        .maybeSingle();
+        .eq("state", "joined")
+        .order("joined_at", { ascending: true });
 
-      if (meErr) console.error(meErr);
-      const st = (me as any)?.state;
-      myState = st === "left" ? "left" : st === "joined" ? "joined" : "none";
-      leftAt = (me as any)?.left_at ? new Date((me as any).left_at) : null;
+      if (mErr) console.error(mErr);
+      setMembers((m ?? []) as any);
+
+      const uid = currentUserId ?? userId;
+
+      let myState: "none" | "joined" | "left" = "none";
+      let leftAtValue: Date | null = null;
+      if (uid) {
+        const { data: me, error: meErr } = await supabase
+          .from("activity_members")
+          .select("state,left_at")
+          .eq("activity_id", activityId)
+          .eq("user_id", uid)
+          .maybeSingle();
+
+        if (meErr) console.error(meErr);
+        const st = (me as any)?.state;
+        myState = st === "left" ? "left" : st === "joined" ? "joined" : "none";
+        leftAtValue = (me as any)?.left_at
+          ? new Date((me as any).left_at)
+          : null;
+      }
+
+      setMyMembershipState(myState);
+      setLeftAt(leftAtValue);
+
+      const canReadEvents = myState === "joined" || myState === "left";
+      if (!canReadEvents) {
+        setEvents([]);
+        return;
+      }
+
+      const page = await fetchRoomEventsPage({
+        activityId,
+        limit: CHAT_PAGE_SIZE,
+        cursor: null,
+        leftAt: leftAtValue,
+      });
+
+      setEvents(page.rows);
+      setChatCursor(page.cursor);
+      setChatHasMore(page.hasMore);
+      if (page.rows.length > 0) scrollToBottom(false);
+    },
+    [activityId, userId]
+  );
+
+  const loadOlder = useCallback(async () => {
+    if (!chatHasMore || loadingOlder || !chatCursor) return;
+    setLoadingOlder(true);
+    try {
+      const page = await fetchRoomEventsPage({
+        activityId,
+        limit: CHAT_PAGE_SIZE,
+        cursor: chatCursor,
+        leftAt,
+      });
+
+      const rows = page.rows;
+      if (rows.length === 0) {
+        setChatHasMore(false);
+        return;
+      }
+      setEvents((prev) => {
+        const existing = new Set(prev.map((e) => e.id));
+        const merged = rows.filter((r) => !existing.has(r.id)).concat(prev);
+        return merged as any;
+      });
+      setChatCursor(page.cursor);
+      setChatHasMore(page.hasMore);
+    } catch (e: any) {
+      console.error(e);
+    } finally {
+      setLoadingOlder(false);
     }
+  }, [
+    activityId,
+    chatCursor,
+    chatHasMore,
+    leftAt,
+    loadingOlder,
+    myMembershipState,
+  ]);
 
-    setMyMembershipState(myState);
-
-    const canReadEvents = myState === "joined" || myState === "left";
-    if (!canReadEvents) {
-      setEvents([]);
-      return;
-    }
-
-    let query = supabase
-      .from("room_events")
-      .select(
-        "id, activity_id, user_id, type, content, created_at, profiles(display_name)"
-      )
-      .eq("activity_id", activityId)
-      .order("created_at", { ascending: true })
-      .limit(200);
-
-    if (myState === "left" && leftAt) {
-      query = query.lte("created_at", leftAt.toISOString());
-    }
-
-    const { data: e, error: eErr } = await query;
-    if (eErr) console.error(eErr);
-    setEvents((e ?? []) as any);
-
-    if ((e ?? []).length > 0) scrollToBottom(false);
-  }
+  const appendEventIfMissing = useCallback((next: RoomEventRow) => {
+    setEvents((prev) => {
+      if (prev.some((e) => e.id === next.id)) return prev;
+      return [...prev, next];
+    });
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -378,55 +328,70 @@ export default function RoomScreen() {
         setUserId(uid);
         await loadAll(uid);
       } catch (_e: any) {
-        Alert.alert("Auth required", "Please log in again.");
+        Alert.alert(t("room.authRequiredTitle"), t("room.authRequiredBody"));
         router.replace("/login");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId]);
+  }, [activityId, loadAll]);
+
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .single();
+      if (error) {
+        console.error(error);
+        return;
+      }
+      setMyDisplayName((data?.display_name ?? "").trim() || null);
+    })();
+  }, [userId]);
+
+  const scheduleReload = useCallback(() => {
+    if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
+    reloadTimerRef.current = setTimeout(() => {
+      loadAll();
+      reloadTimerRef.current = null;
+    }, 200);
+  }, [loadAll]);
 
   useEffect(() => {
     if (myMembershipState !== "joined") return;
 
-    const channel = supabase
-      .channel(`nearby-now-room-${activityId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "activity_members",
-          filter: `activity_id=eq.${activityId}`,
-        },
-        () => loadAll()
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "room_events",
-          filter: `activity_id=eq.${activityId}`,
-        },
-        () => loadAll()
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "activities",
-          filter: `id=eq.${activityId}`,
-        },
-        () => loadAll()
-      )
-      .subscribe();
+    const unsubscribe = subscribeToRoom(activityId, {
+      onMemberChange: () => scheduleReload(),
+      onActivityChange: () => scheduleReload(),
+      onEventInsert: (payload) => {
+        const id = (payload.new as { id?: string })?.id;
+        if (!id) return;
+        fetchRoomEventById(id)
+          .then((evt) => {
+            if (!evt) return;
+            if (myMembershipState === "left" && leftAt) {
+              const ts = new Date(evt.created_at).getTime();
+              if (ts > leftAt.getTime()) return;
+            }
+            appendEventIfMissing(evt);
+          })
+          .catch((e) => console.error(e));
+      },
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activityId, myMembershipState]);
+  }, [
+    activityId,
+    appendEventIfMissing,
+    leftAt,
+    myMembershipState,
+    scheduleReload,
+  ]);
 
   useEffect(() => {
     const subShow = Keyboard.addListener("keyboardDidShow", () => {
@@ -453,27 +418,28 @@ export default function RoomScreen() {
   async function join() {
     if (!userId) return;
     if (roomState.isReadOnly) {
-      Alert.alert("Not available", "This invite is closed or expired.");
+      Alert.alert(
+        t("room.joinNotAvailableTitle"),
+        t("room.joinNotAvailableBody")
+      );
       return;
     }
 
-    Alert.alert("Join this invite?", "Confirm to join this room.", [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(t("room.joinConfirmTitle"), t("room.joinConfirmBody"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Join",
+        text: t("common.join"),
         onPress: async () => {
-          const { error } = await supabase.from("activity_members").upsert({
-            activity_id: activityId,
-            user_id: userId,
-            role: "member",
-            state: "joined",
-          });
-
-          if (error) Alert.alert("Join failed", friendlyDbError(error.message));
-          else {
+          try {
+            await joinWithSystemMessage(activityId, userId);
             await loadAll(userId);
             scrollToBottom(false);
             inputRef.current?.focus?.();
+          } catch (e: any) {
+            Alert.alert(
+              t("room.joinFailedTitle"),
+              friendlyDbError(t, e?.message ?? "Unknown error")
+            );
           }
         },
       },
@@ -489,7 +455,7 @@ export default function RoomScreen() {
           activity_id: activityId,
           user_id: userId,
           type: "system",
-          content: "Left the invite",
+          content: JSON.stringify({ k: "room.system.left" }),
         });
       }
 
@@ -505,33 +471,36 @@ export default function RoomScreen() {
       router.back();
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Leave failed", e?.message ?? "Unknown error");
+      Alert.alert(t("room.leaveFailedTitle"), e?.message ?? "Unknown error");
     }
   }
 
   function confirmLeave() {
     if (Platform.OS === "web") {
       const ok = globalThis.confirm?.(
-        "Leave this invite?\n\nYou will stop receiving updates from this room."
+        `${t("room.leaveConfirmTitle")}\n\n${t("room.leaveConfirmBody")}`
       );
       if (ok) doLeave();
       return;
     }
 
-    Alert.alert(
-      "Leave this invite?",
-      "You will stop receiving updates from this room.",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Leave", style: "destructive", onPress: () => doLeave() },
-      ]
-    );
+    Alert.alert(t("room.leaveConfirmTitle"), t("room.leaveConfirmBody"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.leave"),
+        style: "destructive",
+        onPress: () => doLeave(),
+      },
+    ]);
   }
 
   async function closeInvite() {
     if (!userId || !activity) return;
     if (!isCreator) {
-      Alert.alert("Not allowed", "Only the creator can close this invite.");
+      Alert.alert(
+        t("room.closeNotAllowedTitle"),
+        t("room.closeNotAllowedBody")
+      );
       return;
     }
     if (roomState.isReadOnly) return;
@@ -539,20 +508,20 @@ export default function RoomScreen() {
     const ok =
       Platform.OS === "web"
         ? globalThis.confirm?.(
-            "Close this invite?\n\nNo one can join or send messages anymore."
+            `${t("room.closeConfirmTitle")}\n\n${t("room.closeConfirmBody")}`
           )
         : await new Promise<boolean>((resolve) => {
             Alert.alert(
-              "Close this invite?",
-              "No one can join or send messages anymore.",
+              t("room.closeConfirmTitle"),
+              t("room.closeConfirmBody"),
               [
                 {
-                  text: "Cancel",
+                  text: t("common.cancel"),
                   style: "cancel",
                   onPress: () => resolve(false),
                 },
                 {
-                  text: "Close",
+                  text: t("common.close"),
                   style: "destructive",
                   onPress: () => resolve(true),
                 },
@@ -578,20 +547,20 @@ export default function RoomScreen() {
         activity_id: activityId,
         user_id: userId,
         type: "system",
-        content: "Invite closed by creator",
+        content: JSON.stringify({ k: "room.system.invite_closed" }),
       });
 
       await loadAll(userId);
     } catch (e: any) {
       console.error(e);
-      Alert.alert("Close failed", e?.message ?? "Unknown error");
+      Alert.alert(t("room.closeFailedTitle"), e?.message ?? "Unknown error");
     }
   }
 
   async function sendChat(text: string) {
     if (!userId) return;
     if (!canInteract) {
-      Alert.alert("Read-only", "This invite is closed or expired.");
+      Alert.alert(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
       return;
     }
 
@@ -605,7 +574,8 @@ export default function RoomScreen() {
       content: trimmed,
     });
 
-    if (error) Alert.alert("Send failed", friendlyDbError(error.message));
+    if (error)
+      Alert.alert(t("room.sendFailedTitle"), friendlyDbError(t, error.message));
     else {
       setMessage("");
       await loadAll(userId);
@@ -616,7 +586,7 @@ export default function RoomScreen() {
   async function sendQuick(code: string) {
     if (!userId) return;
     if (!canInteract) {
-      Alert.alert("Read-only", "This invite is closed or expired.");
+      Alert.alert(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
       return;
     }
 
@@ -627,7 +597,8 @@ export default function RoomScreen() {
       content: code,
     });
 
-    if (error) Alert.alert("Failed", friendlyDbError(error.message));
+    if (error)
+      Alert.alert(t("room.failedTitle"), friendlyDbError(t, error.message));
     else {
       await loadAll(userId);
       scrollToBottom(true);
@@ -635,25 +606,46 @@ export default function RoomScreen() {
   }
 
   const placeName =
-    (activity?.place_name ?? activity?.place_text ?? "").trim() || "No place";
+    (activity?.place_name ?? activity?.place_text ?? "").trim() ||
+    t("activityCard.place_none");
   const placeAddress = (activity?.place_address ?? "").trim();
 
   // :zap: CHANGE 1: Build "sectioned list items" (Today/Yesterday/Date)
   const chatItems: ChatItem[] = useMemo(() => {
     const items: ChatItem[] = [];
-    let lastLabel: string | null = null;
+    let currentLabel: string | null = null;
 
-    for (const e of events) {
-      const label = sectionLabelForIso(e.created_at);
-      if (label !== lastLabel) {
-        items.push({ kind: "section", id: `section:${label}`, label });
-        lastLabel = label;
+    const ordered = [...events].sort((a, b) => {
+      const ta = new Date(a.created_at).getTime();
+      const tb = new Date(b.created_at).getTime();
+      if (tb !== ta) return tb - ta;
+      return String(b.id).localeCompare(String(a.id));
+    });
+
+    for (const e of ordered) {
+      const label = sectionLabelForIso(t, i18n.language, e.created_at);
+      if (label !== currentLabel && currentLabel) {
+        // For inverted list: place section AFTER its group's messages
+        items.push({
+          kind: "section",
+          id: `section:${currentLabel}`,
+          label: currentLabel,
+        });
       }
+      currentLabel = label;
       items.push({ kind: "event", id: e.id, e });
     }
 
+    if (currentLabel) {
+      items.push({
+        kind: "section",
+        id: `section:${currentLabel}`,
+        label: currentLabel,
+      });
+    }
+
     return items;
-  }, [events]);
+  }, [events, i18n.language, t]);
 
   // :zap: CHANGE 2: Long-press handler for message
   function openMessageMenu(e: RoomEventRow) {
@@ -666,20 +658,32 @@ export default function RoomScreen() {
     if (Platform.OS === "web") {
       try {
         await navigator.clipboard.writeText(text);
-        Alert.alert("Copied", "Message copied.");
+        Alert.alert(
+          t("room.clipboard.copiedTitle"),
+          t("room.clipboard.copiedBody")
+        );
       } catch {
-        Alert.alert("Copy failed", "Clipboard not available.");
+        Alert.alert(
+          t("room.clipboard.copyFailedTitle"),
+          t("room.clipboard.copyFailedBody")
+        );
       }
       return;
     }
 
     // Native placeholder (so you can test UX now without adding deps)
     // If you want real native copy, tell me and I’ll add expo-clipboard cleanly.
-    Alert.alert("Copy", "Not implemented yet on native (placeholder).");
+    Alert.alert(
+      t("room.clipboard.nativePlaceholderTitle"),
+      t("room.clipboard.nativePlaceholderBody")
+    );
   }
 
   function reportMessage(_e: RoomEventRow) {
-    Alert.alert("Report", "Not implemented yet.");
+    Alert.alert(
+      t("room.clipboard.reportPlaceholderTitle"),
+      t("room.clipboard.reportPlaceholderBody")
+    );
   }
 
   function renderChatItem({ item }: { item: ChatItem }) {
@@ -730,7 +734,7 @@ export default function RoomScreen() {
                 fontWeight: "700",
               }}
             >
-              {renderEventContent(e)}
+              {renderEventContent(t, i18n.language, e)}
             </Text>
           </View>
         </View>
@@ -738,8 +742,10 @@ export default function RoomScreen() {
     }
 
     const isMine = !!userId && e.user_id === userId;
-    const name = getEventDisplayName(e);
-    const content = renderEventContent(e);
+    const name = isMine
+      ? myDisplayName?.trim() || t("room.you")
+      : getEventDisplayName(t, e);
+    const content = renderEventContent(t, i18n.language, e);
 
     // :zap: CHANGE 4: IG-ish layout: name closer + smaller gap, time near bubble
     return (
@@ -810,7 +816,7 @@ export default function RoomScreen() {
             borderColor: TOKENS.border,
             borderRadius: 16,
             padding: 12,
-            backgroundColor: TOKENS.cardBg,
+            backgroundColor: TOKENS.surface,
             gap: 10,
           }}
         >
@@ -821,7 +827,7 @@ export default function RoomScreen() {
               <Text
                 style={{ fontSize: 18, fontWeight: "900", color: TOKENS.title }}
               >
-                {activity?.title_text ?? "Room"}
+                {activity?.title_text ?? t("room.fallbackRoomTitle")}
               </Text>
 
               <Text
@@ -865,7 +871,7 @@ export default function RoomScreen() {
                       color: TOKENS.text,
                     }}
                   >
-                    Members {members.length}
+                    {t("room.membersCount", { count: members.length })}
                   </Text>
                 </View>
 
@@ -887,12 +893,12 @@ export default function RoomScreen() {
                         color: TOKENS.okText,
                       }}
                     >
-                      Created
+                      {t("room.createdBadge")}
                     </Text>
                   </View>
                 ) : null}
 
-                {roomState.label ? (
+                {roomState.labelKey ? (
                   <View
                     style={{
                       paddingVertical: 4,
@@ -910,7 +916,9 @@ export default function RoomScreen() {
                         color: TOKENS.dangerText,
                       }}
                     >
-                      {roomState.label}
+                      {roomState.labelKey === "closed"
+                        ? t("room.closedBadge")
+                        : t("room.expiredBadge")}
                     </Text>
                   </View>
                 ) : null}
@@ -921,20 +929,31 @@ export default function RoomScreen() {
             <View style={{ gap: 8, alignItems: "flex-end" }}>
               {!joined ? (
                 <IconButton
-                  label={myMembershipState === "left" ? "Re-join" : "Join"}
+                  label={
+                    myMembershipState === "left"
+                      ? t("common.rejoin")
+                      : t("common.join")
+                  }
                   onPress={join}
                   disabled={roomState.isReadOnly}
+                  tokens={TOKENS}
                 />
               ) : (
-                <IconButton label="Leave" onPress={confirmLeave} destructive />
+                <IconButton
+                  label={t("common.leave")}
+                  onPress={confirmLeave}
+                  destructive
+                  tokens={TOKENS}
+                />
               )}
 
               {isCreator ? (
                 <IconButton
-                  label="Close"
+                  label={t("common.close")}
                   onPress={closeInvite}
                   disabled={roomState.isReadOnly}
                   destructive
+                  tokens={TOKENS}
                 />
               ) : null}
             </View>
@@ -952,15 +971,15 @@ export default function RoomScreen() {
               }}
             >
               <Text style={{ fontWeight: "900", color: TOKENS.text }}>
-                You left
+                {t("room.leftTitle")}
               </Text>
               <Text style={{ color: TOKENS.subtext }}>
-                You can view history. Tap Re-join to chat again.
+                {t("room.leftBody")}
               </Text>
             </View>
           ) : null}
 
-          {roomState.label ? (
+          {roomState.labelKey ? (
             <View
               style={{
                 padding: 10,
@@ -972,10 +991,10 @@ export default function RoomScreen() {
               }}
             >
               <Text style={{ fontWeight: "900", color: TOKENS.dangerText }}>
-                Read-only
+                {t("room.readonlyTitle")}
               </Text>
               <Text style={{ color: TOKENS.dangerText, opacity: 0.9 }}>
-                You can still view messages.
+                {t("room.readonlyBody")}
               </Text>
             </View>
           ) : null}
@@ -988,16 +1007,14 @@ export default function RoomScreen() {
             borderWidth: 1,
             borderColor: TOKENS.border,
             borderRadius: 16,
-            backgroundColor: TOKENS.cardBg,
+            backgroundColor: TOKENS.surface,
             paddingHorizontal: 12,
             paddingTop: 8,
             paddingBottom: 10,
           }}
         >
           {!canReadEvents ? (
-            <Text style={{ color: TOKENS.subtext }}>
-              Join this invite to see and send messages.
-            </Text>
+            <Text style={{ color: TOKENS.subtext }}>{t("room.joinToSee")}</Text>
           ) : (
             <FlatList
               ref={(r) => (listRef.current = r)}
@@ -1005,9 +1022,24 @@ export default function RoomScreen() {
               keyExtractor={(x) => x.id}
               renderItem={renderChatItem}
               contentContainerStyle={{ gap: 8, paddingBottom: 6 }}
-              onContentSizeChange={() => scrollToBottom(false)}
+              inverted
+              onEndReached={loadOlder}
+              onEndReachedThreshold={0.2}
+              ListFooterComponent={
+                chatHasMore ? (
+                  <View style={{ paddingVertical: 6 }}>
+                    <Text style={{ textAlign: "center", opacity: 0.5 }}>
+                      {loadingOlder ? t("common.loading") : ""}
+                    </Text>
+                  </View>
+                ) : null
+              }
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
+              initialNumToRender={12}
+              windowSize={7}
+              maxToRenderPerBatch={12}
+              updateCellsBatchingPeriod={40}
             />
           )}
         </View>
@@ -1015,19 +1047,22 @@ export default function RoomScreen() {
         {/* Quick actions (near input, like IG quick reactions) */}
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
           <QuickChip
-            label="✅ I'm here"
+            label={t("room.quick.imHere")}
             onPress={() => sendQuick("IM_HERE")}
             disabled={!canInteract}
+            tokens={TOKENS}
           />
           <QuickChip
-            label="⏱️ 10 min late"
+            label={t("room.quick.late10")}
             onPress={() => sendQuick("LATE_10")}
             disabled={!canInteract}
+            tokens={TOKENS}
           />
           <QuickChip
-            label="❌ Cancel"
+            label={t("room.quick.cancel")}
             onPress={() => sendQuick("CANCEL")}
             disabled={!canInteract}
+            tokens={TOKENS}
           />
         </View>
 
@@ -1039,12 +1074,12 @@ export default function RoomScreen() {
             onChangeText={setMessage}
             placeholder={
               canInteract
-                ? "Message…"
+                ? t("room.placeholder.message")
                 : myMembershipState === "left"
-                  ? "Re-join to chat"
+                  ? t("room.placeholder.rejoinToChat")
                   : roomState.isReadOnly
-                    ? "Read-only"
-                    : "Join to chat"
+                    ? t("room.placeholder.readonly")
+                    : t("room.placeholder.joinToChat")
             }
             editable={canInteract}
             multiline
@@ -1059,7 +1094,7 @@ export default function RoomScreen() {
               paddingHorizontal: 12,
               paddingVertical: 10,
               color: TOKENS.text,
-              backgroundColor: TOKENS.cardBg,
+              backgroundColor: TOKENS.surface,
               opacity: canInteract ? 1 : 0.6,
             }}
           />
@@ -1073,11 +1108,13 @@ export default function RoomScreen() {
               borderRadius: 18,
               borderWidth: 1,
               borderColor: TOKENS.border,
-              backgroundColor: TOKENS.cardBg,
+              backgroundColor: TOKENS.surface,
               opacity: !canInteract ? 0.5 : pressed ? 0.85 : 1,
             })}
           >
-            <Text style={{ fontWeight: "900", color: TOKENS.text }}>Send</Text>
+            <Text style={{ fontWeight: "900", color: TOKENS.text }}>
+              {t("common.send")}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -1100,7 +1137,7 @@ export default function RoomScreen() {
           <Pressable
             onPress={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: TOKENS.surface,
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               borderWidth: 1,
@@ -1115,41 +1152,49 @@ export default function RoomScreen() {
                 width: 42,
                 height: 4,
                 borderRadius: 999,
-                backgroundColor: "#E5E7EB",
+                backgroundColor: TOKENS.border,
                 marginBottom: 10,
               }}
             />
 
             <View style={{ paddingHorizontal: 16, paddingBottom: 8, gap: 4 }}>
               <Text style={{ fontWeight: "900", color: TOKENS.text }}>
-                Message
+                {t("room.menu.title")}
               </Text>
               {menuTarget ? (
                 <Text style={{ color: TOKENS.subtext }} numberOfLines={2}>
-                  {renderEventContent(menuTarget)}
+                  {renderEventContent(t, i18n.language, menuTarget)}
                 </Text>
               ) : null}
             </View>
 
             <SheetItem
-              label="Copy"
+              label={t("room.menu.copy")}
               onPress={async () => {
-                const t = menuTarget ? renderEventContent(menuTarget) : "";
+                const text = menuTarget
+                  ? renderEventContent(t, i18n.language, menuTarget)
+                  : "";
                 setMenuOpen(false);
-                await copyToClipboard(t);
+                await copyToClipboard(text);
               }}
+              tokens={TOKENS}
             />
             <SheetItem
-              label="Report"
+              label={t("room.menu.report")}
               onPress={() => {
                 if (!menuTarget) return;
                 setMenuOpen(false);
                 reportMessage(menuTarget);
               }}
+              tokens={TOKENS}
             />
 
             <View style={{ height: 8 }} />
-            <SheetItem label="Cancel" onPress={() => setMenuOpen(false)} />
+            <SheetItem
+              label={t("room.menu.cancel")}
+              onPress={() => setMenuOpen(false)}
+              tokens={TOKENS}
+            />
           </Pressable>
         </Pressable>
       </Modal>

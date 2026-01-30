@@ -1,135 +1,179 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 import ActivityCard, {
   type ActivityCardActivity,
 } from "../../components/ActivityCard";
 import BrowseMap from "../../components/BrowseMap";
-import { requireUserId } from "../../lib/auth";
-import { fetchMembershipRowsForUser, upsertJoin } from "../../lib/activities";
-import { supabase } from "../../lib/supabase";
-
-function isJoinable(a: ActivityCardActivity, joinedSet: Set<string>): boolean {
-  if (joinedSet.has(a.id)) return false;
-  if (a.status !== "open") return false;
-  if (a.expires_at && new Date(a.expires_at).getTime() <= Date.now())
-    return false;
-  return true;
-}
+import { requireUserId } from "../../lib/domain/auth";
+import {
+  getBrowsePage,
+  getMembershipForUser,
+  joinActivity,
+  type ActivitiesPage,
+} from "../../lib/repo/activities_repo";
+import { isJoinableActivity } from "../../lib/domain/activities";
+import { subscribeToBrowseActivities } from "../../lib/realtime/activities";
+import { useT } from "../../lib/i18n/useT";
+import {
+  formatCapacity,
+  formatGenderPref,
+  formatLocalDateTime,
+} from "../../lib/i18n/i18n_format";
+import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { handleError } from "../../lib/ui/handleError";
 
 // :zap: CHANGE 1: Browse = joinable open + not expired + not joined
 export default function BrowseScreen() {
   const router = useRouter();
+  const { t } = useT();
+  const theme = useTheme();
+
+  const PAGE_SIZE = 30;
 
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
   const [joinedSet, setJoinedSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [cursor, setCursor] = useState<ActivitiesPage["cursor"]>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
-  const load = useCallback(async () => {
+  const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
     setUserId(uid);
 
-    const memberships = await fetchMembershipRowsForUser(uid);
+    const memberships = await getMembershipForUser(uid);
     const joined = new Set(
       memberships.filter((m) => m.state === "joined").map((m) => m.activity_id)
     );
     setJoinedSet(joined);
 
-    const { data, error } = await supabase
-      .from("activities")
-      .select(
-        "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at"
-      )
-      .eq("status", "open")
-      .order("created_at", { ascending: false })
-      .limit(200);
+    const page = await getBrowsePage({
+      cursor: null,
+      limit: PAGE_SIZE,
+      joinedSet: joined,
+    });
 
-    if (error) throw error;
-
-    const rows = (data ?? []) as ActivityCardActivity[];
-    const joinable = rows.filter((a) => isJoinable(a, joined));
-
-    setItems(joinable);
+    setItems(page.rows);
+    setCursor(page.cursor);
+    setHasMore(page.hasMore);
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await getBrowsePage({
+        cursor,
+        limit: PAGE_SIZE,
+        joinedSet,
+      });
+      if (page.rows.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      setItems((prev) => {
+        const map = new Map(prev.map((x) => [x.id, x]));
+        for (const a of page.rows) map.set(a.id, a);
+        const arr = Array.from(map.values());
+        arr.sort((a, b) => {
+          const ta = new Date(a.created_at ?? 0).getTime();
+          const tb = new Date(b.created_at ?? 0).getTime();
+          if (tb !== ta) return tb - ta;
+          return String(b.id).localeCompare(String(a.id));
+        });
+        return arr;
+      });
+      setCursor(page.cursor);
+      setHasMore(page.hasMore);
+    } catch (e: any) {
+      handleError(t("browse.refreshErrorTitle"), e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, hasMore, joinedSet, loadingMore, t]);
 
   useEffect(() => {
     (async () => {
       try {
-        await load();
+        await loadInitial();
       } catch (e: any) {
-        console.error(e);
-        Alert.alert("Load failed", e?.message ?? "Unknown error");
+        handleError(t("browse.loadErrorTitle"), e);
         router.replace("/login");
       } finally {
         setLoading(false);
       }
     })();
-  }, [load, router]);
+  }, [loadInitial, router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (loading) return;
+      loadInitial().catch((e: any) => {
+        handleError(t("browse.refreshErrorTitle"), e);
+      });
+    }, [loadInitial, loading, t])
+  );
 
   // :zap: CHANGE 9: Realtime updates for Browse list.
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase
-      .channel("browse-activities")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "activities" },
-        (payload) => {
-          const next = (payload.new ?? null) as ActivityCardActivity | null;
-          const old = (payload.old ?? null) as ActivityCardActivity | null;
+    const unsubscribe = subscribeToBrowseActivities((payload) => {
+      const next = (payload.new ?? null) as ActivityCardActivity | null;
+      const old = (payload.old ?? null) as ActivityCardActivity | null;
 
-          setItems((prev) => {
-            const map = new Map(prev.map((x) => [x.id, x]));
+      setItems((prev) => {
+        const map = new Map(prev.map((x) => [x.id, x]));
 
-            if (payload.eventType === "DELETE") {
-              if (old?.id) map.delete(old.id);
-              return Array.from(map.values());
-            }
-
-            if (!next?.id) return prev;
-
-            const shouldShow = isJoinable(next, joinedSet);
-
-            if (!shouldShow) {
-              map.delete(next.id);
-            } else {
-              map.set(next.id, next);
-            }
-
-            const arr = Array.from(map.values());
-            arr.sort((a, b) => {
-              const ta = new Date(a.created_at ?? 0).getTime();
-              const tb = new Date(b.created_at ?? 0).getTime();
-              return tb - ta;
-            });
-            return arr;
-          });
+        if (payload.eventType === "DELETE") {
+          if (old?.id) map.delete(old.id);
+          return Array.from(map.values());
         }
-      )
-      .subscribe();
+
+        if (!next?.id) return prev;
+
+        const shouldShow = isJoinableActivity(next, joinedSet);
+
+        if (!shouldShow) {
+          map.delete(next.id);
+        } else {
+          map.set(next.id, next);
+        }
+
+        const arr = Array.from(map.values());
+        arr.sort((a, b) => {
+          const ta = new Date(a.created_at ?? 0).getTime();
+          const tb = new Date(b.created_at ?? 0).getTime();
+          if (tb !== ta) return tb - ta;
+          return String(b.id).localeCompare(String(a.id));
+        });
+        return arr;
+      });
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [userId, joinedSet]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await load();
+      await loadInitial();
     } catch (e: any) {
-      console.error(e);
-      Alert.alert("Refresh failed", e?.message ?? "Unknown error");
+      handleError(t("browse.refreshErrorTitle"), e);
     } finally {
       setRefreshing(false);
     }
-  }, [load]);
+  }, [loadInitial]);
 
   async function onPressCard(a: ActivityCardActivity) {
     if (!userId) return;
@@ -139,22 +183,22 @@ export default function BrowseScreen() {
     }
 
     const title = a.title_text;
-    const placeName = (a.place_name ?? a.place_text ?? "").trim() || "No place";
+    const placeName =
+      (a.place_name ?? a.place_text ?? "").trim() || t("browse.place_none");
     const placeAddress = (a.place_address ?? "").trim();
-    const expiresLabel = a.expires_at
-      ? new Date(a.expires_at).toLocaleString()
-      : "Never";
-    const capacityLabel = a.capacity ?? "Unlimited";
+    const expiresLabel = formatLocalDateTime(a.expires_at, t);
+    const capacityLabel = formatCapacity(a.capacity, t);
+    const genderPrefLabel = formatGenderPref(a.gender_pref, t);
 
     const confirmJoin = async () => {
       setJoiningId(a.id);
       try {
-        await upsertJoin(a.id, userId);
+        await joinActivity(a.id, userId);
         setJoinedSet((prev) => new Set([...prev, a.id]));
+        setItems((prev) => prev.filter((x) => x.id !== a.id));
         router.push(`/room/${a.id}`);
       } catch (e: any) {
-        console.error(e);
-        Alert.alert("Join failed", e?.message ?? "Unknown error");
+        handleError(t("browse.joinErrorTitle"), e);
       } finally {
         setJoiningId(null);
       }
@@ -162,79 +206,59 @@ export default function BrowseScreen() {
 
     if (viewMode === "map") {
       const details = [
-        `🎯 ${title}`,
-        `📍 ${placeName}`,
-        placeAddress ? `   ${placeAddress}` : null,
-        `👥 性別偏好: ${a.gender_pref}`,
-        `👤 人數: ${capacityLabel}`,
-        `⏳ 到期: ${expiresLabel}`,
+        t("browse.details.goal", { title }),
+        t("browse.details.place", { placeName }),
+        placeAddress ? t("browse.details.address", { placeAddress }) : null,
+        t("browse.details.genderPref", { genderPref: genderPrefLabel }),
+        t("browse.details.capacity", { capacityLabel }),
+        t("browse.details.expires", { expiresLabel }),
       ]
         .filter(Boolean)
         .join("\n");
 
-      Alert.alert("確認加入邀請？", details, [
-        { text: "Cancel", style: "cancel" },
-        { text: "Join", style: "default", onPress: confirmJoin },
+      Alert.alert(t("browse.mapJoinConfirmTitle"), details, [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("common.join"), style: "default", onPress: confirmJoin },
       ]);
       return;
     }
 
-    Alert.alert(`Join "${title}"?`, "", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Join", style: "default", onPress: confirmJoin },
+    Alert.alert(t("browse.joinConfirmTitle", { title }), "", [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("common.join"), style: "default", onPress: confirmJoin },
     ]);
   }
 
   const header = useMemo(() => {
-    const ToggleButton = ({
-      value,
-      label,
-    }: {
-      value: "list" | "map";
-      label: string;
-    }) => {
-      const selected = viewMode === value;
-      return (
-        <Pressable
-          onPress={() => setViewMode(value)}
-          style={{
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderRadius: 999,
-            borderWidth: 1,
-            opacity: selected ? 1 : 0.6,
-          }}
-        >
-          <Text style={{ fontWeight: "800" }}>{label}</Text>
-        </Pressable>
-      );
-    };
-
     return (
       <View style={{ padding: 16, gap: 10 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>Browse</Text>
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <ToggleButton value="list" label="List" />
-          <ToggleButton value="map" label="Map" />
-        </View>
-        <Text style={{ opacity: 0.7 }}>
-          Open invites you can join right now.
+        <Text style={{ fontSize: 18, fontWeight: "800" }}>
+          {t("browse.headerTitle")}
         </Text>
+        <SegmentedTabs
+          value={viewMode}
+          onChange={setViewMode}
+          items={[
+            { value: "list", label: t("browse.mode_list") },
+            { value: "map", label: t("browse.mode_map") },
+          ]}
+        />
+        <Text style={{ opacity: 0.7 }}>{t("browse.subtitle")}</Text>
       </View>
     );
-  }, [viewMode]);
+  }, [viewMode, t]);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: 16 }}>
-        <Text>Loading...</Text>
-      </View>
+      <Screen>
+        <Text>{t("common.loading")}</Text>
+      </Screen>
     );
   }
 
   if (viewMode === "map") {
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
         {header}
         <BrowseMap
           items={items}
@@ -253,6 +277,13 @@ export default function BrowseScreen() {
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.6}
+      initialNumToRender={6}
+      windowSize={5}
+      maxToRenderPerBatch={8}
+      updateCellsBatchingPeriod={50}
+      removeClippedSubviews
       renderItem={({ item }) => (
         <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
           <ActivityCard
@@ -270,9 +301,26 @@ export default function BrowseScreen() {
         </View>
       )}
       ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
-          <Text style={{ opacity: 0.8 }}>No joinable invites right now.</Text>
+        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
+          <Text style={{ opacity: 0.8 }}>{t("browse.empty")}</Text>
+          <PrimaryButton
+            label={t("browse.empty_cta")}
+            onPress={() => router.push("/create")}
+          />
         </View>
+      }
+      ListFooterComponent={
+        loadingMore ? (
+          <View style={{ paddingVertical: 12 }}>
+            <ActivityIndicator />
+          </View>
+        ) : !hasMore && items.length > 0 ? (
+          <View style={{ paddingVertical: 12 }}>
+            <Text style={{ textAlign: "center", opacity: 0.6 }}>
+              {t("common.noMore")}
+            </Text>
+          </View>
+        ) : null
       }
     />
   );

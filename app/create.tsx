@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { Alert, ScrollView, Text } from "react-native";
+import { Alert, Text } from "react-native";
 import { useRouter } from "expo-router";
-import { supabase } from "../lib/supabase";
-import { requireUserId } from "../lib/auth";
+import { supabase } from "../lib/api/supabase";
+import { requireUserId } from "../lib/domain/auth";
 import InviteForm, { type InviteFormPayload } from "../components/InviteForm";
+import { useT } from "../lib/i18n/useT";
+import { Screen } from "../src/ui/common";
 
 export default function CreateScreen() {
   const router = useRouter();
+  const { t } = useT();
   const [submitting, setSubmitting] = useState(false);
 
   async function onCreate(payload: InviteFormPayload) {
@@ -56,22 +59,24 @@ export default function CreateScreen() {
       router.replace("/");
     } catch (_e: any) {
       console.error(_e);
-      Alert.alert("Create failed", _e?.message ?? "Unknown error");
+      Alert.alert(t("create.errorTitle"), _e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <Text style={{ fontSize: 18, fontWeight: "700" }}>Create an invite</Text>
+    <Screen scroll>
+      <Text style={{ fontSize: 18, fontWeight: "700" }}>
+        {t("create.title")}
+      </Text>
 
       <InviteForm
         mode="create"
         submitting={submitting}
-        submitLabel="Post now"
+        submitLabel={t("create.submit")}
         onSubmit={onCreate}
       />
-    </ScrollView>
+    </Screen>
   );
 }

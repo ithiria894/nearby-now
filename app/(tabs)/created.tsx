@@ -1,27 +1,28 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 import ActivityCard, {
   type ActivityCardActivity,
 } from "../../components/ActivityCard";
-import { requireUserId } from "../../lib/auth";
-import { supabase } from "../../lib/supabase";
-import { fetchMembershipRowsForUser } from "../../lib/activities";
-
-// :zap: CHANGE 1: Helper to decide "active" activities.
-function isActiveActivity(a: ActivityCardActivity): boolean {
-  if (a.status && a.status !== "open") return false;
-  if (a.expires_at) {
-    const ts = new Date(a.expires_at).getTime();
-    if (!Number.isNaN(ts) && ts <= Date.now()) return false;
-  }
-  return true;
-}
+import { requireUserId } from "../../lib/domain/auth";
+import {
+  getCreatedPage,
+  getMembershipForUser,
+  type ActivitiesPage,
+} from "../../lib/repo/activities_repo";
+import { isActiveActivity } from "../../lib/domain/activities";
+import { useT } from "../../lib/i18n/useT";
+import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
+import { handleError } from "../../lib/ui/handleError";
 
 // :zap: CHANGE 1: Created = activities.creator_id = me
 export default function CreatedScreen() {
   const router = useRouter();
+  const { t } = useT();
+
+  const PAGE_SIZE = 30;
 
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
@@ -30,12 +31,15 @@ export default function CreatedScreen() {
   const [joinedSet, setJoinedSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [cursor, setCursor] = useState<ActivitiesPage["cursor"]>(null);
+  const [hasMore, setHasMore] = useState(true);
 
-  const load = useCallback(async () => {
+  const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
     setUserId(uid);
 
-    const memberships = await fetchMembershipRowsForUser(uid);
+    const memberships = await getMembershipForUser(uid);
     setJoinedSet(
       new Set(
         memberships
@@ -44,54 +48,90 @@ export default function CreatedScreen() {
       )
     );
 
-    const { data, error } = await supabase
-      .from("activities")
-      .select(
-        "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at"
-      )
-      .eq("creator_id", uid)
-      .order("created_at", { ascending: false })
-      .limit(200);
-
-    if (error) throw error;
-    setItems((data ?? []) as ActivityCardActivity[]);
+    const page = await getCreatedPage({
+      userId: uid,
+      cursor: null,
+      limit: PAGE_SIZE,
+    });
+    setItems(page.rows);
+    setCursor(page.cursor);
+    setHasMore(page.hasMore);
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || !userId) return;
+    setLoadingMore(true);
+    try {
+      const page = await getCreatedPage({
+        userId,
+        cursor,
+        limit: PAGE_SIZE,
+      });
+      if (page.rows.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      setItems((prev) => {
+        const map = new Map(prev.map((x) => [x.id, x]));
+        for (const a of page.rows) map.set(a.id, a);
+        const arr = Array.from(map.values());
+        arr.sort((a, b) => {
+          const ta = new Date(a.created_at ?? 0).getTime();
+          const tb = new Date(b.created_at ?? 0).getTime();
+          if (tb !== ta) return tb - ta;
+          return String(b.id).localeCompare(String(a.id));
+        });
+        return arr;
+      });
+      setCursor(page.cursor);
+      setHasMore(page.hasMore);
+    } catch (e: any) {
+      handleError(t("created.refreshErrorTitle"), e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, hasMore, loadingMore, t, userId]);
 
   useEffect(() => {
     (async () => {
       try {
-        await load();
+        await loadInitial();
       } catch (e: any) {
-        console.error(e);
-        Alert.alert("Load failed", e?.message ?? "Unknown error");
+        handleError(t("created.loadErrorTitle"), e);
         router.replace("/login");
       } finally {
         setLoading(false);
       }
     })();
-  }, [load, router]);
+  }, [loadInitial, router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (loading) return;
+      loadInitial().catch((e: any) => {
+        handleError(t("created.refreshErrorTitle"), e);
+      });
+    }, [loadInitial, loading, t])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await load();
+      await loadInitial();
     } catch (e: any) {
-      console.error(e);
-      Alert.alert("Refresh failed", e?.message ?? "Unknown error");
+      handleError(t("created.refreshErrorTitle"), e);
     } finally {
       setRefreshing(false);
     }
-  }, [load]);
+  }, [loadInitial]);
 
   // :zap: CHANGE 2: Split items into active/inactive.
   const { activeItems, inactiveItems } = useMemo(() => {
     const active: ActivityCardActivity[] = [];
     const inactive: ActivityCardActivity[] = [];
-
     for (const a of items) {
       (isActiveActivity(a) ? active : inactive).push(a);
     }
-
     return { activeItems: active, inactiveItems: inactive };
   }, [items]);
 
@@ -101,53 +141,41 @@ export default function CreatedScreen() {
     const activeCount = activeItems.length;
     const inactiveCount = inactiveItems.length;
 
-    const TabButton = ({
-      value,
-      label,
-    }: {
-      value: "active" | "inactive";
-      label: string;
-    }) => {
-      const selected = tab === value;
-      return (
-        <Pressable
-          onPress={() => setTab(value)}
-          style={{
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderRadius: 999,
-            borderWidth: 1,
-            opacity: selected ? 1 : 0.6,
-          }}
-        >
-          <Text style={{ fontWeight: "800" }}>{label}</Text>
-        </Pressable>
-      );
-    };
-
     return (
       <View style={{ padding: 16, gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>Created</Text>
+        <Text style={{ fontSize: 18, fontWeight: "800" }}>
+          {t("created.headerTitle")}
+        </Text>
 
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <TabButton value="active" label={`Active (${activeCount})`} />
-          <TabButton value="inactive" label={`Inactive (${inactiveCount})`} />
-        </View>
+        <SegmentedTabs
+          value={tab}
+          onChange={setTab}
+          items={[
+            {
+              value: "active",
+              label: t("created.tab_active", { count: activeCount }),
+            },
+            {
+              value: "inactive",
+              label: t("created.tab_inactive", { count: inactiveCount }),
+            },
+          ]}
+        />
 
         <Text style={{ opacity: 0.7 }}>
           {tab === "active"
-            ? "Showing active invites you created."
-            : "Showing expired/closed invites you created."}
+            ? t("created.subtitle_active")
+            : t("created.subtitle_inactive")}
         </Text>
       </View>
     );
-  }, [tab, activeItems.length, inactiveItems.length]);
+  }, [tab, activeItems.length, inactiveItems.length, t]);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: 16 }}>
-        <Text>Loading...</Text>
-      </View>
+      <Screen>
+        <Text>{t("common.loading")}</Text>
+      </Screen>
     );
   }
 
@@ -159,6 +187,13 @@ export default function CreatedScreen() {
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.6}
+      initialNumToRender={6}
+      windowSize={5}
+      maxToRenderPerBatch={8}
+      updateCellsBatchingPeriod={50}
+      removeClippedSubviews
       renderItem={({ item }) => (
         <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
           <ActivityCard
@@ -172,11 +207,26 @@ export default function CreatedScreen() {
         </View>
       )}
       ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
-          <Text style={{ opacity: 0.8 }}>
-            You haven’t posted any invites yet.
-          </Text>
+        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
+          <Text style={{ opacity: 0.8 }}>{t("created.empty")}</Text>
+          <PrimaryButton
+            label={t("created.empty_cta")}
+            onPress={() => router.push("/create")}
+          />
         </View>
+      }
+      ListFooterComponent={
+        loadingMore ? (
+          <View style={{ paddingVertical: 12 }}>
+            <ActivityIndicator />
+          </View>
+        ) : !hasMore && items.length > 0 ? (
+          <View style={{ paddingVertical: 12 }}>
+            <Text style={{ textAlign: "center", opacity: 0.6 }}>
+              {t("common.noMore")}
+            </Text>
+          </View>
+        ) : null
       }
     />
   );

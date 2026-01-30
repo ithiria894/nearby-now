@@ -1,5 +1,5 @@
 // lib/auth.ts
-import { supabase } from "./supabase";
+import { supabase } from "../api/supabase";
 
 // :zap: CHANGE 1: Central helper to require an authenticated user (id + email).
 export async function requireUser(): Promise<{
