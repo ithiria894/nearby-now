@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, FlatList, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -10,7 +10,7 @@ import ActivityCard, {
 import { requireUserId } from "../../lib/domain/auth";
 import {
   fetchMembershipRowsForUser,
-  fetchActivitiesByIds,
+  fetchActivitiesByIdsPage,
   isActiveActivity,
 } from "../../lib/domain/activities";
 import { supabase } from "../../lib/api/supabase";
@@ -21,6 +21,8 @@ export default function JoinedScreen() {
   const router = useRouter();
   const { t } = useT();
 
+  const PAGE_SIZE = 30;
+
   const [userId, setUserId] = useState<string | null>(null);
   // :zap: CHANGE 1: Tabs instead of Active-only switch.
   const [tab, setTab] = useState<"active" | "inactive" | "left">("active");
@@ -28,12 +30,16 @@ export default function JoinedScreen() {
   const [membershipById, setMembershipById] = useState<
     Map<string, MembershipState>
   >(new Map());
+  const [membershipIds, setMembershipIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const load = useCallback(async () => {
+  const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
     setUserId(uid);
 
@@ -47,16 +53,57 @@ export default function JoinedScreen() {
     setMembershipById(map);
 
     const ids = relevant.map((m) => m.activity_id);
-    const activities = await fetchActivitiesByIds(ids);
+    setMembershipIds(ids);
+    const activities = await fetchActivitiesByIdsPage(ids, null, PAGE_SIZE);
     // :zap: CHANGE 2: hard-exclude anything I created (even if role is wrong).
     const notMine = activities.filter((a) => a.creator_id !== uid);
     setItems(notMine);
+    const nextCursor =
+      activities.length > 0
+        ? (activities[activities.length - 1].created_at as string)
+        : null;
+    setCursor(nextCursor);
+    setHasMore(activities.length === PAGE_SIZE);
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || membershipIds.length === 0 || !userId)
+      return;
+    setLoadingMore(true);
+    try {
+      const activities = await fetchActivitiesByIdsPage(
+        membershipIds,
+        cursor,
+        PAGE_SIZE
+      );
+      if (activities.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      const notMine = activities.filter((a) => a.creator_id !== userId);
+      setItems((prev) => {
+        const map = new Map(prev.map((x) => [x.id, x]));
+        for (const a of notMine) map.set(a.id, a);
+        return Array.from(map.values());
+      });
+      const nextCursor =
+        activities.length > 0
+          ? (activities[activities.length - 1].created_at as string)
+          : null;
+      setCursor(nextCursor);
+      setHasMore(activities.length === PAGE_SIZE);
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert(t("joined.refreshErrorTitle"), e?.message ?? "Unknown error");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, hasMore, loadingMore, membershipIds, t, userId]);
 
   useEffect(() => {
     (async () => {
       try {
-        await load();
+        await loadInitial();
       } catch (e: any) {
         console.error(e);
         Alert.alert(t("joined.loadErrorTitle"), e?.message ?? "Unknown error");
@@ -65,40 +112,40 @@ export default function JoinedScreen() {
         setLoading(false);
       }
     })();
-  }, [load, router]);
+  }, [loadInitial, router]);
 
   useFocusEffect(
     useCallback(() => {
       if (loading) return;
-      load().catch((e: any) => {
+      loadInitial().catch((e: any) => {
         console.error(e);
         Alert.alert(
           t("joined.refreshErrorTitle"),
           e?.message ?? "Unknown error"
         );
       });
-    }, [load, loading, t])
+    }, [loadInitial, loading, t])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await load();
+      await loadInitial();
     } catch (e: any) {
       console.error(e);
       Alert.alert(t("joined.refreshErrorTitle"), e?.message ?? "Unknown error");
     } finally {
       setRefreshing(false);
     }
-  }, [load]);
+  }, [loadInitial]);
 
   const scheduleReload = useCallback(() => {
     if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
     reloadTimerRef.current = setTimeout(() => {
-      load();
+      loadInitial();
       reloadTimerRef.current = null;
     }, 250);
-  }, [load]);
+  }, [loadInitial]);
 
   // :zap: CHANGE 3: Realtime updates (membership + activities).
   useEffect(() => {
@@ -210,6 +257,8 @@ export default function JoinedScreen() {
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.6}
       initialNumToRender={6}
       windowSize={5}
       maxToRenderPerBatch={8}
@@ -250,6 +299,19 @@ export default function JoinedScreen() {
             />
           ) : null}
         </View>
+      }
+      ListFooterComponent={
+        loadingMore ? (
+          <View style={{ paddingVertical: 12 }}>
+            <ActivityIndicator />
+          </View>
+        ) : !hasMore && items.length > 0 ? (
+          <View style={{ paddingVertical: 12 }}>
+            <Text style={{ textAlign: "center", opacity: 0.6 }}>
+              {t("common.noMore")}
+            </Text>
+          </View>
+        ) : null
       }
     />
   );

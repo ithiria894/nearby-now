@@ -63,6 +63,29 @@ export async function fetchActivitiesByIds(
   return rows as ActivityCardActivity[];
 }
 
+export async function fetchActivitiesByIdsPage(
+  activityIds: string[],
+  cursor?: string | null,
+  limit = 50
+): Promise<ActivityCardActivity[]> {
+  if (activityIds.length === 0) return [];
+
+  let query = supabase
+    .from("activities")
+    .select(ACTIVITY_SELECT)
+    .in("id", activityIds)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (cursor) {
+    query = query.lt("created_at", cursor);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as ActivityCardActivity[];
+}
+
 export async function fetchOpenActivities(
   limit = 200
 ): Promise<ActivityCardActivity[]> {
@@ -73,6 +96,26 @@ export async function fetchOpenActivities(
     .order("created_at", { ascending: false })
     .limit(limit);
 
+  if (error) throw error;
+  return (data ?? []) as ActivityCardActivity[];
+}
+
+export async function fetchOpenActivitiesPage(
+  cursor?: string | null,
+  limit = 50
+): Promise<ActivityCardActivity[]> {
+  let query = supabase
+    .from("activities")
+    .select(ACTIVITY_SELECT)
+    .eq("status", "open")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (cursor) {
+    query = query.lt("created_at", cursor);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as ActivityCardActivity[];
 }
@@ -88,6 +131,27 @@ export async function fetchCreatedActivities(
     .order("created_at", { ascending: false })
     .limit(limit);
 
+  if (error) throw error;
+  return (data ?? []) as ActivityCardActivity[];
+}
+
+export async function fetchCreatedActivitiesPage(
+  userId: string,
+  cursor?: string | null,
+  limit = 50
+): Promise<ActivityCardActivity[]> {
+  let query = supabase
+    .from("activities")
+    .select(ACTIVITY_SELECT)
+    .eq("creator_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (cursor) {
+    query = query.lt("created_at", cursor);
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []) as ActivityCardActivity[];
 }

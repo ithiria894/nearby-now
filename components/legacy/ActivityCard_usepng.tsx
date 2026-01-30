@@ -19,6 +19,7 @@ export type ActivityCardActivity = {
   gender_pref: string;
   capacity: number | null;
   status: string;
+  created_at?: string | null;
 };
 
 export type MembershipState = "none" | "joined" | "left";

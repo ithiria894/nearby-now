@@ -20,7 +20,8 @@
     "rejoin": "Re-join",
     "ok": "OK",
     "unknown": "Unknown",
-    "never": "Never"
+    "never": "Never",
+    "noMore": "No more"
   },
   "auth": {
     "login": {

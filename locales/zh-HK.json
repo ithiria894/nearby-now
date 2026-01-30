@@ -20,7 +20,8 @@
     "rejoin": "重新加入",
     "ok": "好",
     "unknown": "未知",
-    "never": "永不"
+    "never": "永不",
+    "noMore": "冇更多"
   },
   "auth": {
     "login": {

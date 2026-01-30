@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, FlatList, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
@@ -9,7 +9,7 @@ import ActivityCard, {
 import BrowseMap from "../../components/BrowseMap";
 import { requireUserId } from "../../lib/domain/auth";
 import {
-  fetchOpenActivities,
+  fetchOpenActivitiesPage,
   fetchMembershipRowsForUser,
   joinWithSystemMessage,
   isJoinableActivity,
@@ -30,15 +30,20 @@ export default function BrowseScreen() {
   const { t } = useT();
   const theme = useTheme();
 
+  const PAGE_SIZE = 30;
+
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
   const [joinedSet, setJoinedSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
-  const load = useCallback(async () => {
+  const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
     setUserId(uid);
 
@@ -48,16 +53,47 @@ export default function BrowseScreen() {
     );
     setJoinedSet(joined);
 
-    const rows = await fetchOpenActivities(200);
+    const rows = await fetchOpenActivitiesPage(null, PAGE_SIZE);
     const joinable = rows.filter((a) => isJoinableActivity(a, joined));
 
     setItems(joinable);
+    const nextCursor =
+      rows.length > 0 ? (rows[rows.length - 1].created_at as string) : null;
+    setCursor(nextCursor);
+    setHasMore(rows.length === PAGE_SIZE);
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const rows = await fetchOpenActivitiesPage(cursor, PAGE_SIZE);
+      if (rows.length === 0) {
+        setHasMore(false);
+        return;
+      }
+      const joinable = rows.filter((a) => isJoinableActivity(a, joinedSet));
+      setItems((prev) => {
+        const map = new Map(prev.map((x) => [x.id, x]));
+        for (const a of joinable) map.set(a.id, a);
+        return Array.from(map.values());
+      });
+      const nextCursor =
+        rows.length > 0 ? (rows[rows.length - 1].created_at as string) : null;
+      setCursor(nextCursor);
+      setHasMore(rows.length === PAGE_SIZE);
+    } catch (e: any) {
+      console.error(e);
+      Alert.alert(t("browse.refreshErrorTitle"), e?.message ?? "Unknown error");
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, hasMore, joinedSet, loadingMore, t]);
 
   useEffect(() => {
     (async () => {
       try {
-        await load();
+        await loadInitial();
       } catch (e: any) {
         console.error(e);
         Alert.alert(t("browse.loadErrorTitle"), e?.message ?? "Unknown error");
@@ -66,19 +102,19 @@ export default function BrowseScreen() {
         setLoading(false);
       }
     })();
-  }, [load, router]);
+  }, [loadInitial, router]);
 
   useFocusEffect(
     useCallback(() => {
       if (loading) return;
-      load().catch((e: any) => {
+      loadInitial().catch((e: any) => {
         console.error(e);
         Alert.alert(
           t("browse.refreshErrorTitle"),
           e?.message ?? "Unknown error"
         );
       });
-    }, [load, loading, t])
+    }, [loadInitial, loading, t])
   );
 
   // :zap: CHANGE 9: Realtime updates for Browse list.
@@ -132,14 +168,14 @@ export default function BrowseScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await load();
+      await loadInitial();
     } catch (e: any) {
       console.error(e);
       Alert.alert(t("browse.refreshErrorTitle"), e?.message ?? "Unknown error");
     } finally {
       setRefreshing(false);
     }
-  }, [load]);
+  }, [loadInitial]);
 
   async function onPressCard(a: ActivityCardActivity) {
     if (!userId) return;
@@ -244,6 +280,8 @@ export default function BrowseScreen() {
       contentContainerStyle={{ paddingBottom: 16 }}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.6}
       initialNumToRender={6}
       windowSize={5}
       maxToRenderPerBatch={8}
@@ -273,6 +311,19 @@ export default function BrowseScreen() {
             onPress={() => router.push("/create")}
           />
         </View>
+      }
+      ListFooterComponent={
+        loadingMore ? (
+          <View style={{ paddingVertical: 12 }}>
+            <ActivityIndicator />
+          </View>
+        ) : !hasMore && items.length > 0 ? (
+          <View style={{ paddingVertical: 12 }}>
+            <Text style={{ textAlign: "center", opacity: 0.6 }}>
+              {t("common.noMore")}
+            </Text>
+          </View>
+        ) : null
       }
     />
   );
