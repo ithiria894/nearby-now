@@ -46,10 +46,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const baseTextStyle = { color: theme.colors.text };
 
     Text.defaultProps = Text.defaultProps ?? {};
-    Text.defaultProps.style = [baseTextStyle];
+    const prevTextStyle = Text.defaultProps.style ?? [];
+    Text.defaultProps.style = Array.isArray(prevTextStyle)
+      ? [...prevTextStyle, baseTextStyle]
+      : [prevTextStyle, baseTextStyle];
 
     TextInput.defaultProps = TextInput.defaultProps ?? {};
-    TextInput.defaultProps.style = [baseTextStyle];
+    const prevInputStyle = TextInput.defaultProps.style ?? [];
+    TextInput.defaultProps.style = Array.isArray(prevInputStyle)
+      ? [...prevInputStyle, baseTextStyle]
+      : [prevInputStyle, baseTextStyle];
     TextInput.defaultProps.placeholderTextColor = theme.colors.subtext;
   }, [theme]);
 

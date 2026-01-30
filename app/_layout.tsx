@@ -33,8 +33,13 @@ export default function RootLayout() {
   useEffect(() => {
     let active = true;
     (async () => {
-      await initI18n();
-      if (active) setI18nReady(true);
+      try {
+        await initI18n();
+      } catch (e) {
+        console.error("i18n init failed:", e);
+      } finally {
+        if (active) setI18nReady(true);
+      }
     })();
     return () => {
       active = false;

@@ -127,7 +127,7 @@ This applies new migrations to the remote Supabase database.
 
 ---
 
-6. Dump remote data to local (for QA)
+5. Dump remote data to local (for QA)
 
 ---
 
@@ -162,7 +162,7 @@ scripts/dump_remote_to_local.sh
 
 ---
 
-7. DB QA (quick checks)
+6. DB QA (quick checks)
 
 ---
 

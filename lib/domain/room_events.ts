@@ -31,7 +31,8 @@ function mapRpcRow(row: RoomEventRpcRow): RoomEventRow {
     type: row.type,
     content: row.content,
     created_at: row.created_at,
-    profiles: row.display_name ? { display_name: row.display_name } : null,
+    profiles:
+      row.display_name !== null ? { display_name: row.display_name } : null,
   };
 }
 

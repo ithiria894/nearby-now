@@ -9,6 +9,7 @@ import {
 import { useT } from "../../lib/i18n/useT";
 import { Screen } from "../../src/ui/common";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
+import { handleError } from "../../lib/ui/handleError";
 
 // :zap: CHANGE 1: Settings tab with Logout action
 export default function SettingsScreen() {
@@ -44,7 +45,13 @@ export default function SettingsScreen() {
           return (
             <Pressable
               key={lng}
-              onPress={() => setLanguage(lng as SupportedLang)}
+              onPress={async () => {
+                try {
+                  await setLanguage(lng as SupportedLang);
+                } catch (e) {
+                  handleError(t("settings.language"), e);
+                }
+              }}
               style={{
                 padding: 10,
                 borderWidth: 1,
