@@ -9,11 +9,11 @@ import ActivityCard, {
 } from "../../components/ActivityCard";
 import { requireUserId } from "../../lib/domain/auth";
 import {
-  fetchMembershipRowsForUser,
-  fetchActivitiesByIdsPage,
-  isActiveActivity,
-  type ActivityCursor,
-} from "../../lib/domain/activities";
+  getJoinedPage,
+  getMembershipForUser,
+  type ActivitiesPage,
+} from "../../lib/repo/activities_repo";
+import { isActiveActivity } from "../../lib/domain/activities";
 import { subscribeToJoinedActivityChanges } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
 import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
@@ -35,7 +35,7 @@ export default function JoinedScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [cursor, setCursor] = useState<ActivityCursor | null>(null);
+  const [cursor, setCursor] = useState<ActivitiesPage["cursor"]>(null);
   const [hasMore, setHasMore] = useState(true);
 
   const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -44,7 +44,7 @@ export default function JoinedScreen() {
     const uid = await requireUserId();
     setUserId(uid);
 
-    const memberships = await fetchMembershipRowsForUser(uid);
+    const memberships = await getMembershipForUser(uid);
     const relevant = memberships.filter((m) => m.role !== "creator");
 
     const map = new Map<string, MembershipState>();
@@ -55,17 +55,15 @@ export default function JoinedScreen() {
 
     const ids = relevant.map((m) => m.activity_id);
     setMembershipIds(ids);
-    const activities = await fetchActivitiesByIdsPage(ids, null, PAGE_SIZE);
-    // :zap: CHANGE 2: hard-exclude anything I created (even if role is wrong).
-    const notMine = activities.filter((a) => a.creator_id !== uid);
-    setItems(notMine);
-    const last = activities[activities.length - 1];
-    const nextCursor =
-      activities.length > 0 && last?.created_at
-        ? { created_at: last.created_at, id: last.id }
-        : null;
-    setCursor(nextCursor);
-    setHasMore(activities.length === PAGE_SIZE);
+    const page = await getJoinedPage({
+      activityIds: ids,
+      cursor: null,
+      limit: PAGE_SIZE,
+      excludeCreatorId: uid,
+    });
+    setItems(page.rows);
+    setCursor(page.cursor);
+    setHasMore(page.hasMore);
   }, []);
 
   const loadMore = useCallback(async () => {
@@ -73,19 +71,19 @@ export default function JoinedScreen() {
       return;
     setLoadingMore(true);
     try {
-      const activities = await fetchActivitiesByIdsPage(
-        membershipIds,
+      const page = await getJoinedPage({
+        activityIds: membershipIds,
         cursor,
-        PAGE_SIZE
-      );
-      if (activities.length === 0) {
+        limit: PAGE_SIZE,
+        excludeCreatorId: userId,
+      });
+      if (page.rows.length === 0) {
         setHasMore(false);
         return;
       }
-      const notMine = activities.filter((a) => a.creator_id !== userId);
       setItems((prev) => {
         const map = new Map(prev.map((x) => [x.id, x]));
-        for (const a of notMine) map.set(a.id, a);
+        for (const a of page.rows) map.set(a.id, a);
         const arr = Array.from(map.values());
         arr.sort((a, b) => {
           const ta = new Date(a.created_at ?? 0).getTime();
@@ -95,13 +93,8 @@ export default function JoinedScreen() {
         });
         return arr;
       });
-      const last = activities[activities.length - 1];
-      const nextCursor =
-        activities.length > 0 && last?.created_at
-          ? { created_at: last.created_at, id: last.id }
-          : null;
-      setCursor(nextCursor);
-      setHasMore(activities.length === PAGE_SIZE);
+      setCursor(page.cursor);
+      setHasMore(page.hasMore);
     } catch (e: any) {
       console.error(e);
       Alert.alert(t("joined.refreshErrorTitle"), e?.message ?? "Unknown error");
@@ -161,15 +154,17 @@ export default function JoinedScreen() {
   useEffect(() => {
     if (!userId) return;
 
-    const unsubscribe = subscribeToJoinedActivityChanges(userId, () =>
-      scheduleReload()
+    const unsubscribe = subscribeToJoinedActivityChanges(
+      userId,
+      new Set(membershipIds),
+      () => scheduleReload()
     );
 
     return () => {
       unsubscribe();
       if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
     };
-  }, [userId, scheduleReload]);
+  }, [userId, membershipIds, scheduleReload]);
 
   // :zap: CHANGE 2: Split joined into Active / Inactive / Left lists.
   const { activeJoined, inactiveJoined, leftRooms } = useMemo(() => {
