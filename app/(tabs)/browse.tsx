@@ -15,7 +15,7 @@ import {
   isJoinableActivity,
   type ActivityCursor,
 } from "../../lib/domain/activities";
-import { supabase } from "../../lib/api/supabase";
+import { subscribeToBrowseActivities } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
 import {
   formatCapacity,
@@ -135,47 +135,41 @@ export default function BrowseScreen() {
   useEffect(() => {
     if (!userId) return;
 
-    const channel = supabase
-      .channel("browse-activities")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "activities" },
-        (payload) => {
-          const next = (payload.new ?? null) as ActivityCardActivity | null;
-          const old = (payload.old ?? null) as ActivityCardActivity | null;
+    const unsubscribe = subscribeToBrowseActivities((payload) => {
+      const next = (payload.new ?? null) as ActivityCardActivity | null;
+      const old = (payload.old ?? null) as ActivityCardActivity | null;
 
-          setItems((prev) => {
-            const map = new Map(prev.map((x) => [x.id, x]));
+      setItems((prev) => {
+        const map = new Map(prev.map((x) => [x.id, x]));
 
-            if (payload.eventType === "DELETE") {
-              if (old?.id) map.delete(old.id);
-              return Array.from(map.values());
-            }
-
-            if (!next?.id) return prev;
-
-            const shouldShow = isJoinableActivity(next, joinedSet);
-
-            if (!shouldShow) {
-              map.delete(next.id);
-            } else {
-              map.set(next.id, next);
-            }
-
-            const arr = Array.from(map.values());
-            arr.sort((a, b) => {
-              const ta = new Date(a.created_at ?? 0).getTime();
-              const tb = new Date(b.created_at ?? 0).getTime();
-              return tb - ta;
-            });
-            return arr;
-          });
+        if (payload.eventType === "DELETE") {
+          if (old?.id) map.delete(old.id);
+          return Array.from(map.values());
         }
-      )
-      .subscribe();
+
+        if (!next?.id) return prev;
+
+        const shouldShow = isJoinableActivity(next, joinedSet);
+
+        if (!shouldShow) {
+          map.delete(next.id);
+        } else {
+          map.set(next.id, next);
+        }
+
+        const arr = Array.from(map.values());
+        arr.sort((a, b) => {
+          const ta = new Date(a.created_at ?? 0).getTime();
+          const tb = new Date(b.created_at ?? 0).getTime();
+          if (tb !== ta) return tb - ta;
+          return String(b.id).localeCompare(String(a.id));
+        });
+        return arr;
+      });
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [userId, joinedSet]);
 

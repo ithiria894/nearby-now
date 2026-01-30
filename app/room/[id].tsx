@@ -15,6 +15,12 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { supabase } from "../../lib/api/supabase";
 import { requireUserId } from "../../lib/domain/auth";
 import { joinWithSystemMessage } from "../../lib/domain/activities";
+import {
+  getRoomEventById,
+  getRoomEventsPage,
+  type RoomEventCursor,
+  type RoomEventRow,
+} from "../../lib/domain/room_events";
 import { useT } from "../../lib/i18n/useT";
 import {
   computeRoomState,
@@ -23,8 +29,8 @@ import {
   hhmm,
   renderEventContent,
   sectionLabelForIso,
-  type RoomEventType,
 } from "../../lib/domain/room";
+import { subscribeToRoom } from "../../lib/realtime/room";
 import { useTheme } from "../../src/ui/theme/ThemeProvider";
 import type { ThemeTokens } from "../../src/ui/theme/tokens";
 
@@ -46,26 +52,6 @@ type MemberRow = {
   role: string;
   state: string;
   joined_at: string;
-};
-
-type RoomEventRow = {
-  id: string;
-  activity_id: string;
-  user_id: string | null;
-  type: RoomEventType;
-  content: string;
-  created_at: string;
-  profiles?: { display_name: string | null } | null;
-};
-
-type RoomEventRpcRow = {
-  id: string;
-  activity_id: string;
-  user_id: string | null;
-  type: RoomEventType;
-  content: string;
-  created_at: string;
-  display_name: string | null;
 };
 
 type ChatItem =
@@ -202,10 +188,7 @@ export default function RoomScreen() {
   >("none");
   const [myDisplayName, setMyDisplayName] = useState<string | null>(null);
   const [leftAt, setLeftAt] = useState<Date | null>(null);
-  const [chatCursor, setChatCursor] = useState<{
-    created_at: string;
-    id: string;
-  } | null>(null);
+  const [chatCursor, setChatCursor] = useState<RoomEventCursor | null>(null);
   const [chatHasMore, setChatHasMore] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
 
@@ -220,24 +203,12 @@ export default function RoomScreen() {
 
   function scrollToBottom(animated = true) {
     requestAnimationFrame(() => {
-      listRef.current?.scrollToEnd({ animated });
+      listRef.current?.scrollToOffset({ offset: 0, animated });
     });
   }
 
   const keyboardVerticalOffset = 100; // you said you already set this
   const CHAT_PAGE_SIZE = 50;
-
-  function mapRpcRow(row: RoomEventRpcRow): RoomEventRow {
-    return {
-      id: row.id,
-      activity_id: row.activity_id,
-      user_id: row.user_id,
-      type: row.type,
-      content: row.content,
-      created_at: row.created_at,
-      profiles: row.display_name ? { display_name: row.display_name } : null,
-    };
-  }
 
   const loadAll = useCallback(
     async (currentUserId?: string | null) => {
@@ -291,29 +262,17 @@ export default function RoomScreen() {
         return;
       }
 
-      const { data: e, error: eErr } = await supabase.rpc(
-        "get_room_events_page",
-        {
-          p_activity_id: activityId,
-          p_limit: CHAT_PAGE_SIZE,
-          p_cursor_created_at: null,
-          p_cursor_id: null,
-          p_left_at: leftAtValue ? leftAtValue.toISOString() : null,
-        }
-      );
-      if (eErr) console.error(eErr);
-      const mapped = ((e ?? []) as RoomEventRpcRow[]).map(mapRpcRow);
-      const rows = mapped.slice().reverse();
-      setEvents(rows);
-      const first = rows[0];
-      const nextCursor =
-        rows.length > 0 && first?.created_at
-          ? { created_at: first.created_at, id: first.id }
-          : null;
-      setChatCursor(nextCursor);
-      setChatHasMore((e ?? []).length === CHAT_PAGE_SIZE);
+      const page = await getRoomEventsPage({
+        activityId,
+        limit: CHAT_PAGE_SIZE,
+        cursor: null,
+        leftAt: leftAtValue,
+      });
 
-      if (rows.length > 0) scrollToBottom(false);
+      setEvents(page.rows);
+      setChatCursor(page.nextCursor);
+      setChatHasMore(page.hasMore);
+      if (page.rows.length > 0) scrollToBottom(false);
     },
     [activityId, userId]
   );
@@ -322,16 +281,14 @@ export default function RoomScreen() {
     if (!chatHasMore || loadingOlder || !chatCursor) return;
     setLoadingOlder(true);
     try {
-      const { data, error } = await supabase.rpc("get_room_events_page", {
-        p_activity_id: activityId,
-        p_limit: CHAT_PAGE_SIZE,
-        p_cursor_created_at: chatCursor.created_at,
-        p_cursor_id: chatCursor.id,
-        p_left_at: leftAt ? leftAt.toISOString() : null,
+      const page = await getRoomEventsPage({
+        activityId,
+        limit: CHAT_PAGE_SIZE,
+        cursor: chatCursor,
+        leftAt,
       });
-      if (error) throw error;
-      const mapped = ((data ?? []) as RoomEventRpcRow[]).map(mapRpcRow);
-      const rows = mapped.slice().reverse();
+
+      const rows = page.rows;
       if (rows.length === 0) {
         setChatHasMore(false);
         return;
@@ -341,8 +298,8 @@ export default function RoomScreen() {
         const merged = rows.filter((r) => !existing.has(r.id)).concat(prev);
         return merged as any;
       });
-      setChatCursor({ created_at: rows[0].created_at, id: rows[0].id });
-      setChatHasMore((data ?? []).length === CHAT_PAGE_SIZE);
+      setChatCursor(page.nextCursor);
+      setChatHasMore(page.hasMore);
     } catch (e: any) {
       console.error(e);
     } finally {
@@ -357,26 +314,11 @@ export default function RoomScreen() {
     myMembershipState,
   ]);
 
-  const fetchEventById = useCallback(async (eventId: string) => {
-    const { data, error } = await supabase.rpc("get_room_event_by_id", {
-      p_event_id: eventId,
-    });
-
-    if (error) {
-      console.error(error);
-      return null;
-    }
-    const rows = (data ?? []) as RoomEventRpcRow[];
-    if (!rows.length) return null;
-    return mapRpcRow(rows[0]);
-  }, []);
-
   const appendEventIfMissing = useCallback((next: RoomEventRow) => {
     setEvents((prev) => {
       if (prev.some((e) => e.id === next.id)) return prev;
       return [...prev, next];
     });
-    scrollToBottom(true);
   }, []);
 
   useEffect(() => {
@@ -420,59 +362,32 @@ export default function RoomScreen() {
   useEffect(() => {
     if (myMembershipState !== "joined") return;
 
-    const channel = supabase
-      .channel(`nearby-now-room-${activityId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "activity_members",
-          filter: `activity_id=eq.${activityId}`,
-        },
-        () => scheduleReload()
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "room_events",
-          filter: `activity_id=eq.${activityId}`,
-        },
-        (payload) => {
-          const id = (payload.new as { id?: string })?.id;
-          if (!id) return;
-          fetchEventById(id).then((evt) => {
+    const unsubscribe = subscribeToRoom(activityId, {
+      onMemberChange: () => scheduleReload(),
+      onActivityChange: () => scheduleReload(),
+      onEventInsert: (payload) => {
+        const id = (payload.new as { id?: string })?.id;
+        if (!id) return;
+        getRoomEventById(id)
+          .then((evt) => {
             if (!evt) return;
             if (myMembershipState === "left" && leftAt) {
               const ts = new Date(evt.created_at).getTime();
               if (ts > leftAt.getTime()) return;
             }
             appendEventIfMissing(evt);
-          });
-        }
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "activities",
-          filter: `id=eq.${activityId}`,
-        },
-        () => scheduleReload()
-      )
-      .subscribe();
+          })
+          .catch((e) => console.error(e));
+      },
+    });
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
       if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
     };
   }, [
     activityId,
     appendEventIfMissing,
-    fetchEventById,
     leftAt,
     myMembershipState,
     scheduleReload,
@@ -700,7 +615,14 @@ export default function RoomScreen() {
     const items: ChatItem[] = [];
     let lastLabel: string | null = null;
 
-    for (const e of events) {
+    const ordered = [...events].sort((a, b) => {
+      const ta = new Date(a.created_at).getTime();
+      const tb = new Date(b.created_at).getTime();
+      if (tb !== ta) return tb - ta;
+      return String(b.id).localeCompare(String(a.id));
+    });
+
+    for (const e of ordered) {
       const label = sectionLabelForIso(t, i18n.language, e.created_at);
       if (label !== lastLabel) {
         items.push({ kind: "section", id: `section:${label}`, label });
@@ -1087,14 +1009,10 @@ export default function RoomScreen() {
               keyExtractor={(x) => x.id}
               renderItem={renderChatItem}
               contentContainerStyle={{ gap: 8, paddingBottom: 6 }}
-              onContentSizeChange={() => scrollToBottom(false)}
-              onScroll={({ nativeEvent }) => {
-                if (nativeEvent.contentOffset.y <= 20) {
-                  loadOlder();
-                }
-              }}
-              scrollEventThrottle={16}
-              ListHeaderComponent={
+              inverted
+              onEndReached={loadOlder}
+              onEndReachedThreshold={0.2}
+              ListFooterComponent={
                 chatHasMore ? (
                   <View style={{ paddingVertical: 6 }}>
                     <Text style={{ textAlign: "center", opacity: 0.5 }}>
