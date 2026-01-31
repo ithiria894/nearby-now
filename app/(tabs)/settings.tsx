@@ -1,6 +1,6 @@
 import { Alert, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { supabase } from "../../lib/api/supabase";
+import { backend } from "../../lib/backend";
 import {
   setLanguage,
   SUPPORTED_LANGS,
@@ -20,7 +20,7 @@ export default function SettingsScreen() {
 
   async function onLogout() {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { error } = await backend.auth.signOut();
       if (error) throw error;
       router.replace("/login");
     } catch (e: any) {

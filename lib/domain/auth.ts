@@ -1,15 +1,12 @@
 // lib/auth.ts
-import { supabase } from "../api/supabase";
+import { backend } from "../backend";
 
 // :zap: CHANGE 1: Central helper to require an authenticated user (id + email).
 export async function requireUser(): Promise<{
   id: string;
   email: string | null;
 }> {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  const { user, error } = await backend.auth.getUser();
 
   if (error) throw error;
   if (!user) throw new Error("Not authenticated");
@@ -36,34 +33,29 @@ function computeDefaultDisplayName(
 export async function ensureProfile(): Promise<void> {
   const { id: userId, email } = await requireUser();
 
-  const { error: upsertErr } = await supabase
-    .from("profiles")
-    .upsert({ id: userId }, { onConflict: "id" });
+  const { error: upsertErr } = await backend.profiles.upsertProfile(userId);
   if (upsertErr) {
     console.error("ensureProfile upsert failed:", upsertErr);
     throw upsertErr;
   }
 
-  const { data: profile, error: selErr } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", userId)
-    .single();
+  const { displayName, error: selErr } =
+    await backend.profiles.getProfileDisplayName(userId);
 
   if (selErr) {
     console.error("ensureProfile select failed:", selErr);
     return;
   }
 
-  const currentName = (profile?.display_name ?? "").trim();
+  const currentName = (displayName ?? "").trim();
   if (currentName) return;
 
   const nextName = computeDefaultDisplayName(email, userId);
 
-  const { error: updErr } = await supabase
-    .from("profiles")
-    .update({ display_name: nextName })
-    .eq("id", userId);
+  const { error: updErr } = await backend.profiles.updateProfileDisplayName(
+    userId,
+    nextName
+  );
 
   if (updErr) {
     console.error("ensureProfile update display_name failed:", updErr);

@@ -1,5 +1,5 @@
 // app/_layout.tsx
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import "fast-text-encoding"; // ✅ provides TextDecoder/TextEncoder
 import "react-native-url-polyfill/auto"; // ✅ provides URL, URLSearchParams
@@ -7,6 +7,8 @@ import { initI18n } from "../lib/i18n/i18n";
 import { useT } from "../lib/i18n/useT";
 import { ThemeProvider } from "../src/ui/theme/ThemeProvider";
 import { useAuthGuard } from "../lib/hooks/useAuthGuard";
+import { Pressable, Text } from "react-native";
+import { useTheme } from "../src/ui/theme/ThemeProvider";
 
 // :zap: CHANGE 1: Load Google fonts via expo-font + expo-google-fonts
 import { useFonts } from "expo-font";
@@ -16,6 +18,23 @@ import { Kalam_400Regular, Kalam_700Bold } from "@expo-google-fonts/kalam";
 
 // :zap: CHANGE 2: Keep splash visible until fonts are ready (prevents font flicker)
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+function StackBackButton() {
+  const router = useRouter();
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={() => {
+        if (router.canGoBack()) router.back();
+        else router.replace("/(tabs)/browse");
+      }}
+      hitSlop={10}
+      style={{ paddingHorizontal: 10, paddingVertical: 6 }}
+    >
+      <Text style={{ fontSize: 18, color: theme.colors.text }}>←</Text>
+    </Pressable>
+  );
+}
 
 export default function RootLayout() {
   const { t } = useT();
@@ -71,10 +90,16 @@ export default function RootLayout() {
           options={{ title: t("rootNav.register") }}
         />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="create" options={{ title: t("rootNav.create") }} />
+        <Stack.Screen
+          name="create"
+          options={{ title: t("rootNav.create"), headerLeft: StackBackButton }}
+        />
         <Stack.Screen
           name="edit/[id]"
-          options={{ title: t("rootNav.editInvite") }}
+          options={{
+            title: t("rootNav.editInvite"),
+            headerLeft: StackBackButton,
+          }}
         />
         <Stack.Screen
           name="room/[id]"
@@ -83,6 +108,7 @@ export default function RootLayout() {
             headerBackTitleVisible: false,
             headerBackTitle: "",
             headerBackButtonDisplayMode: "minimal",
+            headerLeft: StackBackButton,
           }}
         />
       </Stack>

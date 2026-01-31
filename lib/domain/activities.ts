@@ -1,4 +1,4 @@
-import { supabase } from "../api/supabase";
+import { backend } from "../backend";
 import type { ActivityCardActivity } from "../components/ActivityCard";
 
 export type MembershipState = "joined" | "left";
@@ -12,22 +12,6 @@ export type MembershipRow = {
 };
 
 export type ActivityCursor = { created_at: string; id: string };
-
-const ACTIVITY_SELECT =
-  "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, gender_pref, capacity, status, created_at";
-
-function applyCursor<T>(query: T, cursor?: ActivityCursor | null): T {
-  if (!cursor) return query;
-  return (query as any).or(
-    `created_at.lt.${cursor.created_at},and(created_at.eq.${cursor.created_at},id.lt.${cursor.id})`
-  );
-}
-
-function orderByCreatedId<T>(query: T, asc = false): T {
-  return (query as any)
-    .order("created_at", { ascending: asc })
-    .order("id", { ascending: asc });
-}
 
 export function isExpiredOrClosed(a: ActivityCardActivity): boolean {
   if (a.status && a.status !== "open") return true;
@@ -61,10 +45,8 @@ export async function fetchActivitiesByIds(
 ): Promise<ActivityCardActivity[]> {
   if (activityIds.length === 0) return [];
 
-  const { data, error } = await supabase
-    .from("activities")
-    .select(ACTIVITY_SELECT)
-    .in("id", activityIds);
+  const { data, error } =
+    await backend.activities.fetchActivitiesByIds(activityIds);
 
   if (error) throw error;
 
@@ -85,15 +67,11 @@ export async function fetchActivitiesByIdsPage(
 ): Promise<ActivityCardActivity[]> {
   if (activityIds.length === 0) return [];
 
-  let query = supabase
-    .from("activities")
-    .select(ACTIVITY_SELECT)
-    .in("id", activityIds);
-
-  query = orderByCreatedId(query, false).limit(limit);
-  query = applyCursor(query, cursor);
-
-  const { data, error } = await query;
+  const { data, error } = await backend.activities.fetchActivitiesByIdsPage(
+    activityIds,
+    cursor,
+    limit
+  );
   if (error) throw error;
   return (data ?? []) as ActivityCardActivity[];
 }
@@ -101,12 +79,7 @@ export async function fetchActivitiesByIdsPage(
 export async function fetchOpenActivities(
   limit = 200
 ): Promise<ActivityCardActivity[]> {
-  const { data, error } = await supabase
-    .from("activities")
-    .select(ACTIVITY_SELECT)
-    .eq("status", "open")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { data, error } = await backend.activities.fetchOpenActivities(limit);
 
   if (error) throw error;
   return (data ?? []) as ActivityCardActivity[];
@@ -116,15 +89,10 @@ export async function fetchOpenActivitiesPage(
   cursor?: ActivityCursor | null,
   limit = 50
 ): Promise<ActivityCardActivity[]> {
-  let query = supabase
-    .from("activities")
-    .select(ACTIVITY_SELECT)
-    .eq("status", "open");
-
-  query = orderByCreatedId(query, false).limit(limit);
-  query = applyCursor(query, cursor);
-
-  const { data, error } = await query;
+  const { data, error } = await backend.activities.fetchOpenActivitiesPage(
+    cursor,
+    limit
+  );
   if (error) throw error;
   return (data ?? []) as ActivityCardActivity[];
 }
@@ -133,12 +101,10 @@ export async function fetchCreatedActivities(
   userId: string,
   limit = 200
 ): Promise<ActivityCardActivity[]> {
-  const { data, error } = await supabase
-    .from("activities")
-    .select(ACTIVITY_SELECT)
-    .eq("creator_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { data, error } = await backend.activities.fetchCreatedActivities(
+    userId,
+    limit
+  );
 
   if (error) throw error;
   return (data ?? []) as ActivityCardActivity[];
@@ -149,15 +115,11 @@ export async function fetchCreatedActivitiesPage(
   cursor?: ActivityCursor | null,
   limit = 50
 ): Promise<ActivityCardActivity[]> {
-  let query = supabase
-    .from("activities")
-    .select(ACTIVITY_SELECT)
-    .eq("creator_id", userId);
-
-  query = orderByCreatedId(query, false).limit(limit);
-  query = applyCursor(query, cursor);
-
-  const { data, error } = await query;
+  const { data, error } = await backend.activities.fetchCreatedActivitiesPage(
+    userId,
+    cursor,
+    limit
+  );
   if (error) throw error;
   return (data ?? []) as ActivityCardActivity[];
 }
@@ -166,10 +128,8 @@ export async function fetchCreatedActivitiesPage(
 export async function fetchMembershipRowsForUser(
   userId: string
 ): Promise<MembershipRow[]> {
-  const { data, error } = await supabase
-    .from("activity_members")
-    .select("activity_id, user_id, state, role, joined_at")
-    .eq("user_id", userId);
+  const { data, error } =
+    await backend.activities.fetchMembershipRowsForUser(userId);
 
   if (error) throw error;
   return (data ?? []) as MembershipRow[];
@@ -177,7 +137,7 @@ export async function fetchMembershipRowsForUser(
 
 // :zap: CHANGE 3: Helper to upsert joined state (works for join + re-join).
 export async function upsertJoin(activityId: string, userId: string) {
-  const { error } = await supabase.from("activity_members").upsert({
+  const { error } = await backend.activities.upsertActivityMember({
     activity_id: activityId,
     user_id: userId,
     role: "member",
@@ -191,16 +151,12 @@ export async function joinWithSystemMessage(
   activityId: string,
   userId: string
 ): Promise<void> {
-  const { data: existing, error: existingErr } = await supabase
-    .from("activity_members")
-    .select("state")
-    .eq("activity_id", activityId)
-    .eq("user_id", userId)
-    .maybeSingle();
+  const { data: existing, error: existingErr } =
+    await backend.activities.getActivityMemberState(activityId, userId);
 
   if (existingErr) throw existingErr;
 
-  const { error } = await supabase.from("activity_members").upsert({
+  const { error } = await backend.activities.upsertActivityMember({
     activity_id: activityId,
     user_id: userId,
     role: "member",
@@ -211,7 +167,7 @@ export async function joinWithSystemMessage(
 
   if ((existing as any)?.state === "joined") return;
 
-  const { error: evtErr } = await supabase.from("room_events").insert({
+  const { error: evtErr } = await backend.roomEvents.insertRoomEvent({
     activity_id: activityId,
     user_id: userId,
     type: "system",

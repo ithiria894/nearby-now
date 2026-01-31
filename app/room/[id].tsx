@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { supabase } from "../../lib/api/supabase";
+import { backend } from "../../lib/backend";
 import { requireUserId } from "../../lib/domain/auth";
 import { joinWithSystemMessage } from "../../lib/domain/activities";
 import {
@@ -212,23 +212,17 @@ export default function RoomScreen() {
 
   const loadAll = useCallback(
     async (currentUserId?: string | null) => {
-      const { data: a, error: aErr } = await supabase
-        .from("activities")
-        .select(
+      const { data: a, error: aErr } =
+        await backend.activities.getActivityById<ActivityRow>(
+          activityId,
           "id, title_text, place_text, place_name, place_address, expires_at, gender_pref, capacity, status, creator_id"
-        )
-        .eq("id", activityId)
-        .single();
+        );
 
       if (aErr) console.error(aErr);
       setActivity((a ?? null) as any);
 
-      const { data: m, error: mErr } = await supabase
-        .from("activity_members")
-        .select("*")
-        .eq("activity_id", activityId)
-        .eq("state", "joined")
-        .order("joined_at", { ascending: true });
+      const { data: m, error: mErr } =
+        await backend.activities.fetchActivityMembers(activityId);
 
       if (mErr) console.error(mErr);
       setMembers((m ?? []) as any);
@@ -238,12 +232,8 @@ export default function RoomScreen() {
       let myState: "none" | "joined" | "left" = "none";
       let leftAtValue: Date | null = null;
       if (uid) {
-        const { data: me, error: meErr } = await supabase
-          .from("activity_members")
-          .select("state,left_at")
-          .eq("activity_id", activityId)
-          .eq("user_id", uid)
-          .maybeSingle();
+        const { data: me, error: meErr } =
+          await backend.activities.getActivityMemberState(activityId, uid);
 
         if (meErr) console.error(meErr);
         const st = (me as any)?.state;
@@ -338,16 +328,13 @@ export default function RoomScreen() {
   useEffect(() => {
     if (!userId) return;
     (async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("id", userId)
-        .single();
+      const { displayName, error } =
+        await backend.profiles.getProfileDisplayName(userId);
       if (error) {
         console.error(error);
         return;
       }
-      setMyDisplayName((data?.display_name ?? "").trim() || null);
+      setMyDisplayName((displayName ?? "").trim() || null);
     })();
   }, [userId]);
 
@@ -451,7 +438,7 @@ export default function RoomScreen() {
 
     try {
       if (!roomState.isReadOnly) {
-        await supabase.from("room_events").insert({
+        await backend.roomEvents.insertRoomEvent({
           activity_id: activityId,
           user_id: userId,
           type: "system",
@@ -459,11 +446,11 @@ export default function RoomScreen() {
         });
       }
 
-      const { error } = await supabase
-        .from("activity_members")
-        .update({ state: "left" })
-        .eq("activity_id", activityId)
-        .eq("user_id", userId);
+      const { error } = await backend.activities.updateActivityMemberState(
+        activityId,
+        userId,
+        { state: "left" }
+      );
 
       if (error) throw error;
 
@@ -531,18 +518,18 @@ export default function RoomScreen() {
     if (!ok) return;
 
     try {
-      const { error: updErr } = await supabase
-        .from("activities")
-        .update({
+      const { error: updErr } = await backend.activities.updateActivity(
+        activityId,
+        {
           status: "closed",
           closed_at: new Date().toISOString(),
           closed_by: userId,
-        })
-        .eq("id", activityId);
+        }
+      );
 
       if (updErr) throw updErr;
 
-      await supabase.from("room_events").insert({
+      await backend.roomEvents.insertRoomEvent({
         activity_id: activityId,
         user_id: userId,
         type: "system",
@@ -566,7 +553,7 @@ export default function RoomScreen() {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    const { error } = await supabase.from("room_events").insert({
+    const { error } = await backend.roomEvents.insertRoomEvent({
       activity_id: activityId,
       user_id: userId,
       type: "chat",
@@ -589,7 +576,7 @@ export default function RoomScreen() {
       return;
     }
 
-    const { error } = await supabase.from("room_events").insert({
+    const { error } = await backend.roomEvents.insertRoomEvent({
       activity_id: activityId,
       user_id: userId,
       type: "quick",
