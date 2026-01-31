@@ -1,7 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Keyboard,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 import ActivityCard, {
   type ActivityCardActivity,
@@ -22,7 +37,7 @@ import {
   formatGenderPref,
   formatLocalDateTime,
 } from "../../lib/i18n/i18n_format";
-import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
+import { Screen, PrimaryButton } from "../../src/ui/common";
 import { useTheme } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
 
@@ -31,6 +46,7 @@ export default function BrowseScreen() {
   const router = useRouter();
   const { t } = useT();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const PAGE_SIZE = 30;
 
@@ -44,6 +60,15 @@ export default function BrowseScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [searchText, setSearchText] = useState("");
+  const [mapImageError, setMapImageError] = useState(false);
+
+  const paperBg = theme.isDark ? theme.colors.bg : "#F7F2EA";
+  const mapImage = require("../../assets/map.png");
+  const bottomInset = insets.bottom;
+  const TAB_HEIGHT = 64;
+  const TAB_BOTTOM = 8 + bottomInset;
+  const tabBarSpace = 0;
 
   const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
@@ -229,25 +254,6 @@ export default function BrowseScreen() {
     ]);
   }
 
-  const header = useMemo(() => {
-    return (
-      <View style={{ padding: 16, gap: 10 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>
-          {t("browse.headerTitle")}
-        </Text>
-        <SegmentedTabs
-          value={viewMode}
-          onChange={setViewMode}
-          items={[
-            { value: "list", label: t("browse.mode_list") },
-            { value: "map", label: t("browse.mode_map") },
-          ]}
-        />
-        <Text style={{ opacity: 0.7 }}>{t("browse.subtitle")}</Text>
-      </View>
-    );
-  }, [viewMode, t]);
-
   if (loading) {
     return (
       <Screen>
@@ -256,72 +262,215 @@ export default function BrowseScreen() {
     );
   }
 
-  if (viewMode === "map") {
-    return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-        {header}
-        <BrowseMap
-          items={items}
-          onPressCard={onPressCard}
-          onRequestList={() => setViewMode("list")}
-        />
-      </View>
-    );
-  }
+  const mapButtonLabel =
+    viewMode === "map" ? t("browse.mapButton_list") : t("browse.mapButton_map");
 
   return (
-    <FlatList
-      data={items}
-      keyExtractor={(x) => x.id}
-      ListHeaderComponent={header}
-      contentContainerStyle={{ paddingBottom: 16 }}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.6}
-      initialNumToRender={6}
-      windowSize={5}
-      maxToRenderPerBatch={8}
-      updateCellsBatchingPeriod={50}
-      removeClippedSubviews
-      renderItem={({ item }) => (
-        <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
-          <ActivityCard
-            activity={item}
-            currentUserId={userId}
-            membershipState="none"
-            isJoining={joiningId === item.id}
-            onPressCard={() => onPressCard(item)}
-            onPressEdit={
-              item.creator_id === userId
-                ? () => router.push(`/edit/${item.id}`)
-                : undefined
-            }
-          />
-        </View>
-      )}
-      ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
-          <Text style={{ opacity: 0.8 }}>{t("browse.empty")}</Text>
-          <PrimaryButton
-            label={t("browse.empty_cta")}
-            onPress={() => router.push("/create")}
-          />
-        </View>
-      }
-      ListFooterComponent={
-        loadingMore ? (
-          <View style={{ paddingVertical: 12 }}>
-            <ActivityIndicator />
-          </View>
-        ) : !hasMore && items.length > 0 ? (
-          <View style={{ paddingVertical: 12 }}>
-            <Text style={{ textAlign: "center", opacity: 0.6 }}>
-              {t("common.noMore")}
+    <View style={{ flex: 1, backgroundColor: paperBg }}>
+      <SafeAreaView edges={["top"]} style={{ backgroundColor: paperBg }}>
+        {/* Section 1: Logo + App name + Search */}
+        <View
+          style={{
+            paddingHorizontal: 18,
+            paddingTop: 12,
+            paddingBottom: 10,
+            gap: 10,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: "#E6F1DE",
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: "#D6E6C8",
+              }}
+            >
+              <Ionicons name="location" size={20} color="#6FA35B" />
+            </View>
+            <Text
+              style={{
+                fontFamily: "KalamBold",
+                fontSize: 26,
+                color: "#2E2A25",
+              }}
+            >
+              {t("app.name")}
             </Text>
           </View>
-        ) : null
-      }
-    />
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: "#E4DCCE",
+              backgroundColor: "#F1ECE3",
+            }}
+          >
+            <Ionicons name="search" size={18} color="#8B847B" />
+            <TextInput
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder={t("browse.searchPlaceholder")}
+              placeholderTextColor="#9C9388"
+              returnKeyType="search"
+              blurOnSubmit
+              onSubmitEditing={() => Keyboard.dismiss()}
+              style={{
+                flex: 1,
+                fontSize: 14,
+                color: "#3A342E",
+              }}
+            />
+            <Pressable
+              onPress={() => {
+                setSearchText("");
+                Keyboard.dismiss();
+              }}
+              hitSlop={6}
+              style={{ padding: 2 }}
+            >
+              <Ionicons
+                name={searchText ? "close-circle" : "chevron-down"}
+                size={18}
+                color="#9C9388"
+              />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Section 2: What's happening + Map button */}
+        <View
+          style={{
+            paddingHorizontal: 18,
+            paddingBottom: 10,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: "KalamBold",
+              fontSize: 20,
+              color: "#3A342E",
+            }}
+          >
+            {t("browse.whatsHappening")}
+          </Text>
+          <Pressable
+            onPress={() => {
+              Keyboard.dismiss();
+              setViewMode(viewMode === "map" ? "list" : "map");
+            }}
+            style={({ pressed }) => ({
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: "#D6E6C8",
+              backgroundColor: pressed ? "#E2F0D8" : "#EAF4E2",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 64,
+            })}
+          >
+            {mapImageError ? (
+              <Text style={{ fontWeight: "800", color: "#4F7E40" }}>
+                {mapButtonLabel}
+              </Text>
+            ) : (
+              <Image
+                source={mapImage}
+                onError={() => setMapImageError(true)}
+                style={{ width: 54, height: 34, borderRadius: 8 }}
+                resizeMode="cover"
+              />
+            )}
+          </Pressable>
+        </View>
+      </SafeAreaView>
+
+      {/* Section 3: Cards / Map (scrollable area only) */}
+      <View style={{ flex: 1 }}>
+        {viewMode === "map" ? (
+          <View style={{ flex: 1, paddingBottom: tabBarSpace }}>
+            <BrowseMap
+              items={items}
+              onPressCard={onPressCard}
+              onRequestList={() => setViewMode("list")}
+            />
+          </View>
+        ) : (
+          <FlatList
+            data={items}
+            keyExtractor={(x) => x.id}
+            contentContainerStyle={{
+              paddingBottom: tabBarSpace,
+              paddingTop: 4,
+            }}
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            onScrollBeginDrag={() => Keyboard.dismiss()}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.6}
+            initialNumToRender={6}
+            windowSize={5}
+            maxToRenderPerBatch={8}
+            updateCellsBatchingPeriod={50}
+            removeClippedSubviews
+            renderItem={({ item }) => (
+              <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+                <ActivityCard
+                  activity={item}
+                  currentUserId={userId}
+                  membershipState="none"
+                  isJoining={joiningId === item.id}
+                  onPressCard={() => onPressCard(item)}
+                  onPressEdit={
+                    item.creator_id === userId
+                      ? () => router.push(`/edit/${item.id}`)
+                      : undefined
+                  }
+                />
+              </View>
+            )}
+            ListEmptyComponent={
+              <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
+                <Text style={{ opacity: 0.8 }}>{t("browse.empty")}</Text>
+                <PrimaryButton
+                  label={t("browse.empty_cta")}
+                  onPress={() => router.push("/create")}
+                />
+              </View>
+            }
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={{ paddingVertical: 12 }}>
+                  <ActivityIndicator />
+                </View>
+              ) : !hasMore && items.length > 0 ? (
+                <View style={{ paddingVertical: 12 }}>
+                  <Text style={{ textAlign: "center", opacity: 0.6 }}>
+                    {t("common.noMore")}
+                  </Text>
+                </View>
+              ) : null
+            }
+          />
+        )}
+      </View>
+    </View>
   );
 }

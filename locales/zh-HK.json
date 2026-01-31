@@ -102,7 +102,11 @@
       "genderPref": "👥 性別偏好：{{genderPref}}",
       "capacity": "👤 人數：{{capacityLabel}}",
       "expires": "⏳ 到期：{{expiresLabel}}"
-    }
+    },
+    "searchPlaceholder": "搜尋、滑動、地點或酒店",
+    "whatsHappening": "附近有咩發生？",
+    "mapButton_map": "地圖",
+    "mapButton_list": "列表"
   },
   "created": {
     "headerTitle": "我建立",

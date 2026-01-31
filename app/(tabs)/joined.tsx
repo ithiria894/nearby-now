@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ActivityCard, {
   type ActivityCardActivity,
@@ -22,6 +23,10 @@ import { handleError } from "../../lib/ui/handleError";
 export default function JoinedScreen() {
   const router = useRouter();
   const { t } = useT();
+  const insets = useSafeAreaInsets();
+  const TAB_HEIGHT = 64;
+  const TAB_BOTTOM = 8 + insets.bottom;
+  const tabBarSpace = 0;
 
   const PAGE_SIZE = 30;
 
@@ -240,7 +245,7 @@ export default function JoinedScreen() {
       data={dataToShow}
       keyExtractor={(a) => a.id}
       ListHeaderComponent={header}
-      contentContainerStyle={{ paddingBottom: 16 }}
+      contentContainerStyle={{ paddingBottom: tabBarSpace }}
       refreshing={refreshing}
       onRefresh={onRefresh}
       onEndReached={loadMore}

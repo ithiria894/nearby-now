@@ -102,7 +102,11 @@
       "genderPref": "👥 性別希望: {{genderPref}}",
       "capacity": "👤 定員: {{capacityLabel}}",
       "expires": "⏳ 期限: {{expiresLabel}}"
-    }
+    },
+    "searchPlaceholder": "検索、スワイプ、場所やホテル",
+    "whatsHappening": "近くで何が起きてる？",
+    "mapButton_map": "地図",
+    "mapButton_list": "リスト"
   },
   "created": {
     "headerTitle": "作成済み",
