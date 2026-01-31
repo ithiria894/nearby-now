@@ -77,7 +77,8 @@
     "theme_light": "淺色",
     "theme_dark": "深色",
     "language_en": "English",
-    "language_zhHK": "繁體中文（香港）"
+    "language_zhHK": "繁體中文（香港）",
+    "language_ja": "日本語"
   },
   "browse": {
     "headerTitle": "探索",

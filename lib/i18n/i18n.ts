@@ -4,9 +4,10 @@ import { initReactI18next } from "react-i18next";
 
 import en from "../../locales/en.json";
 import zhHK from "../../locales/zh-HK.json";
+import ja from "../../locales/ja.json";
 import { getStoredLanguage, setStoredLanguage } from "./i18n_storage";
 
-export const SUPPORTED_LANGS = ["en", "zh-HK"] as const;
+export const SUPPORTED_LANGS = ["en", "zh-HK", "ja"] as const;
 export type SupportedLang = (typeof SUPPORTED_LANGS)[number];
 
 function pickInitialLanguage(): SupportedLang {
@@ -15,6 +16,9 @@ function pickInitialLanguage(): SupportedLang {
 
   if (tag.toLowerCase().startsWith("zh")) {
     return "zh-HK";
+  }
+  if (tag.toLowerCase().startsWith("ja")) {
+    return "ja";
   }
   return "en";
 }
@@ -36,6 +40,7 @@ export async function initI18n(): Promise<void> {
     resources: {
       en: { translation: en },
       "zh-HK": { translation: zhHK },
+      ja: { translation: ja },
     },
     lng,
     fallbackLng: "en",

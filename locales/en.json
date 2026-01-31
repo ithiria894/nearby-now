@@ -77,7 +77,8 @@
     "theme_light": "Light",
     "theme_dark": "Dark",
     "language_en": "English",
-    "language_zhHK": "繁體中文（香港）"
+    "language_zhHK": "繁體中文（香港）",
+    "language_ja": "日本語"
   },
   "browse": {
     "headerTitle": "Browse",
