@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Alert, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { supabase } from "../../lib/api/supabase";
+import { backend } from "../../lib/backend";
 import { requireUserId } from "../../lib/domain/auth";
 import type { InviteChange } from "../../lib/domain/room";
 import InviteForm, {
@@ -65,13 +65,11 @@ export default function EditActivityScreen() {
         const uid = await requireUserId();
         setUserId(uid);
 
-        const { data, error } = await supabase
-          .from("activities")
-          .select(
+        const { data, error } =
+          await backend.activities.getActivityById<ActivityRow>(
+            activityId,
             "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, place_id, location_source, gender_pref, capacity, expires_at, start_time, end_time"
-          )
-          .eq("id", activityId)
-          .single();
+          );
 
         if (error) throw error;
 
@@ -186,26 +184,22 @@ export default function EditActivityScreen() {
     }
 
     if (changes.length === 0) {
-      router.replace("/");
+      router.replace("/(tabs)/created");
       return;
     }
 
     setSaving(true);
     try {
-      const { error: updErr } = await supabase
-        .from("activities")
-        .update(updates)
-        .eq("id", activityId);
+      const { error: updErr } = await backend.activities.updateActivity(
+        activityId,
+        updates
+      );
 
       if (updErr) throw updErr;
 
       // Only insert system event if user is still joined and room is open.
-      const { data: memberRow } = await supabase
-        .from("activity_members")
-        .select("state")
-        .eq("activity_id", activityId)
-        .eq("user_id", userId)
-        .maybeSingle();
+      const { data: memberRow } =
+        await backend.activities.getActivityMemberState(activityId, userId);
 
       const isJoined = (memberRow as any)?.state === "joined";
       const isOpen =
@@ -213,7 +207,7 @@ export default function EditActivityScreen() {
         new Date(activity.expires_at).getTime() > Date.now();
 
       if (isJoined && isOpen) {
-        const { error: evtErr } = await supabase.from("room_events").insert({
+        const { error: evtErr } = await backend.roomEvents.insertRoomEvent({
           activity_id: activityId,
           user_id: userId,
           type: "system",
@@ -228,7 +222,7 @@ export default function EditActivityScreen() {
         }
       }
 
-      router.replace("/");
+      router.replace("/(tabs)/created");
     } catch (e: any) {
       console.error(e);
       Alert.alert(t("edit.saveErrorTitle"), e?.message ?? "Unknown error");

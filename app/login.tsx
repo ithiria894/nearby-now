@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Alert, Pressable, Text, TextInput } from "react-native";
 import { useRouter } from "expo-router";
-import { supabase } from "../lib/api/supabase";
+import { backend } from "../lib/backend";
 import { ensureProfile } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
 import { Screen, PrimaryButton } from "../src/ui/common";
@@ -25,7 +25,7 @@ export default function LoginScreen() {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await backend.auth.signInWithPassword({
         email: email.trim(),
         password,
       });

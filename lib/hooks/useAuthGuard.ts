@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useRouter, useSegments } from "expo-router";
-import { supabase } from "../api/supabase";
+import { backend } from "../backend";
 
 export function useAuthGuard() {
   const router = useRouter();
@@ -11,10 +11,7 @@ export function useAuthGuard() {
 
     async function guard() {
       if (!segments.length) return;
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
+      const { session, error } = await backend.auth.getSession();
 
       if (!isMounted) return;
       if (error) console.error("getSession error:", error);
@@ -29,13 +26,13 @@ export function useAuthGuard() {
 
     guard();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+    const sub = backend.auth.onAuthStateChange(() => {
       guard();
     });
 
     return () => {
       isMounted = false;
-      sub.subscription.unsubscribe();
+      sub.unsubscribe();
     };
   }, [router, segments]);
 }

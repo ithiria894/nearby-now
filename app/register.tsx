@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Alert, Pressable, Text, TextInput } from "react-native";
 import { useRouter } from "expo-router";
-import { supabase } from "../lib/api/supabase";
+import { backend } from "../lib/backend";
 import { ensureProfile } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
 import { Screen, PrimaryButton } from "../src/ui/common";
@@ -28,7 +28,7 @@ export default function RegisterScreen() {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error } = await backend.auth.signUp({
         email: email.trim(),
         password,
       });
