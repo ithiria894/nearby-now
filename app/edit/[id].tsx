@@ -24,6 +24,8 @@ type ActivityRow = {
   gender_pref: string;
   capacity: number | null;
   expires_at: string | null;
+  start_time: string | null;
+  end_time: string | null;
 };
 
 function formatPlace(
@@ -66,7 +68,7 @@ export default function EditActivityScreen() {
         const { data, error } = await supabase
           .from("activities")
           .select(
-            "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, place_id, location_source, gender_pref, capacity, expires_at"
+            "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, place_id, location_source, gender_pref, capacity, expires_at, start_time, end_time"
           )
           .eq("id", activityId)
           .single();
@@ -102,6 +104,7 @@ export default function EditActivityScreen() {
 
     const updates: Record<string, any> = {
       title_text: payload.title_text,
+      place_text: payload.place_text,
       place_name: payload.place_name,
       place_address: payload.place_address,
       lat: payload.lat,
@@ -110,6 +113,8 @@ export default function EditActivityScreen() {
       location_source: payload.location_source,
       gender_pref: payload.gender_pref,
       capacity: payload.capacity,
+      start_time: payload.start_time,
+      end_time: payload.end_time,
     };
 
     if (payload.expires_at !== undefined) {
@@ -130,7 +135,11 @@ export default function EditActivityScreen() {
       activity.place_name ?? activity.place_text,
       activity.place_address
     );
-    const nextPlace = formatPlace(t, payload.place_name, payload.place_address);
+    const nextPlace = formatPlace(
+      t,
+      payload.place_name ?? payload.place_text,
+      payload.place_address
+    );
     if (oldPlace !== nextPlace) {
       changes.push({ kind: "place", from: oldPlace, to: nextPlace });
     }
@@ -147,6 +156,20 @@ export default function EditActivityScreen() {
         kind: "capacity",
         from: activity.capacity ?? null,
         to: payload.capacity ?? null,
+      });
+    }
+    if ((activity.start_time ?? null) !== (payload.start_time ?? null)) {
+      changes.push({
+        kind: "start_time",
+        from: activity.start_time ?? null,
+        to: payload.start_time ?? null,
+      });
+    }
+    if ((activity.end_time ?? null) !== (payload.end_time ?? null)) {
+      changes.push({
+        kind: "end_time",
+        from: activity.end_time ?? null,
+        to: payload.end_time ?? null,
       });
     }
 
@@ -239,6 +262,7 @@ export default function EditActivityScreen() {
         onCancel={() => router.back()}
         initialValues={{
           title_text: activity.title_text ?? "",
+          place_text: activity.place_text ?? null,
           place_name: activity.place_name ?? activity.place_text ?? null,
           place_address: activity.place_address ?? null,
           lat: activity.lat ?? null,
@@ -248,6 +272,8 @@ export default function EditActivityScreen() {
           gender_pref: (activity.gender_pref as any) ?? "any",
           capacity: activity.capacity ?? null,
           expires_at: activity.expires_at,
+          start_time: activity.start_time ?? null,
+          end_time: activity.end_time ?? null,
         }}
       />
     </Screen>

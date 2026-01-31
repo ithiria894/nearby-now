@@ -20,6 +20,7 @@ export default function CreateScreen() {
       const insertPayload: any = {
         creator_id: userId,
         title_text: payload.title_text,
+        place_text: payload.place_text,
         place_name: payload.place_name,
         place_address: payload.place_address,
         lat: payload.lat,
@@ -28,6 +29,8 @@ export default function CreateScreen() {
         location_source: payload.location_source,
         gender_pref: payload.gender_pref,
         capacity: payload.capacity,
+        start_time: payload.start_time,
+        end_time: payload.end_time,
         status: "open",
       };
 

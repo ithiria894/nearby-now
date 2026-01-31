@@ -207,6 +207,8 @@
       "place": "地點：{{from}} -> {{to}}",
       "gender": "性別：{{from}} -> {{to}}",
       "capacity": "人數：{{from}} -> {{to}}",
+      "start_time": "開始：{{from}} -> {{to}}",
+      "end_time": "結束：{{from}} -> {{to}}",
       "expires": {
         "never": "到期：已設定 -> 永不",
         "datetime": "到期：{{to}}"
@@ -236,8 +238,15 @@
     "notImplementedBody": "暫未支援。"
   },
   "inviteForm": {
+    "titleLabel": "標題",
     "titlePlaceholder": "標題（必填）",
+    "titleRequired": "請輸入標題。",
+    "placeLabel": "地點",
     "placePlaceholder": "搜尋地點（可選）",
+    "placeHint": "輸入至少 3 個字，選擇結果；如果冇揀結果，文字會用作自訂地點。",
+    "customPlaceLabel": "自訂地點",
+    "customPlacePlaceholder": "如果搜尋唔到，可以直接輸入",
+    "customPlaceHint": "只會喺未選擇地點時使用。",
     "missingTitle": "未填",
     "missingBody": "請輸入你想做咩。",
     "selectPlaceTitle": "請選擇地點",
@@ -250,6 +259,12 @@
     "gender_any": "不限",
     "gender_female": "女",
     "gender_male": "男",
+    "genderLabel": "性別偏好",
+    "timeLabel": "時間",
+    "startTimePlaceholder": "開始時間（YYYY-MM-DD HH:mm）",
+    "endTimePlaceholder": "結束時間（可選）",
+    "timeFormatError": "請用 YYYY-MM-DD HH:mm 格式。",
+    "timeRangeError": "結束時間要喺開始時間之後。",
     "expiryTitle": "到期",
     "expiry_default": "預設",
     "expiry_never": "永不",
@@ -257,7 +272,10 @@
     "expiry_hint_preset": "將於 {{when}} 到期。",
     "expiry_hint_edit": "不更改到期設定。",
     "expiry_hint_default": "預設為 30 日。",
+    "capacityLabel": "人數上限",
     "capacityPlaceholder": "人數上限（可選）",
+    "capacityNoLimit": "不限",
+    "capacityHint": "用 + / - 調整，或者設為不限。",
     "submitting": "提交中…",
     "cancel": "取消"
   },

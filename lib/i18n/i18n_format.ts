@@ -7,6 +7,8 @@ type ChangeField =
   | "gender_pref"
   | "capacity"
   | "expires_at"
+  | "start_time"
+  | "end_time"
   | "place"
   | "title";
 
@@ -70,6 +72,10 @@ export function formatChangeValue(
     case "capacity":
       return formatCapacity(value, t);
     case "expires_at":
+      return formatLocalDateTime(value, t);
+    case "start_time":
+      return formatLocalDateTime(value, t);
+    case "end_time":
       return formatLocalDateTime(value, t);
     case "place": {
       const v = typeof value === "string" ? value.trim() : "";

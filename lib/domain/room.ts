@@ -8,6 +8,8 @@ export type InviteChange =
   | { kind: "place"; from: string | null; to: string | null }
   | { kind: "gender"; from: string | null; to: string | null }
   | { kind: "capacity"; from: number | null; to: number | null }
+  | { kind: "start_time"; from: string | null; to: string | null }
+  | { kind: "end_time"; from: string | null; to: string | null }
   | {
       kind: "expires";
       toMode: "never" | "datetime";
@@ -124,6 +126,16 @@ export function formatChangeLabel(
       return t("room.change.capacity", {
         from: formatChangeValue("capacity", change.from, t),
         to: formatChangeValue("capacity", change.to, t),
+      });
+    case "start_time":
+      return t("room.change.start_time", {
+        from: formatChangeValue("start_time", change.from, t),
+        to: formatChangeValue("start_time", change.to, t),
+      });
+    case "end_time":
+      return t("room.change.end_time", {
+        from: formatChangeValue("end_time", change.from, t),
+        to: formatChangeValue("end_time", change.to, t),
       });
     case "expires": {
       if (change.toMode === "never") return t("room.change.expires.never");
