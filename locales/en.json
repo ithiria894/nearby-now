@@ -207,6 +207,8 @@
       "place": "place: {{from}} -> {{to}}",
       "gender": "gender: {{from}} -> {{to}}",
       "capacity": "capacity: {{from}} -> {{to}}",
+      "start_time": "start: {{from}} -> {{to}}",
+      "end_time": "end: {{from}} -> {{to}}",
       "expires": {
         "never": "expires: set -> never",
         "datetime": "expires: {{to}}"
@@ -236,8 +238,15 @@
     "notImplementedBody": "Not implemented yet."
   },
   "inviteForm": {
+    "titleLabel": "Title",
     "titlePlaceholder": "Title (required)",
+    "titleRequired": "Title is required.",
+    "placeLabel": "Place",
     "placePlaceholder": "Search place (optional)",
+    "placeHint": "Type at least 3 letters, then pick a result. If you do not pick one, the text will be used as a custom label.",
+    "customPlaceLabel": "Custom place label",
+    "customPlacePlaceholder": "Type a place label if search misses it",
+    "customPlaceHint": "Used only when no place is selected.",
     "missingTitle": "Missing",
     "missingBody": "Please type what you want to do.",
     "selectPlaceTitle": "Select a place",
@@ -250,6 +259,12 @@
     "gender_any": "any",
     "gender_female": "female",
     "gender_male": "male",
+    "genderLabel": "Gender preference",
+    "timeLabel": "Time",
+    "startTimePlaceholder": "Start time (YYYY-MM-DD HH:mm)",
+    "endTimePlaceholder": "End time (optional)",
+    "timeFormatError": "Use YYYY-MM-DD HH:mm.",
+    "timeRangeError": "End time must be after start time.",
     "expiryTitle": "Expiry",
     "expiry_default": "Default",
     "expiry_never": "Never",
@@ -257,7 +272,10 @@
     "expiry_hint_preset": "Expires {{when}}.",
     "expiry_hint_edit": "No change to expiry.",
     "expiry_hint_default": "Default is 30 days.",
+    "capacityLabel": "Capacity",
     "capacityPlaceholder": "Capacity (optional)",
+    "capacityNoLimit": "No limit",
+    "capacityHint": "Use + / - to adjust, or set no limit.",
     "submitting": "Submitting...",
     "cancel": "Cancel"
   },

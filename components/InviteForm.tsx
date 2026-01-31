@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { searchPlacesNominatim, type PlaceCandidate } from "../lib/api/places";
 import { useT } from "../lib/i18n/useT";
 import { formatExpiryLabel } from "../lib/i18n/i18n_format";
@@ -9,6 +9,7 @@ type GenderPref = "any" | "female" | "male";
 
 export type InviteFormPayload = {
   title_text: string;
+  place_text: string | null;
   place_name: string | null;
   place_address: string | null;
   lat: number | null;
@@ -17,11 +18,14 @@ export type InviteFormPayload = {
   location_source: string | null;
   gender_pref: GenderPref;
   capacity: number | null;
+  start_time?: string | null;
+  end_time?: string | null;
   expires_at?: string | null;
 };
 
 type InviteFormInitialValues = {
   title_text?: string;
+  place_text?: string | null;
   place_name?: string | null;
   place_address?: string | null;
   lat?: number | null;
@@ -30,6 +34,8 @@ type InviteFormInitialValues = {
   location_source?: string | null;
   gender_pref?: GenderPref | null;
   capacity?: number | null;
+  start_time?: string | null;
+  end_time?: string | null;
   expires_at?: string | null;
 };
 
@@ -58,6 +64,33 @@ const EXPIRY_PRESETS = [
   { label: "4h", minutes: 240 },
   { label: "8h", minutes: 480 },
 ];
+
+const pad2 = (value: number) => String(value).padStart(2, "0");
+
+function formatDateTimeLocal(value?: string | null): string {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
+    d.getDate()
+  )} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+function parseDateTimeInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return { iso: null, error: null, date: null as Date | null };
+  let normalized = trimmed;
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/.test(trimmed)) {
+    normalized = `${trimmed.replace(" ", "T")}:00`;
+  } else if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(trimmed)) {
+    normalized = trimmed.replace(" ", "T");
+  }
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) {
+    return { iso: null, error: "format", date: null as Date | null };
+  }
+  return { iso: parsed.toISOString(), error: null, date: parsed };
+}
 
 function buildInitialPlace(
   initialValues: InviteFormInitialValues | undefined,
@@ -101,18 +134,28 @@ export default function InviteForm(props: Props) {
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(
     initialPlace
   );
+  const [manualPlace, setManualPlace] = useState(
+    initialPlace ? "" : (initialValues?.place_text ?? "")
+  );
   const [candidates, setCandidates] = useState<PlaceCandidate[]>([]);
   const [searching, setSearching] = useState(false);
   const [genderPref, setGenderPref] = useState<GenderPref>(
     (initialValues?.gender_pref as GenderPref) ?? "any"
   );
-  const [capacity, setCapacity] = useState(
-    initialValues?.capacity == null ? "" : String(initialValues.capacity)
+  const [capacity, setCapacity] = useState<number | null>(
+    initialValues?.capacity ?? null
+  );
+  const [startTime, setStartTime] = useState(
+    formatDateTimeLocal(initialValues?.start_time ?? null)
+  );
+  const [endTime, setEndTime] = useState(
+    formatDateTimeLocal(initialValues?.end_time ?? null)
   );
   const [expiryMode, setExpiryMode] = useState<"default" | "never" | "preset">(
     initialValues?.expires_at === null ? "never" : "default"
   );
   const [expiryMinutes, setExpiryMinutes] = useState<number | null>(null);
+  const [didSubmit, setDidSubmit] = useState(false);
 
   const searchIdRef = useRef(0);
 
@@ -168,6 +211,7 @@ export default function InviteForm(props: Props) {
       source: "nominatim",
     });
     setPlaceQuery(c.name);
+    setManualPlace("");
     setCandidates([]);
     setSearching(false);
   };
@@ -179,29 +223,45 @@ export default function InviteForm(props: Props) {
     setSearching(false);
   };
 
-  const handleSubmit = async () => {
-    if (!title.trim()) {
-      Alert.alert(t("inviteForm.missingTitle"), t("inviteForm.missingBody"));
-      return;
+  const parsedCapacity = useMemo(() => {
+    if (capacity == null) return { value: null, error: null };
+    if (!Number.isInteger(capacity) || capacity < 1) {
+      return { value: null, error: t("inviteForm.invalidBody") };
     }
+    return { value: capacity, error: null };
+  }, [capacity, t]);
 
-    if (placeQuery.trim() !== "" && !selectedPlace) {
-      Alert.alert(
-        t("inviteForm.selectPlaceTitle"),
-        t("inviteForm.selectPlaceBody")
-      );
-      return;
-    }
-
-    const trimmedCapacity = capacity.trim();
-    let capacityNum: number | null = null;
-    if (trimmedCapacity !== "") {
-      const parsed = Number(trimmedCapacity);
-      if (!Number.isInteger(parsed) || parsed < 1) {
-        Alert.alert(t("inviteForm.invalidTitle"), t("inviteForm.invalidBody"));
-        return;
+  const startParsed = useMemo(() => parseDateTimeInput(startTime), [startTime]);
+  const endParsed = useMemo(() => parseDateTimeInput(endTime), [endTime]);
+  const timeRangeError = useMemo(() => {
+    if (startParsed.error || endParsed.error) return null;
+    if (startParsed.date && endParsed.date) {
+      if (endParsed.date.getTime() < startParsed.date.getTime()) {
+        return t("inviteForm.timeRangeError");
       }
-      capacityNum = parsed;
+    }
+    return null;
+  }, [startParsed, endParsed, t]);
+
+  const titleError =
+    didSubmit && !title.trim() ? t("inviteForm.titleRequired") : null;
+  const capacityError = didSubmit ? parsedCapacity.error : null;
+  const startTimeError =
+    didSubmit && startParsed.error ? t("inviteForm.timeFormatError") : null;
+  const endTimeError =
+    didSubmit && endParsed.error ? t("inviteForm.timeFormatError") : null;
+  const timeRangeDisplayError = didSubmit ? timeRangeError : null;
+
+  const handleSubmit = async () => {
+    setDidSubmit(true);
+    if (
+      !title.trim() ||
+      parsedCapacity.error ||
+      startParsed.error ||
+      endParsed.error ||
+      timeRangeError
+    ) {
+      return;
     }
 
     let expiresAt: string | null | undefined = undefined;
@@ -229,10 +289,16 @@ export default function InviteForm(props: Props) {
         : null;
     const locationSource = selectedPlace
       ? (selectedPlace.source ?? null)
-      : null;
+      : manualPlace.trim() || placeQuery.trim()
+        ? "manual"
+        : null;
+    const placeTextValue = selectedPlace
+      ? null
+      : manualPlace.trim() || placeQuery.trim() || null;
 
     await onSubmit({
       title_text: title.trim(),
+      place_text: placeTextValue,
       place_name: placeName,
       place_address: placeAddress,
       lat,
@@ -240,7 +306,9 @@ export default function InviteForm(props: Props) {
       place_id: placeId,
       location_source: locationSource,
       gender_pref: genderPref,
-      capacity: capacityNum,
+      capacity: parsedCapacity.value,
+      start_time: startParsed.iso,
+      end_time: endParsed.iso,
       expires_at: expiresAt,
     });
   };
@@ -262,6 +330,7 @@ export default function InviteForm(props: Props) {
 
   return (
     <View style={{ gap: 12 }}>
+      <Text style={{ fontWeight: "800" }}>{t("inviteForm.titleLabel")}</Text>
       <TextInput
         value={title}
         onChangeText={setTitle}
@@ -274,8 +343,14 @@ export default function InviteForm(props: Props) {
           backgroundColor: theme.colors.surface,
         }}
       />
+      {titleError ? (
+        <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
+          {titleError}
+        </Text>
+      ) : null}
 
       <View style={{ gap: 8 }}>
+        <Text style={{ fontWeight: "800" }}>{t("inviteForm.placeLabel")}</Text>
         <TextInput
           value={placeQuery}
           onChangeText={onChangePlaceQuery}
@@ -288,6 +363,9 @@ export default function InviteForm(props: Props) {
             backgroundColor: theme.colors.surface,
           }}
         />
+        <Text style={{ fontSize: 12, opacity: 0.7 }}>
+          {t("inviteForm.placeHint")}
+        </Text>
 
         {selectedPlace ? (
           <View
@@ -365,6 +443,26 @@ export default function InviteForm(props: Props) {
         ) : null}
       </View>
 
+      <Text style={{ fontWeight: "800" }}>
+        {t("inviteForm.customPlaceLabel")}
+      </Text>
+      <TextInput
+        value={manualPlace}
+        onChangeText={setManualPlace}
+        placeholder={t("inviteForm.customPlacePlaceholder")}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 10,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+        }}
+      />
+      <Text style={{ fontSize: 12, opacity: 0.7 }}>
+        {t("inviteForm.customPlaceHint")}
+      </Text>
+
+      <Text style={{ fontWeight: "800" }}>{t("inviteForm.genderLabel")}</Text>
       <View style={{ flexDirection: "row", gap: 8 }}>
         {(["any", "female", "male"] as const).map((v) => (
           <Pressable
@@ -386,6 +484,47 @@ export default function InviteForm(props: Props) {
           </Pressable>
         ))}
       </View>
+
+      <Text style={{ fontWeight: "800" }}>{t("inviteForm.timeLabel")}</Text>
+      <TextInput
+        value={startTime}
+        onChangeText={setStartTime}
+        placeholder={t("inviteForm.startTimePlaceholder")}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 10,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+        }}
+      />
+      {startTimeError ? (
+        <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
+          {startTimeError}
+        </Text>
+      ) : null}
+      <TextInput
+        value={endTime}
+        onChangeText={setEndTime}
+        placeholder={t("inviteForm.endTimePlaceholder")}
+        style={{
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 10,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+        }}
+      />
+      {endTimeError ? (
+        <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
+          {endTimeError}
+        </Text>
+      ) : null}
+      {timeRangeDisplayError ? (
+        <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
+          {timeRangeDisplayError}
+        </Text>
+      ) : null}
 
       <Text style={{ fontWeight: "800" }}>{t("inviteForm.expiryTitle")}</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -455,19 +594,82 @@ export default function InviteForm(props: Props) {
       </View>
       <Text style={{ opacity: 0.7 }}>{expiryHint}</Text>
 
-      <TextInput
-        value={capacity}
-        onChangeText={setCapacity}
-        keyboardType="number-pad"
-        placeholder={t("inviteForm.capacityPlaceholder")}
-        style={{
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          borderRadius: 10,
-          padding: 12,
-          backgroundColor: theme.colors.surface,
-        }}
-      />
+      <Text style={{ fontWeight: "800" }}>{t("inviteForm.capacityLabel")}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Pressable
+          onPress={() =>
+            setCapacity((prev) => {
+              if (!prev) return null;
+              const next = prev - 1;
+              return next <= 0 ? null : next;
+            })
+          }
+          disabled={!capacity}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            opacity: capacity ? 1 : 0.4,
+            backgroundColor: theme.colors.surface,
+          }}
+        >
+          <Text style={{ fontWeight: "700" }}>-</Text>
+        </Pressable>
+        <View
+          style={{
+            minWidth: 86,
+            paddingVertical: 10,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            alignItems: "center",
+            backgroundColor: theme.colors.surface,
+          }}
+        >
+          <Text style={{ fontWeight: "700" }}>
+            {capacity ?? t("inviteForm.capacityNoLimit")}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => setCapacity((prev) => (prev ?? 0) + 1)}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface,
+          }}
+        >
+          <Text style={{ fontWeight: "700" }}>+</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setCapacity(null)}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 12,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: theme.colors.surface,
+            opacity: capacity == null ? 0.5 : 1,
+          }}
+        >
+          <Text style={{ fontWeight: "600" }}>
+            {t("inviteForm.capacityNoLimit")}
+          </Text>
+        </Pressable>
+      </View>
+      <Text style={{ fontSize: 12, opacity: 0.7 }}>
+        {t("inviteForm.capacityHint")}
+      </Text>
+      {capacityError ? (
+        <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
+          {capacityError}
+        </Text>
+      ) : null}
 
       <View style={{ flexDirection: "row", gap: 8 }}>
         <Pressable
