@@ -467,7 +467,6 @@ export default function RoomScreen() {
 
       if (error) throw error;
 
-      await loadAll(userId);
       router.back();
     } catch (e: any) {
       console.error(e);
