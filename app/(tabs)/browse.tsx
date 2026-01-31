@@ -63,7 +63,7 @@ export default function BrowseScreen() {
   const [searchText, setSearchText] = useState("");
   const [mapImageError, setMapImageError] = useState(false);
 
-  const paperBg = theme.isDark ? theme.colors.bg : "#F7F2EA";
+  const paperBg = theme.colors.bg;
   const mapImage = require("../../assets/map.png");
   const bottomInset = insets.bottom;
   const TAB_HEIGHT = 64;

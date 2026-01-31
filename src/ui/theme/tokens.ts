@@ -71,7 +71,7 @@ export type ThemeTokens = {
 export const lightTheme: ThemeTokens = {
   isDark: false,
   colors: {
-    bg: "#FFFFFF",
+    bg: "#F7F2EA",
     surface: "#FFFFFF",
     surfaceAlt: "#F3F4F6",
     border: "#E5E7EB",

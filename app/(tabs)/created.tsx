@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { TAB_GAP, TAB_HEIGHT } from "../../src/ui/tabbar";
 
 import ActivityCard, {
   type ActivityCardActivity,
@@ -22,10 +27,10 @@ import { handleError } from "../../lib/ui/handleError";
 export default function CreatedScreen() {
   const router = useRouter();
   const { t } = useT();
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const TAB_HEIGHT = 64;
   const TAB_BOTTOM = 8 + insets.bottom;
-  const tabBarSpace = 0;
+  const tabBarSpace = TAB_HEIGHT + TAB_BOTTOM + TAB_GAP;
 
   const PAGE_SIZE = 30;
 
@@ -185,54 +190,56 @@ export default function CreatedScreen() {
   }
 
   return (
-    <FlatList
-      data={dataToShow}
-      keyExtractor={(x) => x.id}
-      ListHeaderComponent={header}
-      contentContainerStyle={{ paddingBottom: tabBarSpace }}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.6}
-      initialNumToRender={6}
-      windowSize={5}
-      maxToRenderPerBatch={8}
-      updateCellsBatchingPeriod={50}
-      removeClippedSubviews
-      renderItem={({ item }) => (
-        <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
-          <ActivityCard
-            activity={item}
-            currentUserId={userId}
-            membershipState={joinedSet.has(item.id) ? "joined" : "none"}
-            isJoining={false}
-            onPressCard={() => router.push(`/room/${item.id}`)}
-            onPressEdit={() => router.push(`/edit/${item.id}`)}
-          />
-        </View>
-      )}
-      ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
-          <Text style={{ opacity: 0.8 }}>{t("created.empty")}</Text>
-          <PrimaryButton
-            label={t("created.empty_cta")}
-            onPress={() => router.push("/create")}
-          />
-        </View>
-      }
-      ListFooterComponent={
-        loadingMore ? (
-          <View style={{ paddingVertical: 12 }}>
-            <ActivityIndicator />
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+      <FlatList
+        data={dataToShow}
+        keyExtractor={(x) => x.id}
+        ListHeaderComponent={header}
+        contentContainerStyle={{ paddingBottom: tabBarSpace }}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.6}
+        initialNumToRender={6}
+        windowSize={5}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews
+        renderItem={({ item }) => (
+          <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+            <ActivityCard
+              activity={item}
+              currentUserId={userId}
+              membershipState={joinedSet.has(item.id) ? "joined" : "none"}
+              isJoining={false}
+              onPressCard={() => router.push(`/room/${item.id}`)}
+              onPressEdit={() => router.push(`/edit/${item.id}`)}
+            />
           </View>
-        ) : !hasMore && items.length > 0 ? (
-          <View style={{ paddingVertical: 12 }}>
-            <Text style={{ textAlign: "center", opacity: 0.6 }}>
-              {t("common.noMore")}
-            </Text>
+        )}
+        ListEmptyComponent={
+          <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
+            <Text style={{ opacity: 0.8 }}>{t("created.empty")}</Text>
+            <PrimaryButton
+              label={t("created.empty_cta")}
+              onPress={() => router.push("/create")}
+            />
           </View>
-        ) : null
-      }
-    />
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={{ paddingVertical: 12 }}>
+              <ActivityIndicator />
+            </View>
+          ) : !hasMore && items.length > 0 ? (
+            <View style={{ paddingVertical: 12 }}>
+              <Text style={{ textAlign: "center", opacity: 0.6 }}>
+                {t("common.noMore")}
+              </Text>
+            </View>
+          ) : null
+        }
+      />
+    </SafeAreaView>
   );
 }

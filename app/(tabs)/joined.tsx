@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { TAB_GAP, TAB_HEIGHT } from "../../src/ui/tabbar";
 
 import ActivityCard, {
   type ActivityCardActivity,
@@ -23,10 +28,10 @@ import { handleError } from "../../lib/ui/handleError";
 export default function JoinedScreen() {
   const router = useRouter();
   const { t } = useT();
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const TAB_HEIGHT = 64;
   const TAB_BOTTOM = 8 + insets.bottom;
-  const tabBarSpace = 0;
+  const tabBarSpace = TAB_HEIGHT + TAB_BOTTOM + TAB_GAP;
 
   const PAGE_SIZE = 30;
 
@@ -241,69 +246,71 @@ export default function JoinedScreen() {
   }
 
   return (
-    <FlatList
-      data={dataToShow}
-      keyExtractor={(a) => a.id}
-      ListHeaderComponent={header}
-      contentContainerStyle={{ paddingBottom: tabBarSpace }}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.6}
-      initialNumToRender={6}
-      windowSize={5}
-      maxToRenderPerBatch={8}
-      updateCellsBatchingPeriod={50}
-      removeClippedSubviews
-      renderItem={({ item: a }) => {
-        const membershipState: MembershipState =
-          tab === "left" ? "left" : "joined";
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+      <FlatList
+        data={dataToShow}
+        keyExtractor={(a) => a.id}
+        ListHeaderComponent={header}
+        contentContainerStyle={{ paddingBottom: tabBarSpace }}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.6}
+        initialNumToRender={6}
+        windowSize={5}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews
+        renderItem={({ item: a }) => {
+          const membershipState: MembershipState =
+            tab === "left" ? "left" : "joined";
 
-        return (
-          <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
-            <ActivityCard
-              activity={a}
-              currentUserId={userId}
-              membershipState={membershipState}
-              isJoining={false}
-              onPressCard={() => router.push(`/room/${a.id}`)}
-              onPressEdit={
-                a.creator_id === userId
-                  ? () => router.push(`/edit/${a.id}`)
-                  : undefined
-              }
-            />
-          </View>
-        );
-      }}
-      ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
-          <Text style={{ opacity: 0.8 }}>
-            {tab === "active" && t("joined.empty_active")}
-            {tab === "inactive" && t("joined.empty_inactive")}
-            {tab === "left" && t("joined.empty_left")}
-          </Text>
-          {tab === "active" ? (
-            <PrimaryButton
-              label={t("joined.empty_active_cta")}
-              onPress={() => router.push("/(tabs)/browse")}
-            />
-          ) : null}
-        </View>
-      }
-      ListFooterComponent={
-        loadingMore ? (
-          <View style={{ paddingVertical: 12 }}>
-            <ActivityIndicator />
-          </View>
-        ) : !hasMore && items.length > 0 ? (
-          <View style={{ paddingVertical: 12 }}>
-            <Text style={{ textAlign: "center", opacity: 0.6 }}>
-              {t("common.noMore")}
+          return (
+            <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+              <ActivityCard
+                activity={a}
+                currentUserId={userId}
+                membershipState={membershipState}
+                isJoining={false}
+                onPressCard={() => router.push(`/room/${a.id}`)}
+                onPressEdit={
+                  a.creator_id === userId
+                    ? () => router.push(`/edit/${a.id}`)
+                    : undefined
+                }
+              />
+            </View>
+          );
+        }}
+        ListEmptyComponent={
+          <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
+            <Text style={{ opacity: 0.8 }}>
+              {tab === "active" && t("joined.empty_active")}
+              {tab === "inactive" && t("joined.empty_inactive")}
+              {tab === "left" && t("joined.empty_left")}
             </Text>
+            {tab === "active" ? (
+              <PrimaryButton
+                label={t("joined.empty_active_cta")}
+                onPress={() => router.push("/(tabs)/browse")}
+              />
+            ) : null}
           </View>
-        ) : null
-      }
-    />
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={{ paddingVertical: 12 }}>
+              <ActivityIndicator />
+            </View>
+          ) : !hasMore && items.length > 0 ? (
+            <View style={{ paddingVertical: 12 }}>
+              <Text style={{ textAlign: "center", opacity: 0.6 }}>
+                {t("common.noMore")}
+              </Text>
+            </View>
+          ) : null
+        }
+      />
+    </SafeAreaView>
   );
 }

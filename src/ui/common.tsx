@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "./theme/ThemeProvider";
 
 export function Screen({
@@ -17,31 +18,40 @@ export function Screen({
 
   if (scroll) {
     return (
-      <ScrollView
-        style={{ backgroundColor: theme.colors.bg }}
-        contentContainerStyle={{
-          padding,
-          gap: 12,
-          justifyContent: center ? "center" : undefined,
-        }}
-      >
-        {children}
-      </ScrollView>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+        <ScrollView
+          style={{ backgroundColor: theme.colors.bg }}
+          contentContainerStyle={{
+            padding,
+            gap: 12,
+            justifyContent: center ? "center" : undefined,
+          }}
+        >
+          {children}
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View
+    <SafeAreaView
       style={{
         flex: 1,
-        padding,
-        gap: 12,
-        justifyContent: center ? "center" : undefined,
         backgroundColor: theme.colors.bg,
       }}
     >
-      {children}
-    </View>
+      <View
+        style={{
+          flex: 1,
+          padding,
+          gap: 12,
+          justifyContent: center ? "center" : undefined,
+          backgroundColor: theme.colors.bg,
+        }}
+      >
+        {children}
+      </View>
+    </SafeAreaView>
   );
 }
 
