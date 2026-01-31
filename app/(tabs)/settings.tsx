@@ -64,7 +64,9 @@ export default function SettingsScreen() {
               <Text style={{ fontWeight: "800" }}>
                 {lng === "en"
                   ? t("settings.language_en")
-                  : t("settings.language_zhHK")}
+                  : lng === "ja"
+                    ? t("settings.language_ja")
+                    : t("settings.language_zhHK")}
               </Text>
             </Pressable>
           );

@@ -20,6 +20,7 @@ import {
   formatGenderPref,
 } from "../lib/i18n/i18n_format";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
+import { lightTheme } from "../src/ui/theme/tokens";
 
 /* =======================
  * Types
@@ -309,6 +310,8 @@ function MenuItem({
   onPress: () => void;
   destructive?: boolean;
 }) {
+  const theme = useTheme();
+  const TOKENS = theme.colors;
   return (
     <Pressable
       onPress={onPress}
@@ -322,7 +325,7 @@ function MenuItem({
         style={{
           fontSize: 16,
           fontWeight: "800",
-          color: destructive ? "#B91C1C" : "#111827",
+          color: destructive ? TOKENS.dangerText : TOKENS.text,
         }}
       >
         {label}
@@ -514,6 +517,10 @@ export default function ActivityCard({
   const TOKENS = theme.colors;
   const { t } = useT();
   const isCreator = !!currentUserId && a.creator_id === currentUserId;
+  const cardTokens = theme.isDark ? lightTheme.colors : TOKENS;
+  const cardTitleColor = cardTokens.title;
+  const cardTextColor = cardTokens.text;
+  const cardSubtextColor = cardTokens.subtext;
 
   const placeName =
     (a.place_name ?? a.place_text ?? "").trim() || t("activityCard.place_none");
@@ -528,27 +535,27 @@ export default function ActivityCard({
   const timeChipStyle = useMemo(() => {
     if (time.urgency === "critical" || time.urgency === "expired") {
       return {
-        bg: TOKENS.expiredBg,
-        border: TOKENS.expiredBorder,
-        color: TOKENS.expiredText,
+        bg: cardTokens.expiredBg,
+        border: cardTokens.expiredBorder,
+        color: cardTokens.expiredText,
         bold: true,
       };
     }
     if (time.urgency === "soon") {
       return {
-        bg: TOKENS.soonBg,
-        border: TOKENS.soonBorder,
-        color: TOKENS.soonText,
+        bg: cardTokens.soonBg,
+        border: cardTokens.soonBorder,
+        color: cardTokens.soonText,
         bold: true,
       };
     }
     return {
-      bg: TOKENS.chipBg,
-      border: TOKENS.chipBorder,
-      color: TOKENS.text,
+      bg: cardTokens.chipBg,
+      border: cardTokens.chipBorder,
+      color: cardTokens.text,
       bold: false,
     };
-  }, [time.label, time.urgency]);
+  }, [cardTokens, time.label, time.urgency]);
 
   // :zap: CHANGE 15: Card layout constants (tune once, applies everywhere)
   const CARD_HEIGHT = 132;
@@ -655,7 +662,7 @@ export default function ActivityCard({
                 style={{
                   fontSize: 18,
                   fontWeight: "900",
-                  color: TOKENS.subtext,
+                  color: cardSubtextColor,
                 }}
               >
                 ⋯
@@ -685,7 +692,7 @@ export default function ActivityCard({
                   numberOfLines={1}
                   style={{
                     ...FONT.title,
-                    color: TOKENS.title,
+                    color: cardTitleColor,
                     paddingRight: 44,
                   }}
                 >
@@ -697,7 +704,7 @@ export default function ActivityCard({
                     numberOfLines={1}
                     style={{
                       ...FONT.placeName,
-                      color: TOKENS.text,
+                      color: cardTextColor,
                     }}
                   >
                     {placeName}
@@ -708,7 +715,7 @@ export default function ActivityCard({
                       numberOfLines={1}
                       style={{
                         ...FONT.address,
-                        color: TOKENS.subtext,
+                        color: cardSubtextColor,
                       }}
                     >
                       {placeAddress}
@@ -723,9 +730,9 @@ export default function ActivityCard({
                   {isCreator ? (
                     <Chip
                       label={t("activityCard.chip_created")}
-                      bg={TOKENS.createdBg}
-                      border={TOKENS.createdBorder}
-                      color={TOKENS.createdText}
+                      bg={cardTokens.createdBg}
+                      border={cardTokens.createdBorder}
+                      color={cardTokens.createdText}
                       bold
                     />
                   ) : null}
@@ -742,34 +749,34 @@ export default function ActivityCard({
                     label={t("activityCard.chip_pref", {
                       value: formatGenderPref(a.gender_pref, t),
                     })}
-                    bg={TOKENS.chipBg}
-                    border={TOKENS.chipBorder}
-                    color={TOKENS.text}
+                    bg={cardTokens.chipBg}
+                    border={cardTokens.chipBorder}
+                    color={cardTokens.text}
                   />
 
                   <Chip
                     label={t("activityCard.chip_cap", {
                       value: formatCapacity(a.capacity, t),
                     })}
-                    bg={TOKENS.chipBg}
-                    border={TOKENS.chipBorder}
-                    color={TOKENS.text}
+                    bg={cardTokens.chipBg}
+                    border={cardTokens.chipBorder}
+                    color={cardTokens.text}
                   />
 
                   {membershipState === "joined" ? (
                     <Chip
                       label={t("activityCard.chip_joined")}
-                      bg={TOKENS.joinedBg}
-                      border={TOKENS.joinedBorder}
-                      color={TOKENS.joinedText}
+                      bg={cardTokens.joinedBg}
+                      border={cardTokens.joinedBorder}
+                      color={cardTokens.joinedText}
                       bold
                     />
                   ) : membershipState === "left" ? (
                     <Chip
                       label={t("activityCard.chip_left")}
-                      bg={TOKENS.chipBg}
-                      border={TOKENS.chipBorder}
-                      color={TOKENS.subtext}
+                      bg={cardTokens.chipBg}
+                      border={cardTokens.chipBorder}
+                      color={cardTokens.subtext}
                     />
                   ) : null}
                 </View>
@@ -812,7 +819,7 @@ export default function ActivityCard({
                 width: 42,
                 height: 4,
                 borderRadius: 999,
-                backgroundColor: "#E5E7EB",
+                backgroundColor: TOKENS.subtext,
                 marginBottom: 10,
               }}
             />

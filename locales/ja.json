@@ -1,0 +1,319 @@
+{
+  "app": {
+    "name": "Nearby Now"
+  },
+  "tabs": {
+    "browse": "探す",
+    "joined": "参加中",
+    "created": "作成済み",
+    "settings": "設定"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "cancel": "キャンセル",
+    "join": "参加",
+    "leave": "退出",
+    "close": "閉じる",
+    "send": "送信",
+    "copy": "コピー",
+    "report": "報告",
+    "rejoin": "再参加",
+    "ok": "OK",
+    "unknown": "不明",
+    "never": "なし",
+    "noMore": "これ以上ありません"
+  },
+  "auth": {
+    "login": {
+      "title": "Nearby Now",
+      "emailPlaceholder": "メール",
+      "passwordPlaceholder": "パスワード",
+      "missingTitle": "未入力",
+      "missingBody": "メールとパスワードを入力してください。",
+      "submitIdle": "サインイン",
+      "submitBusy": "サインイン中...",
+      "errorTitle": "ログインに失敗",
+      "goRegister": "アカウント作成"
+    },
+    "register": {
+      "title": "アカウント作成",
+      "emailPlaceholder": "メール",
+      "passwordPlaceholder": "パスワード（6文字以上）",
+      "missingTitle": "未入力",
+      "missingBody": "メールとパスワードを入力してください。",
+      "weakTitle": "パスワードが弱い",
+      "weakBody": "パスワードは6文字以上で入力してください。",
+      "submitIdle": "作成",
+      "submitBusy": "作成中...",
+      "successTitle": "成功",
+      "successBody": "アカウントを作成しました。サインインしてください。",
+      "errorTitle": "登録に失敗",
+      "backToLogin": "ログインに戻る"
+    }
+  },
+  "create": {
+    "navTitle": "作成",
+    "title": "招待を作成",
+    "submit": "今すぐ投稿",
+    "errorTitle": "作成に失敗"
+  },
+  "edit": {
+    "navTitle": "招待を編集",
+    "titlePrefix": "編集: ",
+    "fallbackInviteTitle": "招待",
+    "loadErrorTitle": "読み込みに失敗",
+    "save": "保存",
+    "saveErrorTitle": "保存に失敗",
+    "notAllowedTitle": "許可されていません",
+    "notAllowedBody": "作成者のみこの招待を編集できます。"
+  },
+  "settings": {
+    "title": "設定",
+    "logout": "ログアウト",
+    "logoutErrorTitle": "ログアウトに失敗",
+    "language": "言語",
+    "theme": "テーマ",
+    "theme_system": "システム",
+    "theme_light": "ライト",
+    "theme_dark": "ダーク",
+    "language_en": "英語",
+    "language_zhHK": "繁體中文（香港）",
+    "language_ja": "日本語"
+  },
+  "browse": {
+    "headerTitle": "探す",
+    "mode_list": "リスト",
+    "mode_map": "地図",
+    "subtitle": "今すぐ参加できる招待。",
+    "empty": "今参加できる招待はありません。",
+    "empty_cta": "招待を作成",
+    "loadErrorTitle": "読み込みに失敗",
+    "refreshErrorTitle": "更新に失敗",
+    "joinConfirmTitle": "「{{title}}」に参加しますか？",
+    "mapJoinConfirmTitle": "招待に参加しますか？",
+    "joinErrorTitle": "参加に失敗",
+    "place_none": "場所なし",
+    "expires_never": "期限なし",
+    "capacity_unlimited": "無制限",
+    "details": {
+      "goal": "🎯 {{title}}",
+      "place": "📍 {{placeName}}",
+      "address": "   {{placeAddress}}",
+      "genderPref": "👥 性別希望: {{genderPref}}",
+      "capacity": "👤 定員: {{capacityLabel}}",
+      "expires": "⏳ 期限: {{expiresLabel}}"
+    }
+  },
+  "created": {
+    "headerTitle": "作成済み",
+    "tab_active": "有効 ({{count}})",
+    "tab_inactive": "無効 ({{count}})",
+    "subtitle_active": "あなたが作成した有効な招待を表示しています。",
+    "subtitle_inactive": "期限切れ/クローズ済みの招待を表示しています。",
+    "empty": "まだ招待を投稿していません。",
+    "empty_cta": "招待を作成",
+    "loadErrorTitle": "読み込みに失敗",
+    "refreshErrorTitle": "更新に失敗"
+  },
+  "joined": {
+    "headerTitle": "参加中",
+    "tab_active": "有効 ({{count}})",
+    "tab_inactive": "無効 ({{count}})",
+    "tab_left": "退出済み ({{count}})",
+    "subtitle_active": "参加中の有効なルームを表示しています。",
+    "subtitle_inactive": "クローズ/期限切れのルームを表示しています。",
+    "subtitle_left": "退出したルームを表示しています（履歴のみ）。",
+    "empty_active": "参加中の有効なルームはありません。",
+    "empty_inactive": "無効な参加ルームはありません。",
+    "empty_left": "退出したルームはありません。",
+    "empty_active_cta": "探すへ",
+    "loadErrorTitle": "読み込みに失敗",
+    "refreshErrorTitle": "更新に失敗"
+  },
+  "room": {
+    "navTitle": "ルーム",
+    "fallbackRoomTitle": "ルーム",
+    "systemName": "システム",
+    "unknownUser": "不明",
+    "you": "あなた",
+    "time_now": "今",
+    "time_m": "{{count}}分",
+    "time_h": "{{count}}時間",
+    "time_d": "{{count}}日",
+    "section_today": "今日",
+    "section_yesterday": "昨日",
+    "membersCount": "メンバー {{count}}",
+    "createdBadge": "作成者",
+    "closedBadge": "クローズ",
+    "expiredBadge": "期限切れ",
+    "leftTitle": "退出しました",
+    "leftBody": "履歴は閲覧できます。再参加してチャットできます。",
+    "readonlyTitle": "閲覧のみ",
+    "readonlyBody": "メッセージを閲覧できます。",
+    "joinToSee": "この招待に参加してメッセージを表示・送信してください。",
+    "joinNotAvailableTitle": "利用不可",
+    "joinNotAvailableBody": "この招待はクローズ済みまたは期限切れです。",
+    "joinConfirmTitle": "この招待に参加しますか？",
+    "joinConfirmBody": "参加を確認してください。",
+    "leaveConfirmTitle": "この招待から退出しますか？",
+    "leaveConfirmBody": "このルームの更新を受け取らなくなります。",
+    "closeConfirmTitle": "この招待を閉じますか？",
+    "closeConfirmBody": "誰も参加やメッセージ送信ができなくなります。",
+    "closeNotAllowedTitle": "許可されていません",
+    "closeNotAllowedBody": "作成者のみこの招待を閉じられます。",
+    "authRequiredTitle": "認証が必要",
+    "authRequiredBody": "再度ログインしてください。",
+    "readOnlyAlertTitle": "閲覧のみ",
+    "readOnlyAlertBody": "この招待はクローズ済みまたは期限切れです。",
+    "sendFailedTitle": "送信に失敗",
+    "joinFailedTitle": "参加に失敗",
+    "leaveFailedTitle": "退出に失敗",
+    "closeFailedTitle": "クローズに失敗",
+    "failedTitle": "失敗",
+    "quick": {
+      "imHere": "✅ 着きました",
+      "late10": "⏱️ 10分遅れます",
+      "cancel": "❌ キャンセル"
+    },
+    "placeholder": {
+      "message": "メッセージ...",
+      "rejoinToChat": "再参加してチャット",
+      "readonly": "閲覧のみ",
+      "joinToChat": "参加してチャット"
+    },
+    "menu": {
+      "title": "メッセージ",
+      "copy": "コピー",
+      "report": "報告",
+      "cancel": "キャンセル"
+    },
+    "clipboard": {
+      "copiedTitle": "コピー完了",
+      "copiedBody": "メッセージをコピーしました。",
+      "copyFailedTitle": "コピー失敗",
+      "copyFailedBody": "クリップボードが利用できません。",
+      "nativePlaceholderTitle": "コピー",
+      "nativePlaceholderBody": "ネイティブでは未実装です（プレースホルダー）。",
+      "reportPlaceholderTitle": "報告",
+      "reportPlaceholderBody": "まだ未実装です。"
+    },
+    "system": {
+      "joined": "{{name}}が参加しました",
+      "left": "{{name}}が退出しました",
+      "invite_updated": "招待を更新 — {{changes}}",
+      "invite_closed": "作成者が招待を閉じました"
+    },
+    "change": {
+      "title": "タイトル: {{from}} -> {{to}}",
+      "place": "場所: {{from}} -> {{to}}",
+      "gender": "性別: {{from}} -> {{to}}",
+      "capacity": "定員: {{from}} -> {{to}}",
+      "start_time": "開始: {{from}} -> {{to}}",
+      "end_time": "終了: {{from}} -> {{to}}",
+      "expires": {
+        "never": "期限: 設定 -> なし",
+        "datetime": "期限: {{to}}"
+      }
+    }
+  },
+  "activityCard": {
+    "place_none": "場所なし",
+    "chip_created": "作成者",
+    "chip_joined": "参加中",
+    "chip_left": "退出済み",
+    "chip_time": "⏳ {{label}}",
+    "chip_pref": "性別 {{value}}",
+    "chip_cap": "定員 {{value}}",
+    "noExpiry": "期限なし",
+    "expired": "期限切れ",
+    "menu": {
+      "edit": "編集",
+      "delete": "削除",
+      "share": "共有",
+      "report": "報告",
+      "cancel": "キャンセル"
+    },
+    "notImplementedTitle_share": "共有",
+    "notImplementedTitle_report": "報告",
+    "notImplementedTitle_delete": "削除",
+    "notImplementedBody": "未実装です。"
+  },
+  "inviteForm": {
+    "titleLabel": "タイトル",
+    "titlePlaceholder": "タイトル（必須）",
+    "titleRequired": "タイトルは必須です。",
+    "placeLabel": "場所",
+    "placePlaceholder": "場所を検索（任意）",
+    "placeHint": "3文字以上入力して結果を選択してください。選択しない場合、入力した文字がカスタムラベルになります。",
+    "customPlaceLabel": "カスタム場所ラベル",
+    "customPlacePlaceholder": "検索で見つからない場合は入力",
+    "customPlaceHint": "場所が選択されていない場合のみ使用されます。",
+    "missingTitle": "未入力",
+    "missingBody": "やりたいことを入力してください。",
+    "selectPlaceTitle": "場所を選択",
+    "selectPlaceBody": "一覧から選ぶか、検索をクリアしてください。",
+    "invalidTitle": "無効",
+    "invalidBody": "定員は1以上の整数で入力してください。",
+    "clearSelection": "選択をクリア",
+    "searching": "検索中...",
+    "noResults": "まだ結果がありません。",
+    "gender_any": "制限なし",
+    "gender_female": "女性",
+    "gender_male": "男性",
+    "genderLabel": "性別希望",
+    "timeLabel": "時間",
+    "startTimePlaceholder": "開始時間（YYYY-MM-DD HH:mm）",
+    "endTimePlaceholder": "終了時間（任意）",
+    "timeFormatError": "YYYY-MM-DD HH:mm で入力してください。",
+    "timeRangeError": "終了時間は開始時間より後にしてください。",
+    "expiryTitle": "期限",
+    "expiry_default": "デフォルト",
+    "expiry_never": "なし",
+    "expiry_hint_never": "この招待は期限切れになりません。",
+    "expiry_hint_preset": "{{when}} に期限切れ。",
+    "expiry_hint_edit": "期限は変更されません。",
+    "expiry_hint_default": "デフォルトは30日です。",
+    "capacityLabel": "定員",
+    "capacityPlaceholder": "定員（任意）",
+    "capacityNoLimit": "無制限",
+    "capacityHint": "+ / - で調整、または無制限に設定できます。",
+    "submitting": "送信中...",
+    "cancel": "キャンセル"
+  },
+  "browseMap": {
+    "webNotSupported": "Webでは地図表示は利用できません。リストに切り替えてください。",
+    "goToList": "リストへ",
+    "countInArea": "このエリアの招待 {{count}}件"
+  },
+  "rootNav": {
+    "login": "ログイン",
+    "register": "登録",
+    "create": "作成",
+    "editInvite": "招待を編集",
+    "room": "ルーム"
+  },
+  "gender": {
+    "any": "制限なし",
+    "female": "女性",
+    "male": "男性"
+  },
+  "capacity": {
+    "unlimited": "無制限",
+    "n": "{{n}}"
+  },
+  "expiry": {
+    "none": "期限なし",
+    "expired": "期限切れ"
+  },
+  "time": {
+    "in_minutes": "{{n}}分後",
+    "in_hours": "{{h}}時間後",
+    "in_hours_minutes": "{{h}}時間{{m}}分後"
+  },
+  "place": {
+    "none": "場所なし"
+  },
+  "expires": {
+    "never": "なし"
+  }
+}

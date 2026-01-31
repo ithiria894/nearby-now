@@ -145,10 +145,10 @@ export const darkTheme: ThemeTokens = {
     surface: "#0F172A",
     surfaceAlt: "#111827",
     border: "#1F2937",
-    title: "#F9FAFB",
-    text: "#F9FAFB",
-    subtext: "#9CA3AF",
-    primary: "#F9FAFB",
+    title: "#F8FAFC",
+    text: "#E2E8F0",
+    subtext: "#CBD5E1",
+    primary: "#F8FAFC",
     overlay: "rgba(0,0,0,0.6)",
 
     chipBg: "rgba(17,24,39,0.75)",
@@ -156,19 +156,19 @@ export const darkTheme: ThemeTokens = {
 
     createdBg: "rgba(30,64,175,0.25)",
     createdBorder: "rgba(59,130,246,0.35)",
-    createdText: "#93C5FD",
+    createdText: "#BFDBFE",
 
     joinedBg: "rgba(16,185,129,0.18)",
     joinedBorder: "rgba(16,185,129,0.35)",
-    joinedText: "#6EE7B7",
+    joinedText: "#A7F3D0",
 
     expiredBg: "rgba(239,68,68,0.2)",
     expiredBorder: "rgba(239,68,68,0.35)",
-    expiredText: "#FCA5A5",
+    expiredText: "#FECACA",
 
     soonBg: "rgba(245,158,11,0.2)",
     soonBorder: "rgba(245,158,11,0.35)",
-    soonText: "#FCD34D",
+    soonText: "#FDE68A",
 
     mineBg: "rgba(16,185,129,0.2)",
     mineBorder: "rgba(16,185,129,0.35)",
@@ -176,15 +176,15 @@ export const darkTheme: ThemeTokens = {
     otherBg: "rgba(148,163,184,0.12)",
     otherBorder: "rgba(148,163,184,0.25)",
 
-    systemText: "#9CA3AF",
+    systemText: "#E2E8F0",
     systemBg: "rgba(148,163,184,0.12)",
     systemBorder: "rgba(148,163,184,0.25)",
 
-    dangerText: "#FCA5A5",
+    dangerText: "#FECACA",
     dangerBg: "rgba(239,68,68,0.2)",
     dangerBorder: "rgba(239,68,68,0.35)",
 
-    okText: "#6EE7B7",
+    okText: "#BBF7D0",
     okBg: "rgba(16,185,129,0.18)",
     okBorder: "rgba(16,185,129,0.35)",
   },
