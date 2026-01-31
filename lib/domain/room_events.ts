@@ -1,4 +1,4 @@
-import { supabase } from "../api/supabase";
+import { backend } from "../backend";
 import type { RoomEventType } from "./room";
 
 export type RoomEventRow = {
@@ -47,12 +47,12 @@ export async function getRoomEventsPage(params: {
   hasMore: boolean;
 }> {
   const { activityId, limit, cursor, leftAt } = params;
-  const { data, error } = await supabase.rpc("get_room_events_page", {
-    p_activity_id: activityId,
-    p_limit: limit,
-    p_cursor_created_at: cursor?.created_at ?? null,
-    p_cursor_id: cursor?.id ?? null,
-    p_left_at: leftAt ? leftAt.toISOString() : null,
+  const { data, error } = await backend.roomEvents.getRoomEventsPageRpc({
+    activityId,
+    limit,
+    cursorCreatedAt: cursor?.created_at ?? null,
+    cursorId: cursor?.id ?? null,
+    leftAt: leftAt ? leftAt.toISOString() : null,
   });
 
   if (error) throw error;
@@ -72,9 +72,7 @@ export async function getRoomEventsPage(params: {
 export async function getRoomEventById(
   eventId: string
 ): Promise<RoomEventRow | null> {
-  const { data, error } = await supabase.rpc("get_room_event_by_id", {
-    p_event_id: eventId,
-  });
+  const { data, error } = await backend.roomEvents.getRoomEventByIdRpc(eventId);
 
   if (error) throw error;
   const rows = (data ?? []) as RoomEventRpcRow[];
