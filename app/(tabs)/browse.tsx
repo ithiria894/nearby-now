@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -7,12 +7,17 @@ import {
   Keyboard,
   Pressable,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  BottomSheetBackdrop,
+  BottomSheetModal,
+  BottomSheetTextInput,
+  BottomSheetView,
+} from "@gorhom/bottom-sheet";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -62,6 +67,8 @@ export default function BrowseScreen() {
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [searchText, setSearchText] = useState("");
   const [mapImageError, setMapImageError] = useState(false);
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const searchSnapPoints = useMemo(() => ["35%", "70%"], []);
 
   const paperBg = theme.colors.bg;
   const mapImage = require("../../assets/map.png");
@@ -70,6 +77,22 @@ export default function BrowseScreen() {
   const TAB_BOTTOM = 8 + bottomInset;
   const tabBarSpace = 0;
   const brandIconColor = theme.isDark ? theme.colors.text : "#5E8C55";
+
+  const openSearchSheet = useCallback(() => {
+    bottomSheetModalRef.current?.present();
+  }, []);
+
+  const renderSearchBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
 
   const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
@@ -267,45 +290,238 @@ export default function BrowseScreen() {
     viewMode === "map" ? t("browse.mapButton_list") : t("browse.mapButton_map");
 
   return (
-    <View style={{ flex: 1, backgroundColor: paperBg }}>
-      <SafeAreaView edges={["top"]} style={{ backgroundColor: paperBg }}>
-        {/* Section 1: Logo + App name + Search */}
-        <View
-          style={{
-            paddingHorizontal: 18,
-            paddingTop: 12,
-            paddingBottom: 10,
-            gap: 10,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+    <>
+      <View style={{ flex: 1, backgroundColor: paperBg }}>
+        <SafeAreaView edges={["top"]} style={{ backgroundColor: paperBg }}>
+          {/* Section 1: Logo + App name + Search button */}
+          <View
+            style={{
+              paddingHorizontal: 18,
+              paddingTop: 12,
+              paddingBottom: 10,
+              gap: 10,
+            }}
+          >
             <View
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                backgroundColor: "#E6F1DE",
+                flexDirection: "row",
                 alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 1,
-                borderColor: "#D6E6C8",
+                justifyContent: "space-between",
+                gap: 10,
               }}
             >
-              <MaterialCommunityIcons
-                name="compass-rose"
-                size={24}
-                color={brandIconColor}
-              />
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: "#E6F1DE",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 1,
+                    borderColor: "#D6E6C8",
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="compass-rose"
+                    size={24}
+                    color={brandIconColor}
+                  />
+                </View>
+                <Text
+                  style={{
+                    fontFamily: "ShortStack",
+                    fontSize: 26,
+                    fontStyle: "normal",
+                    color: "#2E2A25",
+                  }}
+                >
+                  {t("app.name")}
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={openSearchSheet}
+                hitSlop={8}
+                style={({ pressed }) => ({
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  borderWidth: 1,
+                  borderColor: "#D6E6C8",
+                  backgroundColor: pressed ? "#E2F0D8" : "#EAF4E2",
+                  alignItems: "center",
+                  justifyContent: "center",
+                })}
+              >
+                <Ionicons name="search" size={18} color={brandIconColor} />
+              </Pressable>
             </View>
+          </View>
+
+          {/* Section 2: What's happening + Map button */}
+          <View
+            style={{
+              paddingHorizontal: 18,
+              paddingBottom: 10,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <Text
               style={{
-                fontFamily: "ShortStack",
-                fontSize: 26,
-                fontStyle: "normal",
-                color: "#2E2A25",
+                fontFamily: "Kalam",
+                fontSize: 20,
+                color: "#3A342E",
               }}
             >
-              {t("app.name")}
+              {t("browse.whatsHappening")}
+            </Text>
+            <Pressable
+              onPress={() => {
+                Keyboard.dismiss();
+                setViewMode(viewMode === "map" ? "list" : "map");
+              }}
+              style={({ pressed }) => ({
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: "#D6E6C8",
+                backgroundColor: pressed ? "#E2F0D8" : "#EAF4E2",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 64,
+              })}
+            >
+              {mapImageError ? (
+                <Text style={{ fontWeight: "800", color: "#4F7E40" }}>
+                  {mapButtonLabel}
+                </Text>
+              ) : (
+                <Image
+                  source={mapImage}
+                  onError={() => setMapImageError(true)}
+                  style={{ width: 54, height: 34, borderRadius: 8 }}
+                  resizeMode="cover"
+                />
+              )}
+            </Pressable>
+          </View>
+        </SafeAreaView>
+
+        {/* Section 3: Cards / Map (scrollable area only) */}
+        <View style={{ flex: 1 }}>
+          {viewMode === "map" ? (
+            <View style={{ flex: 1, paddingBottom: tabBarSpace }}>
+              <BrowseMap
+                items={items}
+                onPressCard={onPressCard}
+                onRequestList={() => setViewMode("list")}
+              />
+            </View>
+          ) : (
+            <FlatList
+              data={items}
+              keyExtractor={(x) => x.id}
+              contentContainerStyle={{
+                paddingBottom: tabBarSpace,
+                paddingTop: 4,
+              }}
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              keyboardDismissMode="on-drag"
+              keyboardShouldPersistTaps="handled"
+              onScrollBeginDrag={() => Keyboard.dismiss()}
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.6}
+              initialNumToRender={6}
+              windowSize={5}
+              maxToRenderPerBatch={8}
+              updateCellsBatchingPeriod={50}
+              removeClippedSubviews
+              renderItem={({ item }) => (
+                <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+                  <ActivityCard
+                    activity={item}
+                    currentUserId={userId}
+                    membershipState="none"
+                    isJoining={joiningId === item.id}
+                    onPressCard={() => onPressCard(item)}
+                    onPressEdit={
+                      item.creator_id === userId
+                        ? () => router.push(`/edit/${item.id}`)
+                        : undefined
+                    }
+                  />
+                </View>
+              )}
+              ListEmptyComponent={
+                <View
+                  style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}
+                >
+                  <Text style={{ opacity: 0.8 }}>{t("browse.empty")}</Text>
+                  <PrimaryButton
+                    label={t("browse.empty_cta")}
+                    onPress={() => router.push("/create")}
+                  />
+                </View>
+              }
+              ListFooterComponent={
+                loadingMore ? (
+                  <View style={{ paddingVertical: 12 }}>
+                    <ActivityIndicator />
+                  </View>
+                ) : !hasMore && items.length > 0 ? (
+                  <View style={{ paddingVertical: 12 }}>
+                    <Text style={{ textAlign: "center", opacity: 0.6 }}>
+                      {t("common.noMore")}
+                    </Text>
+                  </View>
+                ) : null
+              }
+            />
+          )}
+        </View>
+      </View>
+
+      <BottomSheetModal
+        ref={bottomSheetModalRef}
+        snapPoints={searchSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderSearchBackdrop}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        backgroundStyle={{
+          backgroundColor: theme.colors.surface,
+          borderTopLeftRadius: 18,
+          borderTopRightRadius: 18,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: theme.colors.border,
+        }}
+      >
+        <BottomSheetView
+          style={{
+            padding: 16,
+            paddingBottom: 16 + insets.bottom,
+            gap: 12,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons name="search" size={18} color={brandIconColor} />
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "800",
+                color: theme.colors.title,
+              }}
+            >
+              {t("browse.searchPlaceholder")}
             </Text>
           </View>
 
@@ -316,167 +532,58 @@ export default function BrowseScreen() {
               gap: 8,
               paddingHorizontal: 12,
               paddingVertical: 10,
-              borderRadius: 999,
+              borderRadius: 12,
               borderWidth: 1,
-              borderColor: "#E4DCCE",
-              backgroundColor: "#F1ECE3",
+              borderColor: theme.colors.border,
+              backgroundColor: theme.isDark
+                ? theme.colors.surfaceAlt
+                : "#F1ECE3",
             }}
           >
-            <Ionicons name="search" size={18} color="#8B847B" />
-            <TextInput
+            <Ionicons name="search" size={16} color={theme.colors.subtext} />
+            <BottomSheetTextInput
               value={searchText}
               onChangeText={setSearchText}
               placeholder={t("browse.searchPlaceholder")}
-              placeholderTextColor="#9C9388"
+              placeholderTextColor={theme.colors.subtext}
               returnKeyType="search"
               blurOnSubmit
               onSubmitEditing={() => Keyboard.dismiss()}
               style={{
                 flex: 1,
                 fontSize: 14,
-                color: "#3A342E",
+                color: theme.colors.text,
               }}
             />
             <Pressable
-              onPress={() => {
-                setSearchText("");
-                Keyboard.dismiss();
-              }}
+              onPress={() => setSearchText("")}
               hitSlop={6}
               style={{ padding: 2 }}
             >
               <Ionicons
                 name={searchText ? "close-circle" : "chevron-down"}
                 size={18}
-                color="#9C9388"
+                color={theme.colors.subtext}
               />
             </Pressable>
           </View>
-        </View>
 
-        {/* Section 2: What's happening + Map button */}
-        <View
-          style={{
-            paddingHorizontal: 18,
-            paddingBottom: 10,
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: "Kalam",
-              fontSize: 20,
-              color: "#3A342E",
-            }}
-          >
-            {t("browse.whatsHappening")}
-          </Text>
-          <Pressable
-            onPress={() => {
-              Keyboard.dismiss();
-              setViewMode(viewMode === "map" ? "list" : "map");
-            }}
-            style={({ pressed }) => ({
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: "#D6E6C8",
-              backgroundColor: pressed ? "#E2F0D8" : "#EAF4E2",
-              alignItems: "center",
-              justifyContent: "center",
-              minWidth: 64,
-            })}
-          >
-            {mapImageError ? (
-              <Text style={{ fontWeight: "800", color: "#4F7E40" }}>
-                {mapButtonLabel}
-              </Text>
-            ) : (
-              <Image
-                source={mapImage}
-                onError={() => setMapImageError(true)}
-                style={{ width: 54, height: 34, borderRadius: 8 }}
-                resizeMode="cover"
-              />
-            )}
-          </Pressable>
-        </View>
-      </SafeAreaView>
-
-      {/* Section 3: Cards / Map (scrollable area only) */}
-      <View style={{ flex: 1 }}>
-        {viewMode === "map" ? (
-          <View style={{ flex: 1, paddingBottom: tabBarSpace }}>
-            <BrowseMap
-              items={items}
-              onPressCard={onPressCard}
-              onRequestList={() => setViewMode("list")}
-            />
+          <View style={{ gap: 6 }}>
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: "800",
+                color: theme.colors.text,
+              }}
+            >
+              Filters
+            </Text>
+            <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
+              Filters will live here.
+            </Text>
           </View>
-        ) : (
-          <FlatList
-            data={items}
-            keyExtractor={(x) => x.id}
-            contentContainerStyle={{
-              paddingBottom: tabBarSpace,
-              paddingTop: 4,
-            }}
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
-            onScrollBeginDrag={() => Keyboard.dismiss()}
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.6}
-            initialNumToRender={6}
-            windowSize={5}
-            maxToRenderPerBatch={8}
-            updateCellsBatchingPeriod={50}
-            removeClippedSubviews
-            renderItem={({ item }) => (
-              <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
-                <ActivityCard
-                  activity={item}
-                  currentUserId={userId}
-                  membershipState="none"
-                  isJoining={joiningId === item.id}
-                  onPressCard={() => onPressCard(item)}
-                  onPressEdit={
-                    item.creator_id === userId
-                      ? () => router.push(`/edit/${item.id}`)
-                      : undefined
-                  }
-                />
-              </View>
-            )}
-            ListEmptyComponent={
-              <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
-                <Text style={{ opacity: 0.8 }}>{t("browse.empty")}</Text>
-                <PrimaryButton
-                  label={t("browse.empty_cta")}
-                  onPress={() => router.push("/create")}
-                />
-              </View>
-            }
-            ListFooterComponent={
-              loadingMore ? (
-                <View style={{ paddingVertical: 12 }}>
-                  <ActivityIndicator />
-                </View>
-              ) : !hasMore && items.length > 0 ? (
-                <View style={{ paddingVertical: 12 }}>
-                  <Text style={{ textAlign: "center", opacity: 0.6 }}>
-                    {t("common.noMore")}
-                  </Text>
-                </View>
-              ) : null
-            }
-          />
-        )}
-      </View>
-    </View>
+        </BottomSheetView>
+      </BottomSheetModal>
+    </>
   );
 }

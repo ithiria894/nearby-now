@@ -9,6 +9,8 @@ import { ThemeProvider } from "../src/ui/theme/ThemeProvider";
 import { useAuthGuard } from "../lib/hooks/useAuthGuard";
 import { Pressable, Text } from "react-native";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 // :zap: CHANGE 1: Load Google fonts via expo-font + expo-google-fonts
 import { useFonts } from "expo-font";
@@ -120,39 +122,46 @@ export default function RootLayout() {
 
   // :zap: CHANGE 6: While fonts aren't loaded, keep splash (render Stack but splash covers it)
   return (
-    <ThemeProvider>
-      <Stack>
-        <Stack.Screen
-          name="login"
-          options={{ title: t("rootNav.login"), headerShown: false }}
-        />
-        <Stack.Screen
-          name="register"
-          options={{ title: t("rootNav.register") }}
-        />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="create"
-          options={{ title: t("rootNav.create"), headerLeft: StackBackButton }}
-        />
-        <Stack.Screen
-          name="edit/[id]"
-          options={{
-            title: t("rootNav.editInvite"),
-            headerLeft: StackBackButton,
-          }}
-        />
-        <Stack.Screen
-          name="room/[id]"
-          options={{
-            title: t("rootNav.room"),
-            headerBackTitleVisible: false,
-            headerBackTitle: "",
-            headerBackButtonDisplayMode: "minimal",
-            headerLeft: StackBackButton,
-          }}
-        />
-      </Stack>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
+        <ThemeProvider>
+          <Stack>
+            <Stack.Screen
+              name="login"
+              options={{ title: t("rootNav.login"), headerShown: false }}
+            />
+            <Stack.Screen
+              name="register"
+              options={{ title: t("rootNav.register") }}
+            />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="create"
+              options={{
+                title: t("rootNav.create"),
+                headerLeft: StackBackButton,
+              }}
+            />
+            <Stack.Screen
+              name="edit/[id]"
+              options={{
+                title: t("rootNav.editInvite"),
+                headerLeft: StackBackButton,
+              }}
+            />
+            <Stack.Screen
+              name="room/[id]"
+              options={{
+                title: t("rootNav.room"),
+                headerBackTitleVisible: false,
+                headerBackTitle: "",
+                headerBackButtonDisplayMode: "minimal",
+                headerLeft: StackBackButton,
+              }}
+            />
+          </Stack>
+        </ThemeProvider>
+      </BottomSheetModalProvider>
+    </GestureHandlerRootView>
   );
 }

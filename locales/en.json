@@ -103,7 +103,7 @@
       "capacity": "👤 Capacity: {{capacityLabel}}",
       "expires": "⏳ Expires: {{expiresLabel}}"
     },
-    "searchPlaceholder": "Search, swipe, places or hotel",
+    "searchPlaceholder": "What do you feel like doing?",
     "whatsHappening": "What's happening nearby?",
     "mapButton_map": "MAP",
     "mapButton_list": "LIST"
