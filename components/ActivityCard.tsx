@@ -23,6 +23,16 @@ import { useTheme } from "../src/ui/theme/ThemeProvider";
 import { lightTheme } from "../src/ui/theme/tokens";
 
 /* =======================
+ * Web Guard for Skia
+ * ======================= */
+// ✅ Expo Web / browser often has Skia undefined -> guard it
+const canUseSkia =
+  Platform.OS !== "web" &&
+  typeof Skia !== "undefined" &&
+  // @ts-ignore
+  !!Skia?.Path?.Make;
+
+/* =======================
  * Types
  * ======================= */
 export type ActivityCardActivity = {
@@ -62,21 +72,21 @@ const cuteFontFamily = Platform.select({
 const FONT = {
   title: {
     fontFamily: cuteFontFamily,
-    fontSize: 16, // ⬆️ 更明顯
+    fontSize: 16,
     fontWeight: "800" as const,
     lineHeight: 20,
     letterSpacing: 0.2,
   },
   placeName: {
     fontFamily: cuteFontFamily,
-    fontSize: 13.5 as any, // RN 接受 number，但 TS 有時唔鍾意小數；唔想就改 14
+    fontSize: 13.5 as any,
     fontWeight: "700" as const,
     lineHeight: 17,
     letterSpacing: 0.15,
   },
   address: {
     fontFamily: cuteFontFamily,
-    fontSize: 11.5 as any, // 唔想小數就用 12
+    fontSize: 11.5 as any,
     fontWeight: "500" as const,
     lineHeight: 14,
     letterSpacing: 0.25,
@@ -86,7 +96,7 @@ const FONT = {
     fontSize: 12,
     fontWeight: "700" as const,
     lineHeight: 14,
-    letterSpacing: 0.3, // ⬆️ sticker label 感更明顯
+    letterSpacing: 0.3,
   },
   chipBold: {
     fontFamily: cuteFontFamily,
@@ -107,7 +117,7 @@ const CARD_VARIANTS: Array<{
   paperBottom: string;
   stitch: string;
   speck: string;
-  accent: string; // tape / sticker accent
+  accent: string;
   icon: string;
 }> = [
   {
@@ -140,7 +150,7 @@ const CARD_VARIANTS: Array<{
  * Helpers
  * ======================= */
 
-// :zap: CHANGE 1: Stable variant pick per activity id
+// Stable variant pick per activity id
 function pickVariant(activityId: string): Variant {
   let h = 0;
   for (let i = 0; i < activityId.length; i += 1) {
@@ -149,7 +159,7 @@ function pickVariant(activityId: string): Variant {
   return (h % 3) as Variant;
 }
 
-// :zap: CHANGE 2: Tiny PRNG for deterministic "texture" points
+// Tiny PRNG for deterministic texture points
 function mulberry32(seed: number) {
   return function rand() {
     let t = (seed += 0x6d2b79f5);
@@ -159,7 +169,8 @@ function mulberry32(seed: number) {
   };
 }
 
-// :zap: CHANGE 3: Torn-ish rounded rect path (subtle, not too noisy)
+// Torn-ish rounded rect path (subtle, not too noisy)
+// ✅ only call when canUseSkia
 function makeTornRectPath(
   w: number,
   h: number,
@@ -168,6 +179,14 @@ function makeTornRectPath(
   jitter: number
 ) {
   const rand = mulberry32(seed);
+
+  // IMPORTANT: prevent crash if Skia is unavailable
+  // (extra safety even though we guard above)
+  if (!canUseSkia) {
+    // @ts-ignore
+    return null;
+  }
+
   const p = Skia.Path.Make();
 
   const left = 0;
@@ -175,10 +194,9 @@ function makeTornRectPath(
   const right = w;
   const bottom = h;
 
-  const steps = Math.max(10, Math.floor((w + h) / 28)); // controls edge detail
+  const steps = Math.max(10, Math.floor((w + h) / 28));
   const j = Math.max(0.6, jitter);
 
-  // Start near top-left corner
   p.moveTo(left + r, top);
 
   // Top edge
@@ -189,7 +207,6 @@ function makeTornRectPath(
     p.lineTo(x, y);
   }
 
-  // Top-right corner arc approximation
   p.quadTo(right, top, right, top + r);
 
   // Right edge
@@ -226,7 +243,7 @@ function makeTornRectPath(
   return p;
 }
 
-// :zap: CHANGE 4: Time + urgency
+// Time + urgency
 function timeLeft(t: (key: string) => string, expiresAt: string | null) {
   const nowMs = Date.now();
   if (!expiresAt) {
@@ -238,10 +255,7 @@ function timeLeft(t: (key: string) => string, expiresAt: string | null) {
 
   const ts = new Date(expiresAt).getTime();
   if (!Number.isFinite(ts)) {
-    return {
-      label: t("common.unknown"),
-      urgency: "normal" as const,
-    };
+    return { label: t("common.unknown"), urgency: "normal" as const };
   }
 
   const ms = ts - nowMs;
@@ -257,13 +271,10 @@ function timeLeft(t: (key: string) => string, expiresAt: string | null) {
   if (mins < 15) urgency = "critical";
   else if (mins < 60) urgency = "soon";
 
-  return {
-    label: formatExpiryLabel(expiresAt, nowMs, t),
-    urgency,
-  };
+  return { label: formatExpiryLabel(expiresAt, nowMs, t), urgency };
 }
 
-// :zap: CHANGE 6: Sticker-like chip
+// Sticker-like chip
 function Chip({
   label,
   bg,
@@ -288,19 +299,14 @@ function Chip({
         borderColor: border,
       }}
     >
-      <Text
-        style={{
-          ...(bold ? FONT.chipBold : FONT.chip),
-          color,
-        }}
-      >
+      <Text style={{ ...(bold ? FONT.chipBold : FONT.chip), color }}>
         {label}
       </Text>
     </View>
   );
 }
 
-// :zap: CHANGE 7: Cross-platform menu item
+// Cross-platform menu item
 function MenuItem({
   label,
   onPress,
@@ -348,11 +354,14 @@ function ScrapbookBackground({
   variant: Variant;
   seed: number;
 }) {
+  // ✅ Web / no-Skia: just do nothing (fallback handled in ActivityCard)
+  if (!canUseSkia) return null;
+
   const v = CARD_VARIANTS[variant];
 
   const paperPath = useMemo(() => {
     const r = 18;
-    const jitter = 2.6; // subtle torn feel
+    const jitter = 2.6;
     return makeTornRectPath(width, height, r, seed, jitter);
   }, [width, height, seed]);
 
@@ -369,11 +378,14 @@ function ScrapbookBackground({
     );
   }, [width, height, seed]);
 
-  // Speckles / doodles (deterministic)
+  // If something went wrong, skip
+  if (!paperPath || !innerPath) return null;
+
+  // Speckles
   const speckles = useMemo(() => {
     const rand = mulberry32(seed + 999);
     const dots: Array<{ x: number; y: number; r: number; a: number }> = [];
-    const n = Math.floor((width * height) / 4200); // density
+    const n = Math.floor((width * height) / 4200);
     for (let i = 0; i < n; i += 1) {
       dots.push({
         x: rand() * width,
@@ -385,7 +397,7 @@ function ScrapbookBackground({
     return dots;
   }, [width, height, seed]);
 
-  // Little star-ish accents near top-right (subtle)
+  // Small highlights
   const stars = useMemo(() => {
     const rand = mulberry32(seed + 2024);
     const pts: Array<{ x: number; y: number; r: number }> = [];
@@ -399,7 +411,7 @@ function ScrapbookBackground({
     return pts;
   }, [width, height, seed]);
 
-  // Tape position (top-left-ish)
+  // Tape position
   const tape = useMemo(() => {
     const rand = mulberry32(seed + 404);
     const w = 66 + rand() * 10;
@@ -412,14 +424,14 @@ function ScrapbookBackground({
 
   return (
     <Canvas style={{ width, height }}>
-      {/* :zap: CHANGE 8: Soft shadow behind the paper */}
+      {/* Soft shadow */}
       <Group transform={[{ translateX: 0 }, { translateY: 3 }]}>
         <Path path={paperPath} color="rgba(0,0,0,0.14)">
           <BlurMask blur={10} style="normal" />
         </Path>
       </Group>
 
-      {/* :zap: CHANGE 9: Paper fill with gentle gradient */}
+      {/* Paper fill gradient */}
       <Path path={paperPath}>
         <LinearGradient
           start={vec(0, 0)}
@@ -428,7 +440,7 @@ function ScrapbookBackground({
         />
       </Path>
 
-      {/* :zap: CHANGE 10: Inner stitched/dashed border */}
+      {/* Inner stitched border */}
       <Group transform={[{ translateX: 10 }, { translateY: 10 }]}>
         <Path
           path={innerPath}
@@ -440,7 +452,7 @@ function ScrapbookBackground({
         </Path>
       </Group>
 
-      {/* :zap: CHANGE 11: Tape (semi-transparent rotated rounded rect) */}
+      {/* Tape */}
       <Group
         transform={[
           { translateX: tape.x + tape.w / 2 },
@@ -468,7 +480,7 @@ function ScrapbookBackground({
         />
       </Group>
 
-      {/* :zap: CHANGE 12: Speckles texture */}
+      {/* Speckles */}
       {speckles.map((d, idx) => (
         <Circle
           key={`sp-${idx}`}
@@ -479,7 +491,7 @@ function ScrapbookBackground({
         />
       ))}
 
-      {/* :zap: CHANGE 13: Small star-like highlights */}
+      {/* Highlights */}
       {stars.map((s, idx) => (
         <Circle
           key={`st-${idx}`}
@@ -490,7 +502,7 @@ function ScrapbookBackground({
         />
       ))}
 
-      {/* :zap: CHANGE 14: Corner vignette for depth */}
+      {/* Vignette */}
       <Rect
         x={0}
         y={0}
@@ -516,6 +528,7 @@ export default function ActivityCard({
   const theme = useTheme();
   const TOKENS = theme.colors;
   const { t } = useT();
+
   const isCreator = !!currentUserId && a.creator_id === currentUserId;
   const cardTokens = theme.isDark ? lightTheme.colors : TOKENS;
   const cardTitleColor = cardTokens.title;
@@ -555,12 +568,9 @@ export default function ActivityCard({
       color: cardTokens.text,
       bold: false,
     };
-  }, [cardTokens, time.label, time.urgency]);
+  }, [cardTokens, time.urgency]);
 
-  // :zap: CHANGE 15: Card layout constants (tune once, applies everywhere)
   const CARD_HEIGHT = 132;
-
-  // :zap: CHANGE 16: Measure width so Skia background matches the card frame
   const [cardWidth, setCardWidth] = useState<number>(0);
 
   function notImplemented(action: "share" | "report" | "delete") {
@@ -593,7 +603,6 @@ export default function ActivityCard({
           ...(pressed ? { transform: [{ scale: 0.99 }] } : {}),
         })}
       >
-        {/* :zap: CHANGE 17: Fixed-height frame so list spacing is predictable */}
         <View
           onLayout={(e) => {
             const w = Math.max(0, Math.floor(e.nativeEvent.layout.width));
@@ -606,8 +615,8 @@ export default function ActivityCard({
             overflow: "hidden",
           }}
         >
-          {/* :zap: CHANGE 18: Skia scrapbook background (no assets) */}
-          {cardWidth > 0 ? (
+          {/* ✅ Background layer */}
+          {canUseSkia && cardWidth > 0 ? (
             <View
               pointerEvents="none"
               style={{
@@ -625,18 +634,35 @@ export default function ActivityCard({
                 seed={a.id.length * 1337 + a.id.charCodeAt(0)}
               />
             </View>
-          ) : null}
+          ) : (
+            // ✅ Web fallback: clean + "premium" look (no dirty fibers)
+            <View
+              pointerEvents="none"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: theme.isDark ? "#0F172A" : "#FFFFFF",
+                borderWidth: 1,
+                borderColor: theme.isDark
+                  ? "rgba(148,163,184,0.22)"
+                  : "rgba(17,24,39,0.10)",
+              }}
+            />
+          )}
 
-          {/* :zap: CHANGE 19: Content overlay, vertically centered (your request) */}
+          {/* Content */}
           <View
             style={{
               flex: 1,
               paddingHorizontal: 16,
               paddingVertical: 12,
-              justifyContent: "center", // ✅ vertical center
+              justifyContent: "center",
             }}
           >
-            {/* :zap: CHANGE 20: Always show ⋯ (top-right) */}
+            {/* Menu button */}
             <Pressable
               onPress={(e) => {
                 e.stopPropagation();
@@ -669,7 +695,6 @@ export default function ActivityCard({
               </Text>
             </Pressable>
 
-            {/* :zap: CHANGE 21: Icon stays on the left (your request) */}
             <View
               style={{ flexDirection: "row", gap: 10, alignItems: "center" }}
             >
@@ -686,7 +711,6 @@ export default function ActivityCard({
                 <Text style={{ fontSize: 16 }}>{v.icon}</Text>
               </View>
 
-              {/* Main */}
               <View style={{ flex: 1, gap: 5 }}>
                 <Text
                   numberOfLines={1}
@@ -723,7 +747,6 @@ export default function ActivityCard({
                   ) : null}
                 </View>
 
-                {/* Chips */}
                 <View
                   style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}
                 >

@@ -46,7 +46,7 @@ export default function TabsLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 12,
-          fontFamily: "KalamBold",
+          fontFamily: "PatrickHand",
         },
         tabBarIcon: ({ color, size }) => {
           const iconSize = size ?? 22;

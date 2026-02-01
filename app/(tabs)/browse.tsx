@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -69,6 +69,7 @@ export default function BrowseScreen() {
   const TAB_HEIGHT = 64;
   const TAB_BOTTOM = 8 + bottomInset;
   const tabBarSpace = 0;
+  const brandIconColor = theme.isDark ? theme.colors.text : "#5E8C55";
 
   const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
@@ -290,12 +291,17 @@ export default function BrowseScreen() {
                 borderColor: "#D6E6C8",
               }}
             >
-              <Ionicons name="location" size={20} color="#6FA35B" />
+              <MaterialCommunityIcons
+                name="compass-rose"
+                size={24}
+                color={brandIconColor}
+              />
             </View>
             <Text
               style={{
-                fontFamily: "KalamBold",
+                fontFamily: "ShortStack",
                 fontSize: 26,
+                fontStyle: "normal",
                 color: "#2E2A25",
               }}
             >
@@ -360,7 +366,7 @@ export default function BrowseScreen() {
         >
           <Text
             style={{
-              fontFamily: "KalamBold",
+              fontFamily: "Kalam",
               fontSize: 20,
               color: "#3A342E",
             }}
