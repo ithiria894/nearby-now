@@ -143,6 +143,13 @@ export default function RootLayout() {
               }}
             />
             <Stack.Screen
+              name="compose"
+              options={{
+                title: t("compose.navTitle"),
+                headerLeft: StackBackButton,
+              }}
+            />
+            <Stack.Screen
               name="edit/[id]"
               options={{
                 title: t("rootNav.editInvite"),

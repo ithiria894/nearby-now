@@ -69,6 +69,7 @@ export default function BrowseScreen() {
   const [mapImageError, setMapImageError] = useState(false);
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const searchSnapPoints = useMemo(() => ["35%", "70%"], []);
+  const [hintIndex, setHintIndex] = useState(0);
 
   const paperBg = theme.colors.bg;
   const mapImage = require("../../assets/map.png");
@@ -93,6 +94,31 @@ export default function BrowseScreen() {
     ),
     []
   );
+
+  const composerHints = useMemo(
+    () => [
+      t("browse.composer_hint_1"),
+      t("browse.composer_hint_2"),
+      t("browse.composer_hint_3"),
+      t("browse.composer_hint_4"),
+      t("browse.composer_hint_5"),
+    ],
+    [t]
+  );
+
+  useEffect(() => {
+    if (composerHints.length <= 1) return;
+    const interval = setInterval(() => {
+      setHintIndex((prev) => (prev + 1) % composerHints.length);
+    }, 3200);
+    return () => clearInterval(interval);
+  }, [composerHints.length]);
+
+  useEffect(() => {
+    if (hintIndex >= composerHints.length) {
+      setHintIndex(0);
+    }
+  }, [composerHints.length, hintIndex]);
 
   const loadInitial = useCallback(async () => {
     const uid = await requireUserId();
@@ -361,6 +387,104 @@ export default function BrowseScreen() {
               </Pressable>
             </View>
           </View>
+
+          <Pressable
+            onPress={() => router.push("/compose")}
+            style={({ pressed }) => ({
+              marginHorizontal: 18,
+              marginBottom: 12,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: "#D6E6C8",
+              backgroundColor: pressed ? "#EAF4E2" : "#F6F9F2",
+              padding: 12,
+              gap: 10,
+              shadowColor: "#000",
+              shadowOpacity: pressed ? 0.06 : 0.08,
+              shadowRadius: 10,
+              shadowOffset: { width: 0, height: 4 },
+            })}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "800",
+                color: theme.colors.title,
+              }}
+            >
+              {t("browse.composer_title")}
+            </Text>
+
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: "#E6F1DE",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: "#D6E6C8",
+                }}
+              >
+                <MaterialCommunityIcons
+                  name="compass-rose"
+                  size={20}
+                  color={brandIconColor}
+                />
+              </View>
+
+              <View
+                style={{
+                  flex: 1,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  backgroundColor: theme.isDark
+                    ? theme.colors.surfaceAlt
+                    : "#FFFFFF",
+                  borderRadius: 999,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                }}
+              >
+                <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
+                  {composerHints[hintIndex]}
+                </Text>
+              </View>
+            </View>
+
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <Ionicons
+                  name="chatbubble-ellipses"
+                  size={14}
+                  color={brandIconColor}
+                />
+                <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
+                  {t("compose.navTitle")}
+                </Text>
+              </View>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <Ionicons
+                  name="people"
+                  size={14}
+                  color={theme.colors.subtext}
+                />
+                <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
+                  {t("common.join")}
+                </Text>
+              </View>
+            </View>
+          </Pressable>
 
           {/* Section 2: What's happening + Map button */}
           <View
