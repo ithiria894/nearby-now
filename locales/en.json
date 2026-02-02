@@ -26,7 +26,9 @@
   "auth": {
     "login": {
       "title": "Nearby Now",
+      "emailLabel": "Email",
       "emailPlaceholder": "Email",
+      "passwordLabel": "Password",
       "passwordPlaceholder": "Password",
       "missingTitle": "Missing",
       "missingBody": "Please enter email and password.",
@@ -105,6 +107,7 @@
     "theme_dark": "Dark",
     "language_en": "English",
     "language_zhHK": "繁體中文（香港）",
+    "language_zhCN": "Simplified Chinese (China)",
     "language_ja": "日本語"
   },
   "browse": {
@@ -138,6 +141,23 @@
     "composer_hint_5": "Just want to chill and chat nearby?",
     "searchPlaceholder": "What do you feel like doing?",
     "whatsHappening": "What's happening nearby?",
+    "area_nearby": "Nearby",
+    "area_unknown": "Choose area",
+    "area_detecting": "Finding your area…",
+    "area_choose": "Set area",
+    "area_approx": "(approx.)",
+    "area_sheet_title": "Choose your area",
+    "area_sheet_subtitle": "Feed results are based on your current area.",
+    "area_current": "Current area",
+    "area_refresh": "Refresh",
+    "area_use_current": "Use my current location",
+    "area_choose_manual": "Choose area manually",
+    "area_search_placeholder": "Search a city or neighborhood",
+    "area_searching": "Searching…",
+    "area_no_results": "No results yet",
+    "area_recent": "Recent areas",
+    "area_radius_title": "Radius",
+    "area_radius_value": "Showing results within {{km}}km",
     "mapButton_map": "MAP",
     "mapButton_list": "LIST"
   },

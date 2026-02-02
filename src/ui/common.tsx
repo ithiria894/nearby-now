@@ -1,5 +1,12 @@
 import React from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import {
+  Keyboard,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "./theme/ThemeProvider";
 
@@ -18,40 +25,45 @@ export function Screen({
 
   if (scroll) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-        <ScrollView
-          style={{ backgroundColor: theme.colors.bg }}
-          contentContainerStyle={{
-            padding,
-            gap: 12,
-            justifyContent: center ? "center" : undefined,
-          }}
-        >
-          {children}
-        </ScrollView>
-      </SafeAreaView>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+          <ScrollView
+            style={{ backgroundColor: theme.colors.bg }}
+            contentContainerStyle={{
+              padding,
+              gap: 12,
+              justifyContent: center ? "center" : undefined,
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
     );
   }
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: theme.colors.bg,
-      }}
-    >
-      <View
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <SafeAreaView
         style={{
           flex: 1,
-          padding,
-          gap: 12,
-          justifyContent: center ? "center" : undefined,
           backgroundColor: theme.colors.bg,
         }}
       >
-        {children}
-      </View>
-    </SafeAreaView>
+        <View
+          style={{
+            flex: 1,
+            padding,
+            gap: 12,
+            justifyContent: center ? "center" : undefined,
+            backgroundColor: theme.colors.bg,
+          }}
+        >
+          {children}
+        </View>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 

@@ -26,7 +26,9 @@
   "auth": {
     "login": {
       "title": "Nearby Now",
+      "emailLabel": "電郵",
       "emailPlaceholder": "電郵",
+      "passwordLabel": "密碼",
       "passwordPlaceholder": "密碼",
       "missingTitle": "未填",
       "missingBody": "請輸入電郵同密碼。",
@@ -105,6 +107,7 @@
     "theme_dark": "深色",
     "language_en": "English",
     "language_zhHK": "繁體中文（香港）",
+    "language_zhCN": "简体中文（中国）",
     "language_ja": "日本語"
   },
   "browse": {
@@ -138,6 +141,23 @@
     "composer_hint_5": "想搵人附近傾偈 chill？",
     "searchPlaceholder": "搜尋、滑動、地點或酒店",
     "whatsHappening": "附近有咩發生？",
+    "area_nearby": "附近",
+    "area_unknown": "選擇地區",
+    "area_detecting": "偵測緊你嘅位置…",
+    "area_choose": "設定地區",
+    "area_approx": "（大概）",
+    "area_sheet_title": "選擇你嘅地區",
+    "area_sheet_subtitle": "Feed 內容會根據你嘅地區顯示。",
+    "area_current": "目前地區",
+    "area_refresh": "重新整理",
+    "area_use_current": "使用我而家嘅位置",
+    "area_choose_manual": "手動選擇地區",
+    "area_search_placeholder": "搜尋城市或附近地區",
+    "area_searching": "搜尋緊…",
+    "area_no_results": "暫時冇結果",
+    "area_recent": "最近地區",
+    "area_radius_title": "距離範圍",
+    "area_radius_value": "顯示 {{km}}km 以內結果",
     "mapButton_map": "地圖",
     "mapButton_list": "列表"
   },

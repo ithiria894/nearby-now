@@ -26,7 +26,9 @@
   "auth": {
     "login": {
       "title": "Nearby Now",
+      "emailLabel": "メール",
       "emailPlaceholder": "メール",
+      "passwordLabel": "パスワード",
       "passwordPlaceholder": "パスワード",
       "missingTitle": "未入力",
       "missingBody": "メールとパスワードを入力してください。",
@@ -105,6 +107,7 @@
     "theme_dark": "ダーク",
     "language_en": "英語",
     "language_zhHK": "繁體中文（香港）",
+    "language_zhCN": "简体中文（中国）",
     "language_ja": "日本語"
   },
   "browse": {
@@ -138,6 +141,23 @@
     "composer_hint_5": "近くでゆるくおしゃべりしたい？",
     "searchPlaceholder": "検索、スワイプ、場所やホテル",
     "whatsHappening": "近くで何が起きてる？",
+    "area_nearby": "近く",
+    "area_unknown": "エリアを選択",
+    "area_detecting": "エリアを取得中…",
+    "area_choose": "エリアを設定",
+    "area_approx": "（目安）",
+    "area_sheet_title": "エリアを選ぶ",
+    "area_sheet_subtitle": "フィードは現在のエリアを基準に表示されます。",
+    "area_current": "現在のエリア",
+    "area_refresh": "更新",
+    "area_use_current": "現在地を使う",
+    "area_choose_manual": "手動で選ぶ",
+    "area_search_placeholder": "都市や近所を検索",
+    "area_searching": "検索中…",
+    "area_no_results": "結果がありません",
+    "area_recent": "最近のエリア",
+    "area_radius_title": "表示範囲",
+    "area_radius_value": "{{km}}km 以内を表示",
     "mapButton_map": "地図",
     "mapButton_list": "リスト"
   },

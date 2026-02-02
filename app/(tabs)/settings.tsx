@@ -66,7 +66,9 @@ export default function SettingsScreen() {
                   ? t("settings.language_en")
                   : lng === "ja"
                     ? t("settings.language_ja")
-                    : t("settings.language_zhHK")}
+                    : lng === "zh-CN"
+                      ? t("settings.language_zhCN")
+                      : t("settings.language_zhHK")}
               </Text>
             </Pressable>
           );
