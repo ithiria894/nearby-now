@@ -1,4 +1,5 @@
 import { Alert, Pressable, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { backend } from "../../lib/backend";
 import {
@@ -34,6 +35,38 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <Pressable
+          onPress={() => router.back()}
+          hitSlop={8}
+          style={({ pressed }) => ({
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: pressed
+              ? theme.colors.otherBg
+              : theme.colors.surface,
+          })}
+        >
+          <Ionicons name="chevron-back" size={14} color={theme.colors.text} />
+          <Text style={{ fontSize: 12.5, color: theme.colors.text }}>
+            {t("common.back")}
+          </Text>
+        </Pressable>
+        <View />
+      </View>
+
       <Text style={{ fontSize: 18, fontWeight: "800" }}>
         {t("settings.title")}
       </Text>

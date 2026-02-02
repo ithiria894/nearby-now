@@ -59,6 +59,11 @@ export default function TabsLayout() {
           if (route.name === "created") {
             return <Ionicons name="add-circle" size={iconSize} color={color} />;
           }
+          if (route.name === "notifications") {
+            return (
+              <Ionicons name="notifications" size={iconSize} color={color} />
+            );
+          }
           return <Ionicons name="settings" size={iconSize} color={color} />;
         },
       })}
@@ -86,11 +91,13 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* :zap: CHANGE 3: Hide Create button on History/Settings */}
+      {/* :zap: CHANGE 3: Notifications replaces Settings tab */}
       <Tabs.Screen
-        name="settings"
-        options={{ title: t("tabs.settings"), headerRight: () => null }}
+        name="notifications"
+        options={{ title: t("tabs.notifications"), headerRight: () => null }}
       />
+      {/* Keep settings route but hide from tab bar */}
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }

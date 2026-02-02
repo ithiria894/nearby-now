@@ -384,7 +384,6 @@ export default function ActivityCard({
                         fontSize: 11.5,
                         fontWeight: "700",
                         color: TOKENS.subtext,
-                        marginRight: "auto",
                       }}
                     >
                       {t("activityCard.host_tag")}
@@ -396,6 +395,7 @@ export default function ActivityCard({
                       onPressCard();
                     }}
                     hitSlop={12}
+                    style={{ marginLeft: "auto" }}
                   >
                     <View
                       style={{

@@ -6,10 +6,12 @@
     "browse": "Feed",
     "joined": "Lobby",
     "created": "Created",
-    "settings": "Settings"
+    "settings": "Settings",
+    "notifications": "Notifications"
   },
   "common": {
     "loading": "Loading...",
+    "back": "Back",
     "cancel": "Cancel",
     "join": "Join lobby",
     "leave": "Leave",
@@ -109,6 +111,10 @@
     "language_zhHK": "繁體中文（香港）",
     "language_zhCN": "Simplified Chinese (China)",
     "language_ja": "日本語"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet."
   },
   "browse": {
     "headerTitle": "Feed",
