@@ -193,13 +193,22 @@ export default function SettingsScreen() {
               style={{
                 padding: 10,
                 borderWidth: 1,
-                borderColor: theme.colors.border,
+                borderColor: selected
+                  ? theme.colors.okBorder
+                  : theme.colors.border,
                 borderRadius: 10,
                 opacity: selected ? 1 : 0.6,
-                backgroundColor: theme.colors.surface,
+                backgroundColor: selected
+                  ? theme.colors.okBg
+                  : theme.colors.surface,
               }}
             >
-              <Text style={{ fontWeight: "800" }}>
+              <Text
+                style={{
+                  fontWeight: "800",
+                  color: selected ? theme.colors.okText : theme.colors.text,
+                }}
+              >
                 {lng === "en"
                   ? t("settings.language_en")
                   : lng === "ja"
@@ -230,13 +239,24 @@ export default function SettingsScreen() {
               style={{
                 padding: 10,
                 borderWidth: 1,
-                borderColor: theme.colors.border,
+                borderColor: selected
+                  ? theme.colors.okBorder
+                  : theme.colors.border,
                 borderRadius: 10,
                 opacity: selected ? 1 : 0.6,
-                backgroundColor: theme.colors.surface,
+                backgroundColor: selected
+                  ? theme.colors.okBg
+                  : theme.colors.surface,
               }}
             >
-              <Text style={{ fontWeight: "800" }}>{label}</Text>
+              <Text
+                style={{
+                  fontWeight: "800",
+                  color: selected ? theme.colors.okText : theme.colors.text,
+                }}
+              >
+                {label}
+              </Text>
             </Pressable>
           );
         })}

@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 import {
   BottomSheetBackdrop,
@@ -36,7 +44,7 @@ export default function ComposeScreen() {
   const successSnapPoints = useMemo(() => ["45%"], []);
   const areaSnapPoints = useMemo(() => ["55%"], []);
   const [currentArea, setCurrentArea] = useState<AreaLocation | null>(null);
-  const [areaLoading, setAreaLoading] = useState(true);
+  const [areaLoading, setAreaLoading] = useState(false);
   const [areaQuery, setAreaQuery] = useState("");
   const [areaResults, setAreaResults] = useState<PlaceCandidate[]>([]);
   const [areaSearching, setAreaSearching] = useState(false);
@@ -69,7 +77,6 @@ export default function ComposeScreen() {
   );
 
   useEffect(() => {
-    let alive = true;
     (async () => {
       try {
         const recentRaw = await AsyncStorage.getItem(RECENT_AREAS_KEY);
@@ -90,37 +97,8 @@ export default function ComposeScreen() {
       } catch {
         // ignore storage errors
       }
-
-      if (currentArea) return;
-      setAreaLoading(true);
-      const res = await requestDeviceLocation();
-      if (!alive) return;
-      if (res.status === "granted" && res.location) {
-        const label =
-          (await reverseGeocodeLabel(res.location)) ?? t("browse.area_nearby");
-        setCurrentArea({
-          lat: res.location.lat,
-          lng: res.location.lng,
-          label,
-          approx: false,
-          source: "device",
-        });
-        setAreaSource("device");
-        setAreaLoading(false);
-        return;
-      }
-
-      const ipArea = await getIpLocation();
-      if (ipArea) {
-        setCurrentArea({ ...ipArea, source: "ip" });
-        setAreaSource("ip");
-      }
-      setAreaLoading(false);
     })();
-    return () => {
-      alive = false;
-    };
-  }, [currentArea, t]);
+  }, []);
 
   useEffect(() => {
     const q = areaQuery.trim();
@@ -185,17 +163,28 @@ export default function ComposeScreen() {
     return null;
   };
 
+  const loadSuggestedArea = async () => {
+    if (currentArea || areaLoading) return;
+    setAreaLoading(true);
+    try {
+      const ipArea = await getIpLocation();
+      if (ipArea) {
+        selectArea(ipArea, "ip");
+      }
+    } finally {
+      setAreaLoading(false);
+    }
+  };
+
   async function onSubmit() {
     if (!text.trim()) return;
     setSubmitting(true);
     try {
-      let area = currentArea;
+      const area = currentArea;
       if (!area) {
-        area = await setAreaFromDevice();
-        if (!area) {
-          areaSheetRef.current?.present();
-          return;
-        }
+        await loadSuggestedArea();
+        areaSheetRef.current?.present();
+        return;
       }
       const userId = await requireUserId();
       const { data, error } = await backend.activities.createActivity({
@@ -234,369 +223,426 @@ export default function ComposeScreen() {
   }
 
   return (
-    <Screen scroll>
-      <Text
-        style={{ fontSize: 20, fontWeight: "800", color: theme.colors.title }}
-      >
-        {t("compose.title")}
-      </Text>
-      <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
-        {t("compose.subtitle")}
-      </Text>
-
-      <View style={{ gap: 8 }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
+    >
+      <Screen scroll>
         <Text
-          style={{ fontSize: 13, fontWeight: "800", color: theme.colors.title }}
+          style={{ fontSize: 20, fontWeight: "800", color: theme.colors.title }}
         >
-          {t("compose.template_label")}
+          {t("compose.title")}
         </Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {templates.map((tpl) => (
-            <Pressable
-              key={tpl}
-              onPress={() => setText(tpl)}
-              style={({ pressed }) => ({
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: pressed
-                  ? theme.isDark
-                    ? theme.colors.surfaceAlt
-                    : "#EAF4E2"
-                  : theme.isDark
-                    ? theme.colors.surface
-                    : "#F6F9F2",
-              })}
-            >
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "700",
-                  color: theme.colors.text,
-                }}
-              >
-                {tpl}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-        <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-          {t("compose.template_hint")}
-        </Text>
-      </View>
-
-      <View
-        style={{
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          borderRadius: 14,
-          backgroundColor: theme.colors.surface,
-          padding: 12,
-        }}
-      >
-        <TextInput
-          value={text}
-          onChangeText={setText}
-          placeholder={t("compose.placeholder")}
-          placeholderTextColor={theme.colors.subtext}
-          multiline
-          textAlignVertical="top"
-          style={{
-            minHeight: 120,
-            fontSize: 16,
-            color: theme.colors.text,
-          }}
-        />
-      </View>
-
-      <View style={{ gap: 8 }}>
         <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
-          {t("compose.area_label")}
+          {t("compose.subtitle")}
         </Text>
-        <Pressable
-          onPress={() => areaSheetRef.current?.present()}
-          style={({ pressed }) => ({
-            alignSelf: "flex-start",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            backgroundColor: pressed
-              ? theme.isDark
-                ? theme.colors.surfaceAlt
-                : "#EAF4E2"
-              : theme.isDark
-                ? theme.colors.surface
-                : "#F6F9F2",
-          })}
-        >
-          <Ionicons name="location" size={14} color={theme.colors.text} />
-          <Text style={{ fontSize: 12.5, color: theme.colors.text }}>
-            {areaLoading
-              ? t("browse.area_detecting")
-              : currentArea?.approx
-                ? `${currentArea?.label ?? t("browse.area_unknown")} ${t(
-                    "browse.area_approx"
-                  )}`
-                : (currentArea?.label ?? t("browse.area_unknown"))}
-          </Text>
-          <Ionicons
-            name="chevron-down"
-            size={14}
-            color={theme.colors.subtext}
-          />
-        </Pressable>
-      </View>
 
-      <PrimaryButton
-        label={submitting ? t("common.loading") : t("compose.submit")}
-        onPress={onSubmit}
-        disabled={submitting || !text.trim()}
-      />
-
-      <BottomSheetModal
-        ref={successSheetRef}
-        snapPoints={successSnapPoints}
-        enablePanDownToClose
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: theme.colors.surface,
-          borderTopLeftRadius: 18,
-          borderTopRightRadius: 18,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: theme.colors.border,
-        }}
-      >
-        <BottomSheetView style={{ padding: 16, gap: 12 }}>
+        <View style={{ gap: 8 }}>
           <Text
             style={{
-              fontSize: 18,
+              fontSize: 13,
               fontWeight: "800",
               color: theme.colors.title,
             }}
           >
-            {t("compose.success_title")}
+            {t("compose.template_label")}
           </Text>
-          <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
-            {successLine}
-          </Text>
-          <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
-            {t("compose.success_guidance")}
-          </Text>
-
-          <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
-            <Pressable
-              onPress={() => {
-                successSheetRef.current?.dismiss();
-                router.replace("/(tabs)/browse");
-              }}
-              style={({ pressed }) => ({
-                flex: 1,
-                paddingVertical: 12,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: pressed
-                  ? theme.isDark
-                    ? theme.colors.surfaceAlt
-                    : "#EAF4E2"
-                  : theme.isDark
-                    ? theme.colors.surface
-                    : "#F6F9F2",
-                alignItems: "center",
-              })}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: "800",
-                  color: theme.colors.text,
-                }}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {templates.map((tpl) => (
+              <Pressable
+                key={tpl}
+                onPress={() => setText(tpl)}
+                style={({ pressed }) => ({
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  backgroundColor: pressed
+                    ? theme.isDark
+                      ? theme.colors.surfaceAlt
+                      : "#EAF4E2"
+                    : theme.isDark
+                      ? theme.colors.surface
+                      : "#F6F9F2",
+                })}
               >
-                {t("compose.success_wait")}
-              </Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => {
-                if (!createdId) return;
-                successSheetRef.current?.dismiss();
-                router.push(`/edit/${createdId}`);
-              }}
-              style={({ pressed }) => ({
-                flex: 1,
-                paddingVertical: 12,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: pressed
-                  ? theme.isDark
-                    ? theme.colors.surfaceAlt
-                    : "#E2F0D8"
-                  : theme.isDark
-                    ? theme.colors.surface
-                    : "#EAF4E2",
-                alignItems: "center",
-              })}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: "800",
-                  color: theme.colors.text,
-                }}
-              >
-                {t("compose.success_edit")}
-              </Text>
-            </Pressable>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    color: theme.colors.text,
+                  }}
+                >
+                  {tpl}
+                </Text>
+              </Pressable>
+            ))}
           </View>
-        </BottomSheetView>
-      </BottomSheetModal>
+          <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
+            {t("compose.template_hint")}
+          </Text>
+        </View>
 
-      <BottomSheetModal
-        ref={areaSheetRef}
-        snapPoints={areaSnapPoints}
-        enablePanDownToClose
-        backdropComponent={renderBackdrop}
-        backgroundStyle={{
-          backgroundColor: theme.colors.surface,
-          borderTopLeftRadius: 18,
-          borderTopRightRadius: 18,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: theme.colors.border,
-        }}
-      >
-        <BottomSheetView style={{ padding: 16, gap: 12 }}>
-          <View style={{ gap: 6 }}>
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            borderRadius: 14,
+            backgroundColor: theme.colors.surface,
+            padding: 12,
+          }}
+        >
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            placeholder={t("compose.placeholder")}
+            placeholderTextColor={theme.colors.subtext}
+            multiline
+            textAlignVertical="top"
+            style={{
+              minHeight: 120,
+              fontSize: 16,
+              color: theme.colors.text,
+            }}
+          />
+        </View>
+
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
+            {t("compose.area_label")}
+          </Text>
+          <Pressable
+            onPress={async () => {
+              await loadSuggestedArea();
+              areaSheetRef.current?.present();
+            }}
+            style={({ pressed }) => ({
+              alignSelf: "flex-start",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              backgroundColor: pressed
+                ? theme.isDark
+                  ? theme.colors.surfaceAlt
+                  : "#EAF4E2"
+                : theme.isDark
+                  ? theme.colors.surface
+                  : "#F6F9F2",
+            })}
+          >
+            <Ionicons name="location" size={14} color={theme.colors.text} />
+            <Text style={{ fontSize: 12.5, color: theme.colors.text }}>
+              {areaLoading
+                ? t("browse.area_detecting")
+                : currentArea?.approx
+                  ? `${currentArea?.label ?? t("browse.area_unknown")} ${t(
+                      "browse.area_approx"
+                    )}`
+                  : (currentArea?.label ?? t("browse.area_unknown"))}
+            </Text>
+            <Ionicons
+              name="chevron-down"
+              size={14}
+              color={theme.colors.subtext}
+            />
+          </Pressable>
+        </View>
+
+        <PrimaryButton
+          label={submitting ? t("common.loading") : t("compose.submit")}
+          onPress={onSubmit}
+          disabled={submitting || !text.trim()}
+        />
+
+        <BottomSheetModal
+          ref={successSheetRef}
+          snapPoints={successSnapPoints}
+          enablePanDownToClose
+          backdropComponent={renderBackdrop}
+          backgroundStyle={{
+            backgroundColor: theme.colors.surface,
+            borderTopLeftRadius: 18,
+            borderTopRightRadius: 18,
+          }}
+          handleIndicatorStyle={{
+            backgroundColor: theme.colors.border,
+          }}
+        >
+          <BottomSheetView style={{ padding: 16, gap: 12 }}>
             <Text
               style={{
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: "800",
                 color: theme.colors.title,
               }}
             >
-              {t("browse.area_sheet_title")}
+              {t("compose.success_title")}
             </Text>
-            <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
-              {t("browse.area_sheet_subtitle")}
+            <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
+              {successLine}
             </Text>
-          </View>
+            <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
+              {t("compose.success_guidance")}
+            </Text>
 
-          <Pressable
-            onPress={async () => {
-              await setAreaFromDevice();
-              areaSheetRef.current?.dismiss();
-            }}
-            style={({ pressed }) => ({
-              paddingHorizontal: 12,
-              paddingVertical: 12,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              backgroundColor: pressed
-                ? theme.colors.otherBg
-                : theme.colors.surface,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-            })}
-          >
-            <Ionicons name="navigate" size={16} color={theme.colors.text} />
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "800",
-                color: theme.colors.text,
-              }}
-            >
-              {t("browse.area_use_current")}
-            </Text>
-          </Pressable>
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
+              <Pressable
+                onPress={() => {
+                  successSheetRef.current?.dismiss();
+                  router.replace("/(tabs)/browse");
+                }}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  backgroundColor: pressed
+                    ? theme.isDark
+                      ? theme.colors.surfaceAlt
+                      : "#EAF4E2"
+                    : theme.isDark
+                      ? theme.colors.surface
+                      : "#F6F9F2",
+                  alignItems: "center",
+                })}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "800",
+                    color: theme.colors.text,
+                  }}
+                >
+                  {t("compose.success_wait")}
+                </Text>
+              </Pressable>
 
-          <View style={{ gap: 8 }}>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: "800",
-                color: theme.colors.text,
+              <Pressable
+                onPress={() => {
+                  if (!createdId) return;
+                  successSheetRef.current?.dismiss();
+                  router.push(`/edit/${createdId}`);
+                }}
+                style={({ pressed }) => ({
+                  flex: 1,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  backgroundColor: pressed
+                    ? theme.isDark
+                      ? theme.colors.surfaceAlt
+                      : "#E2F0D8"
+                    : theme.isDark
+                      ? theme.colors.surface
+                      : "#EAF4E2",
+                  alignItems: "center",
+                })}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "800",
+                    color: theme.colors.text,
+                  }}
+                >
+                  {t("compose.success_edit")}
+                </Text>
+              </Pressable>
+            </View>
+          </BottomSheetView>
+        </BottomSheetModal>
+
+        <BottomSheetModal
+          ref={areaSheetRef}
+          snapPoints={areaSnapPoints}
+          enablePanDownToClose
+          backdropComponent={renderBackdrop}
+          backgroundStyle={{
+            backgroundColor: theme.colors.surface,
+            borderTopLeftRadius: 18,
+            borderTopRightRadius: 18,
+          }}
+          handleIndicatorStyle={{
+            backgroundColor: theme.colors.border,
+          }}
+        >
+          <BottomSheetView style={{ padding: 16, gap: 12 }}>
+            <View style={{ gap: 6 }}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "800",
+                  color: theme.colors.title,
+                }}
+              >
+                {t("browse.area_sheet_title")}
+              </Text>
+              <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
+                {t("browse.area_sheet_subtitle")}
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={async () => {
+                await setAreaFromDevice();
+                areaSheetRef.current?.dismiss();
               }}
-            >
-              {t("browse.area_choose_manual")}
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
+              style={({ pressed }) => ({
                 paddingHorizontal: 12,
-                paddingVertical: 10,
+                paddingVertical: 12,
                 borderRadius: 12,
                 borderWidth: 1,
                 borderColor: theme.colors.border,
-                backgroundColor: theme.isDark
-                  ? theme.colors.surfaceAlt
-                  : "#F1ECE3",
-              }}
+                backgroundColor: pressed
+                  ? theme.colors.otherBg
+                  : theme.colors.surface,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+              })}
             >
-              <Ionicons name="search" size={16} color={theme.colors.subtext} />
-              <TextInput
-                value={areaQuery}
-                onChangeText={setAreaQuery}
-                placeholder={t("browse.area_search_placeholder")}
-                placeholderTextColor={theme.colors.subtext}
+              <Ionicons name="navigate" size={16} color={theme.colors.text} />
+              <Text
                 style={{
-                  flex: 1,
                   fontSize: 14,
+                  fontWeight: "800",
                   color: theme.colors.text,
                 }}
-              />
-              <Pressable
-                onPress={() => setAreaQuery("")}
-                hitSlop={6}
-                style={{ padding: 2 }}
+              >
+                {t("browse.area_use_current")}
+              </Text>
+            </Pressable>
+
+            <View style={{ gap: 8 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "800",
+                  color: theme.colors.text,
+                }}
+              >
+                {t("browse.area_choose_manual")}
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  backgroundColor: theme.isDark
+                    ? theme.colors.surfaceAlt
+                    : "#F1ECE3",
+                }}
               >
                 <Ionicons
-                  name={areaQuery ? "close-circle" : "chevron-down"}
-                  size={18}
+                  name="search"
+                  size={16}
                   color={theme.colors.subtext}
                 />
-              </Pressable>
+                <TextInput
+                  value={areaQuery}
+                  onChangeText={setAreaQuery}
+                  placeholder={t("browse.area_search_placeholder")}
+                  placeholderTextColor={theme.colors.subtext}
+                  style={{
+                    flex: 1,
+                    fontSize: 14,
+                    color: theme.colors.text,
+                  }}
+                />
+                <Pressable
+                  onPress={() => setAreaQuery("")}
+                  hitSlop={6}
+                  style={{ padding: 2 }}
+                >
+                  <Ionicons
+                    name={areaQuery ? "close-circle" : "chevron-down"}
+                    size={18}
+                    color={theme.colors.subtext}
+                  />
+                </Pressable>
+              </View>
             </View>
-          </View>
 
-          {areaQuery.trim().length > 0 ? (
-            <View style={{ gap: 8 }}>
-              {areaSearching ? (
-                <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
-                  {t("browse.area_searching")}
+            {areaQuery.trim().length > 0 ? (
+              <View style={{ gap: 8 }}>
+                {areaSearching ? (
+                  <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
+                    {t("browse.area_searching")}
+                  </Text>
+                ) : areaResults.length === 0 ? (
+                  <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
+                    {t("browse.area_no_results")}
+                  </Text>
+                ) : (
+                  areaResults.map((place) => (
+                    <Pressable
+                      key={place.placeId}
+                      onPress={() => {
+                        selectArea(
+                          {
+                            lat: place.lat,
+                            lng: place.lng,
+                            label: place.name,
+                            approx: false,
+                          },
+                          "manual"
+                        );
+                        setAreaQuery("");
+                        areaSheetRef.current?.dismiss();
+                      }}
+                      style={({ pressed }) => ({
+                        paddingHorizontal: 12,
+                        paddingVertical: 10,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: theme.colors.border,
+                        backgroundColor: pressed
+                          ? theme.colors.otherBg
+                          : theme.colors.surface,
+                      })}
+                    >
+                      <Text style={{ fontSize: 14, fontWeight: "800" }}>
+                        {place.name}
+                      </Text>
+                      <Text
+                        style={{ fontSize: 12, color: theme.colors.subtext }}
+                      >
+                        {place.address}
+                      </Text>
+                    </Pressable>
+                  ))
+                )}
+              </View>
+            ) : recentAreas.length > 0 ? (
+              <View style={{ gap: 8 }}>
+                <Text
+                  style={{
+                    fontSize: 12.5,
+                    fontWeight: "800",
+                    color: theme.colors.text,
+                  }}
+                >
+                  {t("browse.area_recent")}
                 </Text>
-              ) : areaResults.length === 0 ? (
-                <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
-                  {t("browse.area_no_results")}
-                </Text>
-              ) : (
-                areaResults.map((place) => (
+                {recentAreas.map((area) => (
                   <Pressable
-                    key={place.placeId}
+                    key={`${area.label}-${area.lat}-${area.lng}`}
                     onPress={() => {
-                      selectArea(
-                        {
-                          lat: place.lat,
-                          lng: place.lng,
-                          label: place.name,
-                          approx: false,
-                        },
-                        "manual"
-                      );
-                      setAreaQuery("");
+                      selectArea(area, area.source ?? "manual");
                       areaSheetRef.current?.dismiss();
                     }}
                     style={({ pressed }) => ({
@@ -611,53 +657,15 @@ export default function ComposeScreen() {
                     })}
                   >
                     <Text style={{ fontSize: 14, fontWeight: "800" }}>
-                      {place.name}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-                      {place.address}
+                      {area.label}
                     </Text>
                   </Pressable>
-                ))
-              )}
-            </View>
-          ) : recentAreas.length > 0 ? (
-            <View style={{ gap: 8 }}>
-              <Text
-                style={{
-                  fontSize: 12.5,
-                  fontWeight: "800",
-                  color: theme.colors.text,
-                }}
-              >
-                {t("browse.area_recent")}
-              </Text>
-              {recentAreas.map((area) => (
-                <Pressable
-                  key={`${area.label}-${area.lat}-${area.lng}`}
-                  onPress={() => {
-                    selectArea(area, area.source ?? "manual");
-                    areaSheetRef.current?.dismiss();
-                  }}
-                  style={({ pressed }) => ({
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: theme.colors.border,
-                    backgroundColor: pressed
-                      ? theme.colors.otherBg
-                      : theme.colors.surface,
-                  })}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: "800" }}>
-                    {area.label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
-        </BottomSheetView>
-      </BottomSheetModal>
-    </Screen>
+                ))}
+              </View>
+            ) : null}
+          </BottomSheetView>
+        </BottomSheetModal>
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }
