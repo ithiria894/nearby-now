@@ -65,6 +65,7 @@
     "navTitle": "Quick Post",
     "title": "Post a quick invite",
     "subtitle": "Write one short line. You can edit details later in the room.",
+    "area_label": "This post will go to",
     "placeholder": "Type a short invite…",
     "template_label": "Quick templates",
     "template_hint": "Tap a template to fill the box, then tweak or add details.",
@@ -100,6 +101,10 @@
   },
   "settings": {
     "title": "Settings",
+    "displayNameLabel": "Display name",
+    "displayNamePlaceholder": "Your name",
+    "displayNameSave": "Save name",
+    "displayNameSaved": "Saved",
     "logout": "Log out",
     "logoutErrorTitle": "Logout failed",
     "language": "Language",

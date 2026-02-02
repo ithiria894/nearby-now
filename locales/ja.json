@@ -65,6 +65,7 @@
     "navTitle": "クイック投稿",
     "title": "クイック招待",
     "subtitle": "一言だけでOK。詳細は後で部屋で編集できます。",
+    "area_label": "この投稿の対象エリア",
     "placeholder": "例：今夜カラオケ行ける人？",
     "template_label": "クイック例文",
     "template_hint": "タップして入力欄に入れ、あとで編集・追記できます。",
@@ -100,6 +101,10 @@
   },
   "settings": {
     "title": "設定",
+    "displayNameLabel": "表示名",
+    "displayNamePlaceholder": "表示名を入力",
+    "displayNameSave": "保存",
+    "displayNameSaved": "保存済み",
     "logout": "ログアウト",
     "logoutErrorTitle": "ログアウトに失敗",
     "language": "言語",

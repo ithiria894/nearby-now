@@ -65,6 +65,7 @@
     "navTitle": "快貼",
     "title": "快速發佈邀請",
     "subtitle": "打一段簡短文字就得，詳細之後再改。",
+    "area_label": "呢個 post 會發去",
     "placeholder": "例如：今晚有冇人想去唱K？",
     "template_label": "快速範本",
     "template_hint": "撳範本自動填入，之後可以再改或補充。",
@@ -100,6 +101,10 @@
   },
   "settings": {
     "title": "設定",
+    "displayNameLabel": "顯示名稱",
+    "displayNamePlaceholder": "你嘅名稱",
+    "displayNameSave": "儲存名稱",
+    "displayNameSaved": "已儲存",
     "logout": "登出",
     "logoutErrorTitle": "登出失敗",
     "language": "語言",

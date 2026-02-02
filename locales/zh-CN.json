@@ -65,6 +65,7 @@
     "navTitle": "快速发布",
     "title": "快速发布邀请",
     "subtitle": "写一句简短邀请即可，细节之后再改。",
+    "area_label": "这条帖子将发布到",
     "placeholder": "例如：今晚有没有人想去唱K？",
     "template_label": "快速模板",
     "template_hint": "点击模板自动填入，之后可以再修改或补充。",
@@ -100,6 +101,10 @@
   },
   "settings": {
     "title": "设置",
+    "displayNameLabel": "显示名称",
+    "displayNamePlaceholder": "你的昵称",
+    "displayNameSave": "保存名称",
+    "displayNameSaved": "已保存",
     "logout": "退出登录",
     "logoutErrorTitle": "退出登录失败",
     "language": "语言",

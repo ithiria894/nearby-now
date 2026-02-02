@@ -1,6 +1,7 @@
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Pressable, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { backend } from "../../lib/backend";
 import {
   setLanguage,
@@ -11,6 +12,7 @@ import { useT } from "../../lib/i18n/useT";
 import { Screen } from "../../src/ui/common";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
+import { requireUserId } from "../../lib/domain/auth";
 
 // :zap: CHANGE 1: Settings tab with Logout action
 export default function SettingsScreen() {
@@ -18,6 +20,32 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { mode, setMode } = useThemeSettings();
   const { t, i18n } = useT();
+  const [displayName, setDisplayName] = useState("");
+  const [nameLoading, setNameLoading] = useState(true);
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameSaved, setNameSaved] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const userId = await requireUserId();
+        const { displayName: current, error } =
+          await backend.profiles.getProfileDisplayName(userId);
+        if (!alive) return;
+        if (error) throw error;
+        setDisplayName(current ?? "");
+        setNameSaved(false);
+      } catch (e) {
+        handleError(t("settings.displayNameLabel"), e);
+      } finally {
+        if (alive) setNameLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [t]);
 
   async function onLogout() {
     try {
@@ -30,6 +58,27 @@ export default function SettingsScreen() {
         t("settings.logoutErrorTitle"),
         e?.message ?? "Unknown error"
       );
+    }
+  }
+
+  async function onSaveDisplayName() {
+    if (nameSaving) return;
+    setNameSaving(true);
+    setNameSaved(false);
+    try {
+      const userId = await requireUserId();
+      const next = displayName.trim().slice(0, 24);
+      const { error } = await backend.profiles.updateProfileDisplayName(
+        userId,
+        next
+      );
+      if (error) throw error;
+      setDisplayName(next);
+      setNameSaved(true);
+    } catch (e) {
+      handleError(t("settings.displayNameLabel"), e);
+    } finally {
+      setNameSaving(false);
     }
   }
 
@@ -70,6 +119,62 @@ export default function SettingsScreen() {
       <Text style={{ fontSize: 18, fontWeight: "800" }}>
         {t("settings.title")}
       </Text>
+
+      <Text style={{ fontWeight: "800" }}>
+        {t("settings.displayNameLabel")}
+      </Text>
+      <View style={{ gap: 8 }}>
+        <TextInput
+          value={displayName}
+          onChangeText={(value) => {
+            setDisplayName(value);
+            if (nameSaved) setNameSaved(false);
+          }}
+          placeholder={t("settings.displayNamePlaceholder")}
+          placeholderTextColor={theme.colors.subtext}
+          editable={!nameLoading}
+          style={{
+            borderWidth: 1,
+            borderRadius: 12,
+            padding: 12,
+            borderColor: theme.colors.border,
+            backgroundColor: theme.isDark ? theme.colors.surfaceAlt : "#FFFFFF",
+            color: theme.colors.text,
+          }}
+        />
+        <Pressable
+          onPress={onSaveDisplayName}
+          disabled={nameSaving || nameLoading}
+          style={({ pressed }) => ({
+            alignSelf: "flex-start",
+            paddingHorizontal: 12,
+            paddingVertical: 8,
+            borderRadius: 999,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+            backgroundColor: nameSaved
+              ? theme.colors.okBg
+              : pressed
+                ? theme.colors.otherBg
+                : theme.colors.surface,
+            opacity: nameSaving || nameLoading ? 0.6 : 1,
+          })}
+        >
+          <Text
+            style={{
+              fontWeight: "800",
+              color: nameSaved ? theme.colors.okText : theme.colors.text,
+            }}
+          >
+            {nameSaving
+              ? t("common.loading")
+              : nameSaved
+                ? t("settings.displayNameSaved")
+                : t("settings.displayNameSave")}
+            {nameSaved ? " ✓" : ""}
+          </Text>
+        </Pressable>
+      </View>
 
       <Text style={{ fontWeight: "800" }}>{t("settings.language")}</Text>
       <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>

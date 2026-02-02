@@ -12,6 +12,7 @@ export type AreaLocation = {
   lng: number;
   label: string;
   approx?: boolean;
+  source?: "device" | "ip" | "manual";
 };
 
 export type LocationResult =
