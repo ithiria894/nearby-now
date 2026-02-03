@@ -144,7 +144,7 @@ export const lightTheme: ThemeTokens = {
     settingsSubtext: "#3A342E",
     settingsActionText: "#2E2A25",
     subtitleText: "#3A342E",
-    tabBarTextActive: "#2E2A25",
+    tabBarTextActive: "#5E8C55",
     tabBarTextInactive: "#9C9388",
     segmentedTabTextActive: "#2E2A25",
     segmentedTabTextInactive: "#9C9388",

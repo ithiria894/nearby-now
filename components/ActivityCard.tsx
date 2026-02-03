@@ -173,7 +173,6 @@ function MenuItem({
 export default function ActivityCard({
   activity: a,
   currentUserId,
-  membershipState,
   isJoining,
   onPressCard,
   onPressEdit,
@@ -188,7 +187,7 @@ export default function ActivityCard({
   const dividerColor = TOKENS.activityCardDivider;
   const cardBg = TOKENS.activityCardBg;
   const iconBg = theme.isDark ? TOKENS.surfaceAlt : TOKENS.brandSoft;
-  const accent = theme.isDark ? TOKENS.text : TOKENS.brand;
+  const accent = TOKENS.brand;
 
   const time = useMemo(() => timeLeftLabel(t, a.expires_at), [a.expires_at, t]);
   const icon = useMemo(() => inferActivityIcon(a), [a]);
@@ -201,14 +200,6 @@ export default function ActivityCard({
     [a, t, time.label]
   );
   const showHint = !!hintText;
-
-  const ctaText =
-    membershipState === "joined"
-      ? t("activityCard.cta_link_joined")
-      : membershipState === "left"
-        ? t("activityCard.cta_link_left")
-        : t("activityCard.cta_link_default");
-  const showHostLabel = isCreator;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const didLongPressRef = useRef(false);
@@ -304,7 +295,7 @@ export default function ActivityCard({
           style={
             theme.isDark
               ? {
-                  borderRadius: CARD.radius,
+                  borderRadius: CARD.radius + 1,
                   backgroundColor: "rgba(255,255,255,0.03)",
                   padding: 1,
                 }
@@ -324,18 +315,30 @@ export default function ActivityCard({
               ...animatedStyle,
             }}
           >
-            <Text
+            <View
+              pointerEvents="none"
               style={{
                 position: "absolute",
                 top: CARD.timeTop,
                 right: CARD.timeRight,
-                fontSize: 11.5,
-                fontWeight: "700",
-                color: TOKENS.subtext,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
               }}
             >
-              {postedLabel}
-            </Text>
+              {isCreator ? (
+                <Ionicons name="ribbon" size={13} color={TOKENS.brand} />
+              ) : null}
+              <Text
+                style={{
+                  fontSize: 11.5,
+                  fontWeight: "700",
+                  color: TOKENS.subtext,
+                }}
+              >
+                {postedLabel}
+              </Text>
+            </View>
 
             <View
               style={{
@@ -398,17 +401,6 @@ export default function ActivityCard({
                   ) : null}
 
                   <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    {showHostLabel ? (
-                      <Text
-                        style={{
-                          fontSize: 11.5,
-                          fontWeight: "700",
-                          color: TOKENS.subtext,
-                        }}
-                      >
-                        {t("activityCard.host_tag")}
-                      </Text>
-                    ) : null}
                     <Pressable
                       onPress={(e) => {
                         e.stopPropagation();
@@ -427,12 +419,13 @@ export default function ActivityCard({
                         <Ionicons name="people" size={12} color={accent} />
                         <Text
                           style={{
-                            fontSize: 12.5,
-                            fontWeight: "800",
+                            fontSize: 16,
+                            fontWeight: "900",
                             color: accent,
+                            marginTop: -1,
                           }}
                         >
-                          {ctaText} →
+                          ›
                         </Text>
                       </View>
                     </Pressable>

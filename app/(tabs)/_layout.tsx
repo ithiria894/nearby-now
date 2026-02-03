@@ -48,23 +48,30 @@ export default function TabsLayout() {
           fontSize: 12,
           fontFamily: "PatrickHand",
         },
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color, size, focused }) => {
           const iconSize = size ?? 22;
+          const iconColor = focused ? activeTint : inactiveTint;
           if (route.name === "browse") {
-            return <Ionicons name="heart" size={iconSize} color={color} />;
+            return <Ionicons name="heart" size={iconSize} color={iconColor} />;
           }
           if (route.name === "joined") {
-            return <Ionicons name="people" size={iconSize} color={color} />;
+            return <Ionicons name="people" size={iconSize} color={iconColor} />;
           }
           if (route.name === "created") {
-            return <Ionicons name="add-circle" size={iconSize} color={color} />;
+            return (
+              <Ionicons name="add-circle" size={iconSize} color={iconColor} />
+            );
           }
           if (route.name === "notifications") {
             return (
-              <Ionicons name="notifications" size={iconSize} color={color} />
+              <Ionicons
+                name="notifications"
+                size={iconSize}
+                color={iconColor}
+              />
             );
           }
-          return <Ionicons name="settings" size={iconSize} color={color} />;
+          return <Ionicons name="settings" size={iconSize} color={iconColor} />;
         },
       })}
     >
