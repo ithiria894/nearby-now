@@ -31,7 +31,7 @@ import {
   searchPlacesNominatim,
   type PlaceCandidate,
 } from "../../lib/api/places";
-import { requireUserId } from "../../lib/domain/auth";
+import { isAuthMissingError, requireUserId } from "../../lib/domain/auth";
 import {
   getBrowsePage,
   getMembershipForUser,
@@ -289,6 +289,7 @@ export default function BrowseScreen() {
       cursor: null,
       limit: PAGE_SIZE,
       joinedSet: joined,
+      excludeCreatorId: uid,
     });
 
     setItems(page.rows);
@@ -304,6 +305,7 @@ export default function BrowseScreen() {
         cursor,
         limit: PAGE_SIZE,
         joinedSet,
+        excludeCreatorId: userId,
       });
       if (page.rows.length === 0) {
         setHasMore(false);
@@ -328,7 +330,7 @@ export default function BrowseScreen() {
     } finally {
       setLoadingMore(false);
     }
-  }, [cursor, hasMore, joinedSet, loadingMore, t]);
+  }, [cursor, hasMore, joinedSet, loadingMore, t, userId]);
 
   const filteredItems = useMemo(() => {
     if (!currentArea) return items;
@@ -349,6 +351,10 @@ export default function BrowseScreen() {
       try {
         await loadInitial();
       } catch (e: any) {
+        if (isAuthMissingError(e)) {
+          router.replace("/login");
+          return;
+        }
         handleError(t("browse.loadErrorTitle"), e);
         router.replace("/login");
       } finally {
@@ -384,7 +390,8 @@ export default function BrowseScreen() {
 
         if (!next?.id) return prev;
 
-        const shouldShow = isJoinableActivity(next, joinedSet);
+        const isMine = !!userId && next?.creator_id === userId;
+        const shouldShow = !isMine && isJoinableActivity(next, joinedSet);
 
         if (!shouldShow) {
           map.delete(next.id);

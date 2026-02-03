@@ -80,7 +80,7 @@ export default function LoginScreen() {
               color: theme.colors.title,
             }}
           >
-            {t("auth.login.title")}
+            {t("app.name")}
           </Text>
           <Text style={{ fontSize: 13, color: theme.colors.subtitleText }}>
             {t("auth.login.submitIdle")}

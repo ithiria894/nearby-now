@@ -37,14 +37,18 @@ import { ShortStack_400Regular } from "@expo-google-fonts/short-stack";
 // :zap: CHANGE 2: Keep splash visible until fonts are ready (prevents font flicker)
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
-function StackBackButton() {
+function StackBackButton({
+  fallbackHref = "/(tabs)/browse",
+}: {
+  fallbackHref?: string;
+}) {
   const router = useRouter();
   const theme = useTheme();
   return (
     <Pressable
       onPress={() => {
         if (router.canGoBack()) router.back();
-        else router.replace("/(tabs)/browse");
+        else router.replace(fallbackHref);
       }}
       hitSlop={10}
       style={{ paddingHorizontal: 10, paddingVertical: 6 }}
@@ -132,7 +136,10 @@ export default function RootLayout() {
             />
             <Stack.Screen
               name="register"
-              options={{ title: t("rootNav.register") }}
+              options={{
+                title: t("rootNav.register"),
+                headerLeft: () => <StackBackButton fallbackHref="/login" />,
+              }}
             />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen

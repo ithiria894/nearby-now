@@ -33,12 +33,19 @@ export async function getBrowsePage(params: {
   cursor?: ActivityCursor | null;
   limit: number;
   joinedSet: Set<string>;
+  excludeCreatorId?: string | null;
 }): Promise<ActivitiesPage> {
   const rows = await fetchOpenActivitiesPage(
     params.cursor ?? null,
     params.limit
   );
-  const joinable = rows.filter((a) => isJoinableActivity(a, params.joinedSet));
+  const notMine =
+    params.excludeCreatorId != null
+      ? rows.filter((a) => a.creator_id !== params.excludeCreatorId)
+      : rows;
+  const joinable = notMine.filter((a) =>
+    isJoinableActivity(a, params.joinedSet)
+  );
   return {
     rows: joinable,
     cursor: buildCursor(rows),
