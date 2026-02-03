@@ -1,6 +1,9 @@
 import { Tabs, useRouter } from "expo-router";
 import { Pressable, Text } from "react-native";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useT } from "../../lib/i18n/useT";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // :zap: CHANGE 1: Shared header button for navigating to Create screen
 function HeaderCreateButton() {
@@ -19,9 +22,63 @@ function HeaderCreateButton() {
 
 export default function TabsLayout() {
   const { t } = useT();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBg = theme.isDark ? theme.colors.surface : theme.colors.bg;
+  const tabBorder = theme.isDark ? theme.colors.border : theme.colors.tabBorder;
+  const activeTint = theme.colors.tabBarTextActive;
+  const inactiveTint = theme.colors.tabBarTextInactive;
+  const TAB_HEIGHT = 64;
+  const TAB_BOTTOM = 8 + insets.bottom;
 
   return (
-    <Tabs screenOptions={{ headerShown: true }}>
+    <Tabs
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: activeTint,
+        tabBarInactiveTintColor: inactiveTint,
+        tabBarStyle: {
+          backgroundColor: tabBg,
+          borderTopColor: tabBorder,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 6,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontFamily: "PatrickHand",
+        },
+        tabBarIcon: ({ color, size, focused }) => {
+          const iconSize = size ?? 22;
+          const iconColor = focused ? activeTint : inactiveTint;
+          if (route.name === "browse") {
+            return <Ionicons name="heart" size={iconSize} color={iconColor} />;
+          }
+          if (route.name === "joined") {
+            return <Ionicons name="people" size={iconSize} color={iconColor} />;
+          }
+          if (route.name === "created") {
+            return (
+              <MaterialCommunityIcons
+                name="pencil-box-outline"
+                size={iconSize}
+                color={iconColor}
+              />
+            );
+          }
+          if (route.name === "notifications") {
+            return (
+              <Ionicons
+                name="notifications"
+                size={iconSize}
+                color={iconColor}
+              />
+            );
+          }
+          return <Ionicons name="settings" size={iconSize} color={iconColor} />;
+        },
+      })}
+    >
       {/* :zap: CHANGE 2: Show Create button only on these tabs */}
       <Tabs.Screen
         name="browse"
@@ -45,11 +102,13 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* :zap: CHANGE 3: Hide Create button on History/Settings */}
+      {/* :zap: CHANGE 3: Notifications replaces Settings tab */}
       <Tabs.Screen
-        name="settings"
-        options={{ title: t("tabs.settings"), headerRight: () => null }}
+        name="notifications"
+        options={{ title: t("tabs.notifications"), headerRight: () => null }}
       />
+      {/* Keep settings route but hide from tab bar */}
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }

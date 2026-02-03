@@ -1,5 +1,13 @@
 import React from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import {
+  Keyboard,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "./theme/ThemeProvider";
 
 export function Screen({
@@ -17,31 +25,45 @@ export function Screen({
 
   if (scroll) {
     return (
-      <ScrollView
-        style={{ backgroundColor: theme.colors.bg }}
-        contentContainerStyle={{
-          padding,
-          gap: 12,
-          justifyContent: center ? "center" : undefined,
-        }}
-      >
-        {children}
-      </ScrollView>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+          <ScrollView
+            style={{ backgroundColor: theme.colors.bg }}
+            contentContainerStyle={{
+              padding,
+              gap: 12,
+              justifyContent: center ? "center" : undefined,
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
     );
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        padding,
-        gap: 12,
-        justifyContent: center ? "center" : undefined,
-        backgroundColor: theme.colors.bg,
-      }}
-    >
-      {children}
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: theme.colors.bg,
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            padding,
+            gap: 12,
+            justifyContent: center ? "center" : undefined,
+            backgroundColor: theme.colors.bg,
+          }}
+        >
+          {children}
+        </View>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -74,7 +96,16 @@ export function SegmentedTabs<T extends string>({
               opacity: selected ? 1 : 0.6,
             }}
           >
-            <Text style={{ fontWeight: "800" }}>{item.label}</Text>
+            <Text
+              style={{
+                fontWeight: "800",
+                color: selected
+                  ? theme.colors.segmentedTabTextActive
+                  : theme.colors.segmentedTabTextInactive,
+              }}
+            >
+              {item.label}
+            </Text>
           </Pressable>
         );
       })}
@@ -108,6 +139,23 @@ export function PrimaryButton({
     >
       <Text style={{ fontWeight: "800" }}>{label}</Text>
     </Pressable>
+  );
+}
+
+export function PageTitle({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
+  return (
+    <Text
+      style={{
+        fontFamily: "ShortStack",
+        fontSize: 24,
+        fontWeight: "800",
+        color: theme.colors.ink,
+        letterSpacing: 0.2,
+      }}
+    >
+      {children}
+    </Text>
   );
 }
 
