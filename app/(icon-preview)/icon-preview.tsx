@@ -1,4 +1,4 @@
-// app/icon-preview.tsx
+// app/(icon-preview)/icon-preview.tsx
 import React, { useMemo, useState } from "react";
 import {
   Alert,
@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useTheme } from "../src/ui/theme/ThemeProvider";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
 
 type IconSet = "Ionicons" | "MaterialCommunityIcons";
 

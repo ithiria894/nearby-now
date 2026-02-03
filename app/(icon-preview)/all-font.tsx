@@ -1,6 +1,6 @@
 import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "../src/ui/theme/ThemeProvider";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
 
 const FONT_SAMPLES: Array<{
   label: string;

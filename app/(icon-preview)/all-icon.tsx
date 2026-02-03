@@ -1,8 +1,8 @@
-// app/icon-preview.tsx
+// app/(icon-preview)/all-icon.tsx
 import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTheme } from "../src/ui/theme/ThemeProvider";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
 
 import {
   Sparkle,
