@@ -25,9 +25,9 @@ export default function TabsLayout() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const tabBg = theme.isDark ? theme.colors.surface : theme.colors.bg;
-  const tabBorder = theme.isDark ? theme.colors.border : "#E7DFD2";
-  const activeTint = theme.isDark ? theme.colors.text : "#5E8C55";
-  const inactiveTint = theme.isDark ? theme.colors.subtext : "#9C9388";
+  const tabBorder = theme.isDark ? theme.colors.border : theme.colors.tabBorder;
+  const activeTint = theme.colors.tabBarTextActive;
+  const inactiveTint = theme.colors.tabBarTextInactive;
   const TAB_HEIGHT = 64;
   const TAB_BOTTOM = 8 + insets.bottom;
 

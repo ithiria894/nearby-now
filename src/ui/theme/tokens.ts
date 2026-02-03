@@ -10,6 +10,31 @@ export type ThemeTokens = {
     subtext: string;
     primary: string;
     overlay: string;
+    shadow: string;
+
+    brand: string;
+    brandSoft: string;
+    brandBorder: string;
+    brandSurface: string;
+    brandSurfaceAlt: string;
+    brandSurfacePressed: string;
+    ink: string;
+    inkSubtle: string;
+    inputBg: string;
+    tabBorder: string;
+    inactive: string;
+    pageTitle: string;
+    settingsText: string;
+    settingsSubtext: string;
+    settingsActionText: string;
+    subtitleText: string;
+    tabBarTextActive: string;
+    tabBarTextInactive: string;
+    segmentedTabTextActive: string;
+    segmentedTabTextInactive: string;
+    activityCardBorder: string;
+    activityCardDivider: string;
+    activityCardBg: string;
 
     chipBg: string;
     chipBorder: string;
@@ -66,6 +91,27 @@ export type ThemeTokens = {
     body: { fontSize: number; fontWeight: "500" | "600" | "700" };
     subtext: { fontSize: number; fontWeight: "500" | "600" };
   };
+  components: {
+    activityCard: {
+      borderWidth: number;
+      radius: number;
+      padding: number;
+      gap: number;
+      iconSize: number;
+      iconRadius: number;
+      timeTop: number;
+      timeRight: number;
+      contentRightPadding: number;
+      dividerHeight: number;
+      dividerOpacity: number;
+      shadowOpacityMin: number;
+      shadowOpacityMax: number;
+      shadowRadiusMin: number;
+      shadowRadiusMax: number;
+      elevationMin: number;
+      elevationMax: number;
+    };
+  };
 };
 
 export const lightTheme: ThemeTokens = {
@@ -80,6 +126,31 @@ export const lightTheme: ThemeTokens = {
     subtext: "#6B7280",
     primary: "#111827",
     overlay: "rgba(0,0,0,0.28)",
+    shadow: "#000000",
+
+    brand: "#5E8C55",
+    brandSoft: "#E6F1DE",
+    brandBorder: "#D6E6C8",
+    brandSurface: "#F6F9F2",
+    brandSurfaceAlt: "#EAF4E2",
+    brandSurfacePressed: "#E2F0D8",
+    ink: "#2E2A25",
+    inkSubtle: "#3A342E",
+    inputBg: "#F1ECE3",
+    tabBorder: "#E7DFD2",
+    inactive: "#9C9388",
+    pageTitle: "#5E8C55",
+    settingsText: "#2E2A25",
+    settingsSubtext: "#3A342E",
+    settingsActionText: "#2E2A25",
+    subtitleText: "#3A342E",
+    tabBarTextActive: "#2E2A25",
+    tabBarTextInactive: "#9C9388",
+    segmentedTabTextActive: "#2E2A25",
+    segmentedTabTextInactive: "#9C9388",
+    activityCardBorder: "#D6E6C8",
+    activityCardDivider: "#D6E6C8",
+    activityCardBg: "#F6F9F2",
 
     chipBg: "rgba(255,255,255,0.82)",
     chipBorder: "rgba(17,24,39,0.10)",
@@ -136,57 +207,110 @@ export const lightTheme: ThemeTokens = {
     body: { fontSize: 14, fontWeight: "600" },
     subtext: { fontSize: 12, fontWeight: "500" },
   },
+  components: {
+    activityCard: {
+      borderWidth: 1,
+      radius: 16,
+      padding: 14,
+      gap: 8,
+      iconSize: 40,
+      iconRadius: 20,
+      timeTop: 10,
+      timeRight: 12,
+      contentRightPadding: 36,
+      dividerHeight: 1,
+      dividerOpacity: 0.6,
+      shadowOpacityMin: 0.1,
+      shadowOpacityMax: 0.18,
+      shadowRadiusMin: 12,
+      shadowRadiusMax: 16,
+      elevationMin: 2,
+      elevationMax: 5,
+    },
+  },
 };
 
 export const darkTheme: ThemeTokens = {
   isDark: true,
   colors: {
-    bg: "#0B0F14",
-    surface: "#0F172A",
-    surfaceAlt: "#111827",
-    border: "#1F2937",
-    title: "#F8FAFC",
-    text: "#E2E8F0",
-    subtext: "#CBD5E1",
-    primary: "#F8FAFC",
-    overlay: "rgba(0,0,0,0.6)",
+    bg: "#040806",
+    surface: "#070D0A",
+    surfaceAlt: "#0A120E",
+    border: "#14231B",
 
-    chipBg: "rgba(17,24,39,0.75)",
-    chipBorder: "rgba(148,163,184,0.25)",
+    title: "#E7EEE9",
+    text: "#C8D6CE",
+    subtext: "#85978E",
+    primary: "#E7EEE9",
 
-    createdBg: "rgba(30,64,175,0.25)",
-    createdBorder: "rgba(59,130,246,0.35)",
-    createdText: "#BFDBFE",
+    overlay: "rgba(0,0,0,0.78)",
+    shadow: "#000000",
 
-    joinedBg: "rgba(16,185,129,0.18)",
-    joinedBorder: "rgba(16,185,129,0.35)",
-    joinedText: "#A7F3D0",
+    brand: "#1E5A44",
+    brandSoft: "rgba(30,90,68,0.16)",
+    brandBorder: "#163A2C",
+    brandSurface: "#06110C",
+    brandSurfaceAlt: "#081712",
+    brandSurfacePressed: "#0B241A",
 
-    expiredBg: "rgba(239,68,68,0.2)",
-    expiredBorder: "rgba(239,68,68,0.35)",
+    ink: "#E7EEE9",
+    inkSubtle: "#A3B4AC",
+
+    inputBg: "#06110C",
+    tabBorder: "#14231B",
+    inactive: "#6A7C73",
+
+    pageTitle: "#4C9A78",
+
+    settingsText: "#C8D6CE",
+    settingsSubtext: "#85978E",
+    settingsActionText: "#E7EEE9",
+    subtitleText: "#85978E",
+
+    tabBarTextActive: "#E7EEE9",
+    tabBarTextInactive: "#6A7C73",
+    segmentedTabTextActive: "#E7EEE9",
+    segmentedTabTextInactive: "#6A7C73",
+    activityCardBorder: "#1C3328",
+    activityCardDivider: "#25463A",
+    activityCardBg: "#08130E",
+
+    chipBg: "rgba(7,13,10,0.78)",
+    chipBorder: "rgba(30,90,68,0.28)",
+
+    createdBg: "rgba(37,99,235,0.14)",
+    createdBorder: "rgba(37,99,235,0.28)",
+    createdText: "#C7D2FE",
+
+    joinedBg: "rgba(30,90,68,0.18)",
+    joinedBorder: "rgba(30,90,68,0.34)",
+    joinedText: "#BDEBD4",
+
+    expiredBg: "rgba(220,38,38,0.14)",
+    expiredBorder: "rgba(220,38,38,0.28)",
     expiredText: "#FECACA",
 
-    soonBg: "rgba(245,158,11,0.2)",
-    soonBorder: "rgba(245,158,11,0.35)",
+    soonBg: "rgba(217,119,6,0.14)",
+    soonBorder: "rgba(217,119,6,0.28)",
     soonText: "#FDE68A",
 
-    mineBg: "rgba(16,185,129,0.2)",
-    mineBorder: "rgba(16,185,129,0.35)",
+    mineBg: "rgba(30,90,68,0.14)",
+    mineBorder: "rgba(30,90,68,0.28)",
 
-    otherBg: "rgba(148,163,184,0.12)",
-    otherBorder: "rgba(148,163,184,0.25)",
+    otherBg: "rgba(148,163,184,0.07)",
+    otherBorder: "rgba(148,163,184,0.16)",
 
-    systemText: "#E2E8F0",
-    systemBg: "rgba(148,163,184,0.12)",
-    systemBorder: "rgba(148,163,184,0.25)",
+    systemText: "#85978E",
+    systemBg: "rgba(30,90,68,0.07)",
+    systemBorder: "rgba(30,90,68,0.16)",
 
     dangerText: "#FECACA",
-    dangerBg: "rgba(239,68,68,0.2)",
-    dangerBorder: "rgba(239,68,68,0.35)",
+    dangerBg: "rgba(220,38,38,0.14)",
+    dangerBorder: "rgba(220,38,38,0.28)",
 
-    okText: "#BBF7D0",
-    okBg: "rgba(16,185,129,0.18)",
-    okBorder: "rgba(16,185,129,0.35)",
+    okText: "#BDEBD4",
+    okBg: "rgba(30,90,68,0.18)",
+    okBorder: "rgba(30,90,68,0.34)",
   },
   spacing: {
     xs: 4,
@@ -205,5 +329,26 @@ export const darkTheme: ThemeTokens = {
     title: { fontSize: 18, fontWeight: "800" },
     body: { fontSize: 14, fontWeight: "600" },
     subtext: { fontSize: 12, fontWeight: "500" },
+  },
+  components: {
+    activityCard: {
+      borderWidth: 1,
+      radius: 16,
+      padding: 14,
+      gap: 8,
+      iconSize: 40,
+      iconRadius: 20,
+      timeTop: 10,
+      timeRight: 12,
+      contentRightPadding: 36,
+      dividerHeight: 1,
+      dividerOpacity: 0.82,
+      shadowOpacityMin: 0.1,
+      shadowOpacityMax: 0.18,
+      shadowRadiusMin: 12,
+      shadowRadiusMax: 16,
+      elevationMin: 2,
+      elevationMax: 5,
+    },
   },
 };

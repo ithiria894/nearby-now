@@ -116,11 +116,17 @@ export default function SettingsScreen() {
         <View />
       </View>
 
-      <Text style={{ fontSize: 18, fontWeight: "800" }}>
+      <Text
+        style={{
+          fontSize: 18,
+          fontWeight: "800",
+          color: theme.colors.pageTitle,
+        }}
+      >
         {t("settings.title")}
       </Text>
 
-      <Text style={{ fontWeight: "800" }}>
+      <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
         {t("settings.displayNameLabel")}
       </Text>
       <View style={{ gap: 8 }}>
@@ -138,7 +144,9 @@ export default function SettingsScreen() {
             borderRadius: 12,
             padding: 12,
             borderColor: theme.colors.border,
-            backgroundColor: theme.isDark ? theme.colors.surfaceAlt : "#FFFFFF",
+            backgroundColor: theme.isDark
+              ? theme.colors.surfaceAlt
+              : theme.colors.surface,
             color: theme.colors.text,
           }}
         />
@@ -176,7 +184,9 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
-      <Text style={{ fontWeight: "800" }}>{t("settings.language")}</Text>
+      <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
+        {t("settings.language")}
+      </Text>
       <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
         {SUPPORTED_LANGS.map((lng) => {
           const selected = i18n.language === lng;
@@ -222,7 +232,9 @@ export default function SettingsScreen() {
         })}
       </View>
 
-      <Text style={{ fontWeight: "800" }}>{t("settings.theme")}</Text>
+      <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
+        {t("settings.theme")}
+      </Text>
       <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
         {(["system", "light", "dark"] as const).map((value) => {
           const selected = mode === value;
@@ -273,7 +285,11 @@ export default function SettingsScreen() {
           alignItems: "center",
         }}
       >
-        <Text style={{ fontWeight: "800" }}>{t("settings.logout")}</Text>
+        <Text
+          style={{ fontWeight: "800", color: theme.colors.settingsActionText }}
+        >
+          {t("settings.logout")}
+        </Text>
       </Pressable>
     </Screen>
   );

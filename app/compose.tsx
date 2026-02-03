@@ -234,7 +234,7 @@ export default function ComposeScreen() {
         >
           {t("compose.title")}
         </Text>
-        <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
+        <Text style={{ fontSize: 13, color: theme.colors.subtitleText }}>
           {t("compose.subtitle")}
         </Text>
 
@@ -262,10 +262,10 @@ export default function ComposeScreen() {
                   backgroundColor: pressed
                     ? theme.isDark
                       ? theme.colors.surfaceAlt
-                      : "#EAF4E2"
+                      : theme.colors.brandSurfaceAlt
                     : theme.isDark
                       ? theme.colors.surface
-                      : "#F6F9F2",
+                      : theme.colors.brandSurface,
                 })}
               >
                 <Text
@@ -331,10 +331,10 @@ export default function ComposeScreen() {
               backgroundColor: pressed
                 ? theme.isDark
                   ? theme.colors.surfaceAlt
-                  : "#EAF4E2"
+                  : theme.colors.brandSurfaceAlt
                 : theme.isDark
                   ? theme.colors.surface
-                  : "#F6F9F2",
+                  : theme.colors.brandSurface,
             })}
           >
             <Ionicons name="location" size={14} color={theme.colors.text} />
@@ -407,10 +407,10 @@ export default function ComposeScreen() {
                   backgroundColor: pressed
                     ? theme.isDark
                       ? theme.colors.surfaceAlt
-                      : "#EAF4E2"
+                      : theme.colors.brandSurfaceAlt
                     : theme.isDark
                       ? theme.colors.surface
-                      : "#F6F9F2",
+                      : theme.colors.brandSurface,
                   alignItems: "center",
                 })}
               >
@@ -440,10 +440,10 @@ export default function ComposeScreen() {
                   backgroundColor: pressed
                     ? theme.isDark
                       ? theme.colors.surfaceAlt
-                      : "#E2F0D8"
+                      : theme.colors.brandSurfacePressed
                     : theme.isDark
                       ? theme.colors.surface
-                      : "#EAF4E2",
+                      : theme.colors.brandSurfaceAlt,
                   alignItems: "center",
                 })}
               >
@@ -544,7 +544,7 @@ export default function ComposeScreen() {
                   borderColor: theme.colors.border,
                   backgroundColor: theme.isDark
                     ? theme.colors.surfaceAlt
-                    : "#F1ECE3",
+                    : theme.colors.inputBg,
                 }}
               >
                 <Ionicons

@@ -19,7 +19,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const brandIconColor = theme.isDark ? theme.colors.text : "#5E8C55";
+  const brandIconColor = theme.colors.brand;
 
   async function onLogin() {
     if (!email.trim() || !password) {
@@ -56,11 +56,15 @@ export default function LoginScreen() {
               width: 54,
               height: 54,
               borderRadius: 27,
-              backgroundColor: theme.isDark ? theme.colors.otherBg : "#E6F1DE",
+              backgroundColor: theme.isDark
+                ? theme.colors.otherBg
+                : theme.colors.brandSoft,
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 1,
-              borderColor: theme.isDark ? theme.colors.border : "#D6E6C8",
+              borderColor: theme.isDark
+                ? theme.colors.border
+                : theme.colors.brandBorder,
             }}
           >
             <MaterialCommunityIcons
@@ -78,7 +82,7 @@ export default function LoginScreen() {
           >
             {t("auth.login.title")}
           </Text>
-          <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
+          <Text style={{ fontSize: 13, color: theme.colors.subtitleText }}>
             {t("auth.login.submitIdle")}
           </Text>
         </View>
@@ -87,11 +91,15 @@ export default function LoginScreen() {
           style={{
             borderRadius: 18,
             borderWidth: 1,
-            borderColor: theme.isDark ? theme.colors.border : "#D6E6C8",
-            backgroundColor: theme.isDark ? theme.colors.surface : "#F6F9F2",
+            borderColor: theme.isDark
+              ? theme.colors.border
+              : theme.colors.brandBorder,
+            backgroundColor: theme.isDark
+              ? theme.colors.surface
+              : theme.colors.brandSurface,
             padding: 14,
             gap: 12,
-            shadowColor: "#000",
+            shadowColor: theme.colors.shadow,
             shadowOpacity: 0.06,
             shadowRadius: 10,
             shadowOffset: { width: 0, height: 4 },
@@ -114,7 +122,7 @@ export default function LoginScreen() {
               borderColor: theme.colors.border,
               backgroundColor: theme.isDark
                 ? theme.colors.surfaceAlt
-                : "#FFFFFF",
+                : theme.colors.surface,
               color: theme.colors.text,
             }}
           />
@@ -135,7 +143,7 @@ export default function LoginScreen() {
               borderColor: theme.colors.border,
               backgroundColor: theme.isDark
                 ? theme.colors.surfaceAlt
-                : "#FFFFFF",
+                : theme.colors.surface,
               color: theme.colors.text,
             }}
           />

@@ -62,8 +62,10 @@ export default function AllFontScreen() {
             key={f.fontFamily}
             style={{
               borderWidth: 1,
-              borderColor: theme.colors.border ?? "#E7DFD2",
-              backgroundColor: theme.isDark ? theme.colors.surface : "#F7F2EA",
+              borderColor: theme.colors.border ?? theme.colors.tabBorder,
+              backgroundColor: theme.isDark
+                ? theme.colors.surface
+                : theme.colors.bg,
               borderRadius: 16,
               padding: 12,
               gap: 6,

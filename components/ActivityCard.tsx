@@ -181,12 +181,14 @@ export default function ActivityCard({
   const { t } = useT();
   const theme = useTheme();
   const TOKENS = theme.colors;
+  const CARD = theme.components.activityCard;
 
   const isCreator = !!currentUserId && a.creator_id === currentUserId;
-  const cardBorder = theme.isDark ? TOKENS.border : "#D6E6C8";
-  const cardBg = theme.isDark ? TOKENS.surface : "#F6F9F2";
-  const iconBg = theme.isDark ? TOKENS.surfaceAlt : "#E6F1DE";
-  const accent = theme.isDark ? TOKENS.text : "#4F7E40";
+  const cardBorder = TOKENS.activityCardBorder;
+  const dividerColor = TOKENS.activityCardDivider;
+  const cardBg = TOKENS.activityCardBg;
+  const iconBg = theme.isDark ? TOKENS.surfaceAlt : TOKENS.brandSoft;
+  const accent = theme.isDark ? TOKENS.text : TOKENS.brand;
 
   const time = useMemo(() => timeLeftLabel(t, a.expires_at), [a.expires_at, t]);
   const icon = useMemo(() => inferActivityIcon(a), [a]);
@@ -212,7 +214,9 @@ export default function ActivityCard({
   const didLongPressRef = useRef(false);
   const pressAnim = useRef(new Animated.Value(0)).current;
 
-  const pressedBg = theme.isDark ? "#161B22" : "#EAF4E2";
+  const pressedBg = theme.isDark
+    ? TOKENS.brandSurfacePressed
+    : TOKENS.brandSurfaceAlt;
   const animatedStyle = {
     transform: [
       {
@@ -224,15 +228,15 @@ export default function ActivityCard({
     ],
     shadowOpacity: pressAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [0.08, 0.14],
+      outputRange: [CARD.shadowOpacityMin, CARD.shadowOpacityMax],
     }),
     shadowRadius: pressAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [10, 14],
+      outputRange: [CARD.shadowRadiusMin, CARD.shadowRadiusMax],
     }),
     elevation: pressAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [1, 3],
+      outputRange: [CARD.elevationMin, CARD.elevationMax],
     }),
     backgroundColor: pressAnim.interpolate({
       inputRange: [0, 1],
@@ -299,12 +303,12 @@ export default function ActivityCard({
         <Animated.View
           style={{
             width: "100%",
-            borderRadius: 16,
-            borderWidth: 1,
+            borderRadius: CARD.radius,
+            borderWidth: CARD.borderWidth,
             borderColor: cardBorder,
-            padding: 14,
-            gap: 8,
-            shadowColor: "#000",
+            padding: CARD.padding,
+            gap: CARD.gap,
+            shadowColor: TOKENS.shadow,
             shadowOffset: { width: 0, height: 4 },
             ...animatedStyle,
           }}
@@ -312,8 +316,8 @@ export default function ActivityCard({
           <Text
             style={{
               position: "absolute",
-              top: 10,
-              right: 12,
+              top: CARD.timeTop,
+              right: CARD.timeRight,
               fontSize: 11.5,
               fontWeight: "700",
               color: TOKENS.subtext,
@@ -327,12 +331,12 @@ export default function ActivityCard({
           >
             <View
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
+                width: CARD.iconSize,
+                height: CARD.iconSize,
+                borderRadius: CARD.iconRadius,
                 alignItems: "center",
                 justifyContent: "center",
-                borderWidth: 1,
+                borderWidth: CARD.borderWidth,
                 borderColor: cardBorder,
                 backgroundColor: iconBg,
               }}
@@ -340,7 +344,7 @@ export default function ActivityCard({
               <Text style={{ fontSize: 18 }}>{icon}</Text>
             </View>
 
-            <View style={{ flex: 1, paddingRight: 36 }}>
+            <View style={{ flex: 1, paddingRight: CARD.contentRightPadding }}>
               <Text
                 numberOfLines={5}
                 style={{
@@ -358,9 +362,9 @@ export default function ActivityCard({
                   <>
                     <View
                       style={{
-                        height: 1,
-                        backgroundColor: cardBorder,
-                        opacity: theme.isDark ? 0.45 : 0.7,
+                        height: CARD.dividerHeight,
+                        backgroundColor: dividerColor,
+                        opacity: CARD.dividerOpacity,
                         marginBottom: 2,
                       }}
                     />

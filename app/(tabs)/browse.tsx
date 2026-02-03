@@ -109,7 +109,7 @@ export default function BrowseScreen() {
   const bottomInset = insets.bottom;
   const TAB_BOTTOM = 8 + bottomInset;
   const tabBarSpace = 0;
-  const brandIconColor = theme.isDark ? theme.colors.text : "#5E8C55";
+  const brandIconColor = theme.colors.brand;
   const openSearchSheet = useCallback(() => {
     bottomSheetModalRef.current?.present();
   }, []);
@@ -517,11 +517,11 @@ export default function BrowseScreen() {
                     width: 36,
                     height: 36,
                     borderRadius: 18,
-                    backgroundColor: "#E6F1DE",
+                    backgroundColor: theme.colors.brandSoft,
                     alignItems: "center",
                     justifyContent: "center",
                     borderWidth: 1,
-                    borderColor: "#D6E6C8",
+                    borderColor: theme.colors.brandBorder,
                   }}
                 >
                   <MaterialCommunityIcons
@@ -535,7 +535,7 @@ export default function BrowseScreen() {
                     fontFamily: "ShortStack",
                     fontSize: 26,
                     fontStyle: "normal",
-                    color: "#2E2A25",
+                    color: theme.colors.ink,
                   }}
                 >
                   {t("app.name")}
@@ -550,8 +550,10 @@ export default function BrowseScreen() {
                   height: 36,
                   borderRadius: 18,
                   borderWidth: 1,
-                  borderColor: "#D6E6C8",
-                  backgroundColor: pressed ? "#E2F0D8" : "#EAF4E2",
+                  borderColor: theme.colors.brandBorder,
+                  backgroundColor: pressed
+                    ? theme.colors.brandSurfacePressed
+                    : theme.colors.brandSurfaceAlt,
                   alignItems: "center",
                   justifyContent: "center",
                 })}
@@ -568,11 +570,13 @@ export default function BrowseScreen() {
               marginBottom: 12,
               borderRadius: 18,
               borderWidth: 1,
-              borderColor: "#D6E6C8",
-              backgroundColor: pressed ? "#EAF4E2" : "#F6F9F2",
+              borderColor: theme.colors.brandBorder,
+              backgroundColor: pressed
+                ? theme.colors.brandSurfaceAlt
+                : theme.colors.brandSurface,
               padding: 12,
               gap: 10,
-              shadowColor: "#000",
+              shadowColor: theme.colors.shadow,
               shadowOpacity: pressed ? 0.06 : 0.08,
               shadowRadius: 10,
               shadowOffset: { width: 0, height: 4 },
@@ -596,11 +600,11 @@ export default function BrowseScreen() {
                   width: 36,
                   height: 36,
                   borderRadius: 18,
-                  backgroundColor: "#E6F1DE",
+                  backgroundColor: theme.colors.brandSoft,
                   alignItems: "center",
                   justifyContent: "center",
                   borderWidth: 1,
-                  borderColor: "#D6E6C8",
+                  borderColor: theme.colors.brandBorder,
                 }}
               >
                 <MaterialCommunityIcons
@@ -617,7 +621,7 @@ export default function BrowseScreen() {
                   borderColor: theme.colors.border,
                   backgroundColor: theme.isDark
                     ? theme.colors.surfaceAlt
-                    : "#FFFFFF",
+                    : theme.colors.surface,
                   borderRadius: 999,
                   paddingHorizontal: 14,
                   paddingVertical: 10,
@@ -678,7 +682,7 @@ export default function BrowseScreen() {
                 style={{
                   fontFamily: "Kalam",
                   fontSize: 20,
-                  color: "#3A342E",
+                  color: theme.colors.inkSubtle,
                 }}
               >
                 {t("browse.whatsHappening")}
@@ -693,8 +697,10 @@ export default function BrowseScreen() {
                   paddingVertical: 8,
                   borderRadius: 999,
                   borderWidth: 1,
-                  borderColor: "#D6E6C8",
-                  backgroundColor: pressed ? "#E2F0D8" : "#F6F9F2",
+                  borderColor: theme.colors.brandBorder,
+                  backgroundColor: pressed
+                    ? theme.colors.brandSurfacePressed
+                    : theme.colors.brandSurface,
                   maxWidth: "60%",
                 })}
               >
@@ -793,7 +799,12 @@ export default function BrowseScreen() {
                   </View>
                 ) : !hasMore && filteredItems.length > 0 ? (
                   <View style={{ paddingVertical: 12 }}>
-                    <Text style={{ textAlign: "center", opacity: 0.6 }}>
+                    <Text
+                      style={{
+                        textAlign: "center",
+                        color: theme.colors.subtitleText,
+                      }}
+                    >
                       {t("common.noMore")}
                     </Text>
                   </View>
@@ -823,7 +834,7 @@ export default function BrowseScreen() {
             opacity: pressed ? 0.72 : 0.88,
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: "#000",
+            shadowColor: theme.colors.shadow,
             shadowOpacity: 0.18,
             shadowRadius: 10,
             shadowOffset: { width: 0, height: 6 },
@@ -886,7 +897,7 @@ export default function BrowseScreen() {
               borderColor: theme.colors.border,
               backgroundColor: theme.isDark
                 ? theme.colors.surfaceAlt
-                : "#F1ECE3",
+                : theme.colors.inputBg,
             }}
           >
             <Ionicons name="search" size={16} color={theme.colors.subtext} />
@@ -1004,7 +1015,7 @@ export default function BrowseScreen() {
               borderColor: theme.colors.border,
               backgroundColor: theme.isDark
                 ? theme.colors.surfaceAlt
-                : "#F1ECE3",
+                : theme.colors.inputBg,
             }}
           >
             <Text style={{ fontSize: 13, color: theme.colors.text }}>
@@ -1065,7 +1076,7 @@ export default function BrowseScreen() {
                 borderColor: theme.colors.border,
                 backgroundColor: theme.isDark
                   ? theme.colors.surfaceAlt
-                  : "#F1ECE3",
+                  : theme.colors.inputBg,
               }}
             >
               <Ionicons name="search" size={16} color={theme.colors.subtext} />

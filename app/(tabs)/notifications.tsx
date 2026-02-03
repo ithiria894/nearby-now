@@ -9,7 +9,7 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { t } = useT();
   const theme = useTheme();
-  const accent = theme.isDark ? theme.colors.text : "#5E8C55";
+  const accent = theme.colors.pageTitle;
 
   return (
     <Screen>
@@ -49,7 +49,9 @@ export default function NotificationsScreen() {
             borderRadius: 16,
             borderWidth: 1,
             borderColor: theme.colors.border,
-            backgroundColor: theme.isDark ? theme.colors.surface : "#F6F9F2",
+            backgroundColor: theme.isDark
+              ? theme.colors.surface
+              : theme.colors.brandSurface,
             padding: 16,
           }}
         >

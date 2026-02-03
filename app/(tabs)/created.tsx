@@ -153,7 +153,13 @@ export default function CreatedScreen() {
 
     return (
       <View style={{ padding: 16, gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "800",
+            color: theme.colors.pageTitle,
+          }}
+        >
           {t("created.headerTitle")}
         </Text>
 
@@ -172,7 +178,7 @@ export default function CreatedScreen() {
           ]}
         />
 
-        <Text style={{ opacity: 0.7 }}>
+        <Text style={{ color: theme.colors.subtitleText }}>
           {tab === "active"
             ? t("created.subtitle_active")
             : t("created.subtitle_inactive")}
@@ -233,7 +239,12 @@ export default function CreatedScreen() {
             </View>
           ) : !hasMore && items.length > 0 ? (
             <View style={{ paddingVertical: 12 }}>
-              <Text style={{ textAlign: "center", opacity: 0.6 }}>
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: theme.colors.subtitleText,
+                }}
+              >
                 {t("common.noMore")}
               </Text>
             </View>

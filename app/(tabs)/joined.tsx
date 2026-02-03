@@ -205,7 +205,13 @@ export default function JoinedScreen() {
   const header = useMemo(() => {
     return (
       <View style={{ padding: 16, gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "800",
+            color: theme.colors.pageTitle,
+          }}
+        >
           {t("joined.headerTitle")}
         </Text>
 
@@ -228,7 +234,7 @@ export default function JoinedScreen() {
           ]}
         />
 
-        <Text style={{ opacity: 0.7 }}>
+        <Text style={{ color: theme.colors.subtitleText }}>
           {tab === "active" && t("joined.subtitle_active")}
           {tab === "inactive" && t("joined.subtitle_inactive")}
           {tab === "left" && t("joined.subtitle_left")}
@@ -304,7 +310,12 @@ export default function JoinedScreen() {
             </View>
           ) : !hasMore && items.length > 0 ? (
             <View style={{ paddingVertical: 12 }}>
-              <Text style={{ textAlign: "center", opacity: 0.6 }}>
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: theme.colors.subtitleText,
+                }}
+              >
                 {t("common.noMore")}
               </Text>
             </View>

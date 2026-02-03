@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTheme } from "../src/ui/theme/ThemeProvider";
 
 type IconSet = "Ionicons" | "MaterialCommunityIcons";
 
@@ -73,6 +74,8 @@ function renderIcon(set: IconSet, name: string, size: number, color: string) {
 export default function IconPreviewScreen() {
   const [q, setQ] = useState("");
   const [setFilter, setSetFilter] = useState<IconSet | "All">("All");
+  const theme = useTheme();
+  const brand = theme.colors.brand;
 
   const data = useMemo(() => {
     const qq = q.trim().toLowerCase();
@@ -84,9 +87,11 @@ export default function IconPreviewScreen() {
   }, [q, setFilter]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F7F2EA" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
       <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 10 }}>
-        <Text style={{ fontSize: 22, fontWeight: "900", color: "#2E2A25" }}>
+        <Text
+          style={{ fontSize: 22, fontWeight: "900", color: theme.colors.ink }}
+        >
           Icon Preview
         </Text>
 
@@ -97,20 +102,20 @@ export default function IconPreviewScreen() {
             alignItems: "center",
             gap: 10,
             borderWidth: 1,
-            borderColor: "#E4DCCE",
-            backgroundColor: "#F1ECE3",
+            borderColor: theme.colors.tabBorder,
+            backgroundColor: theme.colors.inputBg,
             borderRadius: 999,
             paddingHorizontal: 12,
             paddingVertical: 10,
           }}
         >
-          <Ionicons name="search" size={18} color="#8B847B" />
+          <Ionicons name="search" size={18} color={theme.colors.subtext} />
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="search icon name… e.g. map / location / compass"
-            placeholderTextColor="#9C9388"
-            style={{ flex: 1, fontSize: 14, color: "#3A342E" }}
+            placeholderTextColor={theme.colors.subtext}
+            style={{ flex: 1, fontSize: 14, color: theme.colors.text }}
             autoCapitalize="none"
             autoCorrect={false}
           />
@@ -119,7 +124,11 @@ export default function IconPreviewScreen() {
             hitSlop={10}
             style={{ padding: 2 }}
           >
-            <Ionicons name="close-circle" size={18} color="#9C9388" />
+            <Ionicons
+              name="close-circle"
+              size={18}
+              color={theme.colors.subtext}
+            />
           </Pressable>
         </View>
 
@@ -136,18 +145,22 @@ export default function IconPreviewScreen() {
                   paddingHorizontal: 12,
                   borderRadius: 999,
                   borderWidth: 1,
-                  borderColor: "#D6E6C8",
-                  backgroundColor: selected ? "#EAF4E2" : "#FFFFFF",
+                  borderColor: theme.colors.brandBorder,
+                  backgroundColor: selected
+                    ? theme.colors.brandSurfaceAlt
+                    : theme.colors.surface,
                   opacity: selected ? 1 : 0.75,
                 }}
               >
-                <Text style={{ fontWeight: "800", color: "#2E2A25" }}>{v}</Text>
+                <Text style={{ fontWeight: "800", color: theme.colors.ink }}>
+                  {v}
+                </Text>
               </Pressable>
             );
           })}
         </View>
 
-        <Text style={{ opacity: 0.7, color: "#3A342E" }}>
+        <Text style={{ opacity: 0.7, color: theme.colors.inkSubtle }}>
           Showing {data.length} icons — tap one to see its name.
         </Text>
       </View>
@@ -169,8 +182,8 @@ export default function IconPreviewScreen() {
               width: "30%",
               minWidth: 110,
               borderWidth: 1,
-              borderColor: "#E7DFD2",
-              backgroundColor: "#FFFFFF",
+              borderColor: theme.colors.tabBorder,
+              backgroundColor: theme.colors.surface,
               borderRadius: 16,
               paddingVertical: 14,
               paddingHorizontal: 10,
@@ -179,11 +192,23 @@ export default function IconPreviewScreen() {
               opacity: pressed ? 0.7 : 1,
             })}
           >
-            {renderIcon(x.set, x.name, 28, "#4F7E40")}
-            <Text style={{ fontSize: 12, fontWeight: "800", color: "#3A342E" }}>
+            {renderIcon(x.set, x.name, 28, brand)}
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: "800",
+                color: theme.colors.text,
+              }}
+            >
               {x.name}
             </Text>
-            <Text style={{ fontSize: 11, opacity: 0.6, color: "#3A342E" }}>
+            <Text
+              style={{
+                fontSize: 11,
+                opacity: 0.6,
+                color: theme.colors.subtext,
+              }}
+            >
               {x.set}
             </Text>
           </Pressable>

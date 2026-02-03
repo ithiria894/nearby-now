@@ -96,7 +96,16 @@ export function SegmentedTabs<T extends string>({
               opacity: selected ? 1 : 0.6,
             }}
           >
-            <Text style={{ fontWeight: "800" }}>{item.label}</Text>
+            <Text
+              style={{
+                fontWeight: "800",
+                color: selected
+                  ? theme.colors.segmentedTabTextActive
+                  : theme.colors.segmentedTabTextInactive,
+              }}
+            >
+              {item.label}
+            </Text>
           </Pressable>
         );
       })}

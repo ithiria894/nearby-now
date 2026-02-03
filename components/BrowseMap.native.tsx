@@ -55,7 +55,7 @@ export default function BrowseMap({ items, onPressCard }: Props) {
           alignItems: "center",
         }}
       >
-        <Text style={{ fontWeight: "700" }}>
+        <Text style={{ fontWeight: "700", color: theme.colors.subtitleText }}>
           {t("browseMap.countInArea", { count: mappable.length })}
         </Text>
       </View>
