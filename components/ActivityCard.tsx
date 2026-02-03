@@ -300,131 +300,148 @@ export default function ActivityCard({
           opacity: isJoining ? 0.55 : pressed ? 0.98 : 1,
         })}
       >
-        <Animated.View
-          style={{
-            width: "100%",
-            borderRadius: CARD.radius,
-            borderWidth: CARD.borderWidth,
-            borderColor: cardBorder,
-            padding: CARD.padding,
-            gap: CARD.gap,
-            shadowColor: TOKENS.shadow,
-            shadowOffset: { width: 0, height: 4 },
-            ...animatedStyle,
-          }}
+        <View
+          style={
+            theme.isDark
+              ? {
+                  borderRadius: CARD.radius,
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                  padding: 1,
+                }
+              : undefined
+          }
         >
-          <Text
+          <Animated.View
             style={{
-              position: "absolute",
-              top: CARD.timeTop,
-              right: CARD.timeRight,
-              fontSize: 11.5,
-              fontWeight: "700",
-              color: TOKENS.subtext,
+              width: "100%",
+              borderRadius: CARD.radius,
+              borderWidth: CARD.borderWidth,
+              borderColor: cardBorder,
+              padding: CARD.padding,
+              gap: CARD.gap,
+              shadowColor: TOKENS.shadow,
+              shadowOffset: { width: 0, height: 4 },
+              ...animatedStyle,
             }}
           >
-            {postedLabel}
-          </Text>
-
-          <View
-            style={{ flexDirection: "row", gap: 12, alignItems: "flex-start" }}
-          >
-            <View
+            <Text
               style={{
-                width: CARD.iconSize,
-                height: CARD.iconSize,
-                borderRadius: CARD.iconRadius,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: CARD.borderWidth,
-                borderColor: cardBorder,
-                backgroundColor: iconBg,
+                position: "absolute",
+                top: CARD.timeTop,
+                right: CARD.timeRight,
+                fontSize: 11.5,
+                fontWeight: "700",
+                color: TOKENS.subtext,
               }}
             >
-              <Text style={{ fontSize: 18 }}>{icon}</Text>
-            </View>
+              {postedLabel}
+            </Text>
 
-            <View style={{ flex: 1, paddingRight: CARD.contentRightPadding }}>
-              <Text
-                numberOfLines={5}
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 12,
+                alignItems: "flex-start",
+              }}
+            >
+              <View
                 style={{
-                  fontSize: 17,
-                  fontWeight: "700",
-                  lineHeight: 23,
-                  color: TOKENS.text,
+                  width: CARD.iconSize,
+                  height: CARD.iconSize,
+                  borderRadius: CARD.iconRadius,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: CARD.borderWidth,
+                  borderColor: cardBorder,
+                  backgroundColor: iconBg,
                 }}
               >
-                {a.title_text}
-              </Text>
+                <Text style={{ fontSize: 18 }}>{icon}</Text>
+              </View>
 
-              <View style={{ gap: 6, paddingTop: showHint ? 10 : 8 }}>
-                {showHint ? (
-                  <>
-                    <View
-                      style={{
-                        height: CARD.dividerHeight,
-                        backgroundColor: dividerColor,
-                        opacity: CARD.dividerOpacity,
-                        marginBottom: 2,
-                      }}
-                    />
-                    <Text
-                      numberOfLines={2}
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "600",
-                        color: TOKENS.subtext,
-                      }}
-                    >
-                      {hintText}
-                    </Text>
-                  </>
-                ) : null}
+              <View style={{ flex: 1, paddingRight: CARD.contentRightPadding }}>
+                <Text
+                  numberOfLines={5}
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "800",
+                    lineHeight: 23,
+                    color: TOKENS.text,
+                  }}
+                >
+                  {a.title_text}
+                </Text>
 
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  {showHostLabel ? (
-                    <Text
-                      style={{
-                        fontSize: 11.5,
-                        fontWeight: "700",
-                        color: TOKENS.subtext,
-                      }}
-                    >
-                      {t("activityCard.host_tag")}
-                    </Text>
-                  ) : null}
-                  <Pressable
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      onPressCard();
-                    }}
-                    hitSlop={12}
-                    style={{ marginLeft: "auto" }}
-                  >
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <Ionicons name="people" size={12} color={accent} />
-                      <Text
+                <View style={{ gap: 6, paddingTop: showHint ? 10 : 8 }}>
+                  {showHint ? (
+                    <>
+                      <View
                         style={{
-                          fontSize: 12.5,
-                          fontWeight: "800",
-                          color: accent,
+                          height: CARD.dividerHeight,
+                          backgroundColor: dividerColor,
+                          opacity: CARD.dividerOpacity,
+                          marginBottom: 2,
+                        }}
+                      />
+                      <Text
+                        numberOfLines={2}
+                        style={{
+                          fontSize: 12,
+                          fontWeight: "600",
+                          lineHeight: 17,
+                          color: TOKENS.subtext,
                         }}
                       >
-                        {ctaText} →
+                        {hintText}
                       </Text>
-                    </View>
-                  </Pressable>
+                    </>
+                  ) : null}
+
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    {showHostLabel ? (
+                      <Text
+                        style={{
+                          fontSize: 11.5,
+                          fontWeight: "700",
+                          color: TOKENS.subtext,
+                        }}
+                      >
+                        {t("activityCard.host_tag")}
+                      </Text>
+                    ) : null}
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        onPressCard();
+                      }}
+                      hitSlop={12}
+                      style={{ marginLeft: "auto" }}
+                    >
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <Ionicons name="people" size={12} color={accent} />
+                        <Text
+                          style={{
+                            fontSize: 12.5,
+                            fontWeight: "800",
+                            color: accent,
+                          }}
+                        >
+                          {ctaText} →
+                        </Text>
+                      </View>
+                    </Pressable>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        </View>
       </Pressable>
 
       {/* Menu modal */}
