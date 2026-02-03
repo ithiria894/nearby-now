@@ -1,8 +1,8 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Alert, Animated, Modal, Pressable, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useT } from "../lib/i18n/useT";
-import { formatCapacity, formatExpiryLabel } from "../lib/i18n/i18n_format";
+import { formatExpiryLabel } from "../lib/i18n/i18n_format";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
 
 /* =======================
@@ -18,8 +18,11 @@ export type ActivityCardActivity = {
   lat?: number | null;
   lng?: number | null;
   expires_at: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
   gender_pref: string;
   capacity: number | null;
+  joined_count?: number | null;
   status: string;
   created_at?: string | null;
 
@@ -80,6 +83,31 @@ function relativeCreatedAt(
   return t("activityCard.time_d", { count: days });
 }
 
+function startOfDayMs(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+type TimeWindowKey = "tonight" | "later" | "week" | "next";
+
+function inferTimeWindowKey(startTime?: string | null): TimeWindowKey | null {
+  if (!startTime) return null;
+  const start = new Date(startTime);
+  if (Number.isNaN(start.getTime())) return null;
+
+  const now = new Date();
+  const diffDays = Math.floor(
+    (startOfDayMs(start) - startOfDayMs(now)) / (24 * 60 * 60 * 1000)
+  );
+
+  if (diffDays < 0) return null;
+  if (diffDays === 0) {
+    return start.getHours() >= 18 ? "tonight" : "later";
+  }
+  if (diffDays <= 2) return "week";
+  if (diffDays <= 6) return "next";
+  return "next";
+}
+
 function inferActivityIcon(activity: ActivityCardActivity) {
   const hay = [activity.title_text, activity.place_name, activity.place_text]
     .filter(Boolean)
@@ -101,37 +129,55 @@ function inferActivityIcon(activity: ActivityCardActivity) {
 function buildPostHint(
   t: (key: string, opts?: any) => string,
   activity: ActivityCardActivity,
-  timeLabel: string
+  timeLabel: string,
+  timeWindowKey: TimeWindowKey | null,
+  joinedCount: number | null
 ) {
-  const sentences: string[] = [];
+  const parts: string[] = [];
   const place = (activity.place_name ?? activity.place_text ?? "").trim();
 
   if (place) {
-    sentences.push(t("activityCard.hint_place", { place }));
+    parts.push(t("activityCard.hint_place_short", { place }));
   }
 
-  if (activity.expires_at) {
-    sentences.push(t("activityCard.hint_expiry", { when: timeLabel }));
+  if (timeWindowKey) {
+    parts.push(t(`activityCard.hint_time_${timeWindowKey}`));
+  } else if (activity.expires_at) {
+    parts.push(t("activityCard.hint_expiry_short", { when: timeLabel }));
   }
 
-  if (activity.capacity !== null && activity.capacity !== undefined) {
-    sentences.push(
-      t("activityCard.hint_capacity", {
-        count: formatCapacity(activity.capacity, t),
-      })
+  if (typeof activity.capacity === "number" && activity.capacity >= 1) {
+    parts.push(
+      joinedCount != null
+        ? t("activityCard.hint_capacity_ratio", {
+            joined: joinedCount,
+            cap: activity.capacity,
+          })
+        : t("activityCard.hint_capacity_max", {
+            cap: activity.capacity,
+          })
     );
   }
 
+  const genderRaw = String(activity.gender_pref ?? "")
+    .trim()
+    .toLowerCase();
+  if (genderRaw === "female" || genderRaw === "f") {
+    parts.push(t("activityCard.hint_gender_female"));
+  } else if (genderRaw === "male" || genderRaw === "m") {
+    parts.push(t("activityCard.hint_gender_male"));
+  }
+
   if (activity.distance_km != null) {
-    sentences.push(
-      t("activityCard.hint_distance", {
+    parts.push(
+      t("activityCard.hint_distance_short", {
         km: activity.distance_km.toFixed(1),
       })
     );
   }
 
-  if (sentences.length === 0) return null;
-  return sentences.slice(0, 2).join(" ");
+  if (parts.length === 0) return null;
+  return parts.join(" · ");
 }
 
 function MenuItem({
@@ -195,9 +241,15 @@ export default function ActivityCard({
     () => relativeCreatedAt(t, a.created_at),
     [a.created_at, t]
   );
+  const timeWindowKey = useMemo(
+    () => inferTimeWindowKey(a.start_time ?? null),
+    [a.start_time]
+  );
+  const joinedCount =
+    typeof a.joined_count === "number" ? a.joined_count : null;
   const hintText = useMemo(
-    () => buildPostHint(t, a, time.label),
-    [a, t, time.label]
+    () => buildPostHint(t, a, time.label, timeWindowKey, joinedCount),
+    [a, joinedCount, t, time.label, timeWindowKey]
   );
   const showHint = !!hintText;
 
@@ -327,7 +379,11 @@ export default function ActivityCard({
               }}
             >
               {isCreator ? (
-                <Ionicons name="ribbon" size={13} color={TOKENS.brand} />
+                <MaterialCommunityIcons
+                  name="pencil-box-outline"
+                  size={13}
+                  color={TOKENS.brand}
+                />
               ) : null}
               <Text
                 style={{

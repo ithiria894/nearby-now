@@ -2,14 +2,14 @@ import { Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useT } from "../../lib/i18n/useT";
-import { Screen } from "../../src/ui/common";
+import { PageTitle, Screen } from "../../src/ui/common";
 import { useTheme } from "../../src/ui/theme/ThemeProvider";
 
 export default function NotificationsScreen() {
   const router = useRouter();
   const { t } = useT();
   const theme = useTheme();
-  const accent = theme.colors.pageTitle;
+  const accent = theme.colors.brand;
 
   return (
     <Screen>
@@ -21,9 +21,27 @@ export default function NotificationsScreen() {
             justifyContent: "space-between",
           }}
         >
-          <Text style={{ fontSize: 20, fontWeight: "800", color: accent }}>
-            {t("notifications.title")}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: theme.isDark
+                  ? theme.colors.otherBg
+                  : theme.colors.brandSoft,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: theme.isDark
+                  ? theme.colors.border
+                  : theme.colors.brandBorder,
+              }}
+            >
+              <Ionicons name="notifications" size={20} color={accent} />
+            </View>
+            <PageTitle>{t("notifications.title")}</PageTitle>
+          </View>
           <Pressable
             onPress={() => router.push("/settings")}
             hitSlop={8}
@@ -34,10 +52,12 @@ export default function NotificationsScreen() {
               alignItems: "center",
               justifyContent: "center",
               borderWidth: 1,
-              borderColor: theme.colors.border,
+              borderColor: theme.isDark
+                ? theme.colors.border
+                : theme.colors.brandBorder,
               backgroundColor: pressed
-                ? theme.colors.otherBg
-                : theme.colors.surface,
+                ? theme.colors.brandSurfacePressed
+                : theme.colors.brandSurfaceAlt,
             })}
           >
             <Ionicons name="settings" size={18} color={theme.colors.text} />
@@ -48,7 +68,9 @@ export default function NotificationsScreen() {
           style={{
             borderRadius: 16,
             borderWidth: 1,
-            borderColor: theme.colors.border,
+            borderColor: theme.isDark
+              ? theme.colors.border
+              : theme.colors.brandBorder,
             backgroundColor: theme.isDark
               ? theme.colors.surface
               : theme.colors.brandSurface,

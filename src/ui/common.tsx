@@ -142,6 +142,23 @@ export function PrimaryButton({
   );
 }
 
+export function PageTitle({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
+  return (
+    <Text
+      style={{
+        fontFamily: "ShortStack",
+        fontSize: 24,
+        fontWeight: "800",
+        color: theme.colors.ink,
+        letterSpacing: 0.2,
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
+
 export function Card({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
   return (

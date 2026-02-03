@@ -396,7 +396,13 @@ export default function BrowseScreen() {
         if (!shouldShow) {
           map.delete(next.id);
         } else {
-          map.set(next.id, next);
+          const existing = map.get(next.id);
+          map.set(
+            next.id,
+            existing?.joined_count != null && (next as any).joined_count == null
+              ? { ...next, joined_count: existing.joined_count }
+              : next
+          );
         }
 
         const arr = Array.from(map.values());

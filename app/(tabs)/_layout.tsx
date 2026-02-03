@@ -1,6 +1,6 @@
 import { Tabs, useRouter } from "expo-router";
 import { Pressable, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useT } from "../../lib/i18n/useT";
 import { useTheme } from "../../src/ui/theme/ThemeProvider";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -59,7 +59,11 @@ export default function TabsLayout() {
           }
           if (route.name === "created") {
             return (
-              <Ionicons name="add-circle" size={iconSize} color={iconColor} />
+              <MaterialCommunityIcons
+                name="pencil-box-outline"
+                size={iconSize}
+                color={iconColor}
+              />
             );
           }
           if (route.name === "notifications") {

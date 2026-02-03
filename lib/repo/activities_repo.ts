@@ -3,6 +3,7 @@ import {
   fetchCreatedActivitiesPage,
   fetchActivitiesByIdsPage,
   fetchMembershipRowsForUser,
+  fetchActivityMemberCounts,
   joinWithSystemMessage,
   isJoinableActivity,
   isActiveActivity,
@@ -16,6 +17,22 @@ export type ActivitiesPage = {
   cursor: ActivityCursor | null;
   hasMore: boolean;
 };
+
+async function attachMemberCounts(
+  rows: ActivityCardActivity[]
+): Promise<ActivityCardActivity[]> {
+  if (rows.length === 0) return rows;
+  try {
+    const counts = await fetchActivityMemberCounts(rows.map((r) => r.id));
+    return rows.map((row) => ({
+      ...row,
+      joined_count: counts.get(row.id) ?? 0,
+    }));
+  } catch (e) {
+    console.error("member count fetch failed:", e);
+    return rows;
+  }
+}
 
 function buildCursor(rows: ActivityCardActivity[]): ActivityCursor | null {
   const last = rows[rows.length - 1];
@@ -46,8 +63,9 @@ export async function getBrowsePage(params: {
   const joinable = notMine.filter((a) =>
     isJoinableActivity(a, params.joinedSet)
   );
+  const withCounts = await attachMemberCounts(joinable);
   return {
-    rows: joinable,
+    rows: withCounts,
     cursor: buildCursor(rows),
     hasMore: rows.length === params.limit,
   };
@@ -63,8 +81,9 @@ export async function getCreatedPage(params: {
     params.cursor ?? null,
     params.limit
   );
+  const withCounts = await attachMemberCounts(rows);
   return {
-    rows,
+    rows: withCounts,
     cursor: buildCursor(rows),
     hasMore: rows.length === params.limit,
   };
@@ -89,8 +108,9 @@ export async function getJoinedPage(params: {
     params.excludeCreatorId != null
       ? rows.filter((a) => a.creator_id !== params.excludeCreatorId)
       : rows;
+  const withCounts = await attachMemberCounts(notMine);
   return {
-    rows: notMine,
+    rows: withCounts,
     cursor: buildCursor(rows),
     hasMore: rows.length === params.limit,
   };

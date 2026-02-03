@@ -1,5 +1,5 @@
 import { Alert, Pressable, Text, TextInput, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { backend } from "../../lib/backend";
@@ -9,7 +9,7 @@ import {
   type SupportedLang,
 } from "../../lib/i18n/i18n";
 import { useT } from "../../lib/i18n/useT";
-import { Screen } from "../../src/ui/common";
+import { PageTitle, Screen } from "../../src/ui/common";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
 import { requireUserId } from "../../lib/domain/auth";
@@ -24,6 +24,22 @@ export default function SettingsScreen() {
   const [nameLoading, setNameLoading] = useState(true);
   const [nameSaving, setNameSaving] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
+  const brandIconColor = theme.colors.brand;
+
+  const sectionCardStyle = {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: theme.isDark ? theme.colors.border : theme.colors.brandBorder,
+    backgroundColor: theme.isDark
+      ? theme.colors.surface
+      : theme.colors.brandSurface,
+    padding: 14,
+    gap: 10,
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+  } as const;
 
   useEffect(() => {
     let alive = true;
@@ -83,7 +99,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <Screen>
+    <Screen scroll>
       <View
         style={{
           flexDirection: "row",
@@ -102,10 +118,12 @@ export default function SettingsScreen() {
             paddingVertical: 6,
             borderRadius: 999,
             borderWidth: 1,
-            borderColor: theme.colors.border,
+            borderColor: theme.isDark
+              ? theme.colors.border
+              : theme.colors.brandBorder,
             backgroundColor: pressed
-              ? theme.colors.otherBg
-              : theme.colors.surface,
+              ? theme.colors.brandSurfacePressed
+              : theme.colors.brandSurfaceAlt,
           })}
         >
           <Ionicons name="chevron-back" size={14} color={theme.colors.text} />
@@ -116,20 +134,39 @@ export default function SettingsScreen() {
         <View />
       </View>
 
-      <Text
-        style={{
-          fontSize: 18,
-          fontWeight: "800",
-          color: theme.colors.pageTitle,
-        }}
-      >
-        {t("settings.title")}
-      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: theme.isDark
+              ? theme.colors.otherBg
+              : theme.colors.brandSoft,
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1,
+            borderColor: theme.isDark
+              ? theme.colors.border
+              : theme.colors.brandBorder,
+          }}
+        >
+          <Ionicons name="settings" size={20} color={brandIconColor} />
+        </View>
+        <PageTitle>{t("settings.title")}</PageTitle>
+      </View>
 
-      <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
-        {t("settings.displayNameLabel")}
-      </Text>
-      <View style={{ gap: 8 }}>
+      <View style={sectionCardStyle}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <MaterialCommunityIcons
+            name="account"
+            size={18}
+            color={brandIconColor}
+          />
+          <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
+            {t("settings.displayNameLabel")}
+          </Text>
+        </View>
         <TextInput
           value={displayName}
           onChangeText={(value) => {
@@ -159,12 +196,14 @@ export default function SettingsScreen() {
             paddingVertical: 8,
             borderRadius: 999,
             borderWidth: 1,
-            borderColor: theme.colors.border,
+            borderColor: nameSaved
+              ? theme.colors.okBorder
+              : theme.colors.brandBorder,
             backgroundColor: nameSaved
               ? theme.colors.okBg
               : pressed
-                ? theme.colors.otherBg
-                : theme.colors.surface,
+                ? theme.colors.brandSurfacePressed
+                : theme.colors.brandSurfaceAlt,
             opacity: nameSaving || nameLoading ? 0.6 : 1,
           })}
         >
@@ -184,110 +223,130 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
-      <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
-        {t("settings.language")}
-      </Text>
-      <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-        {SUPPORTED_LANGS.map((lng) => {
-          const selected = i18n.language === lng;
-          return (
-            <Pressable
-              key={lng}
-              onPress={async () => {
-                try {
-                  await setLanguage(lng as SupportedLang);
-                } catch (e) {
-                  handleError(t("settings.language"), e);
-                }
-              }}
-              style={{
-                padding: 10,
-                borderWidth: 1,
-                borderColor: selected
-                  ? theme.colors.okBorder
-                  : theme.colors.border,
-                borderRadius: 10,
-                opacity: selected ? 1 : 0.6,
-                backgroundColor: selected
-                  ? theme.colors.okBg
-                  : theme.colors.surface,
-              }}
-            >
-              <Text
+      <View style={sectionCardStyle}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <MaterialCommunityIcons
+            name="translate"
+            size={18}
+            color={brandIconColor}
+          />
+          <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
+            {t("settings.language")}
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+          {SUPPORTED_LANGS.map((lng) => {
+            const selected = i18n.language === lng;
+            return (
+              <Pressable
+                key={lng}
+                onPress={async () => {
+                  try {
+                    await setLanguage(lng as SupportedLang);
+                  } catch (e) {
+                    handleError(t("settings.language"), e);
+                  }
+                }}
                 style={{
-                  fontWeight: "800",
-                  color: selected ? theme.colors.okText : theme.colors.text,
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderWidth: 1,
+                  borderColor: selected
+                    ? theme.colors.brandBorder
+                    : theme.colors.border,
+                  borderRadius: 999,
+                  opacity: selected ? 1 : 0.65,
+                  backgroundColor: selected
+                    ? theme.colors.brandSurfaceAlt
+                    : theme.colors.surface,
                 }}
               >
-                {lng === "en"
-                  ? t("settings.language_en")
-                  : lng === "ja"
-                    ? t("settings.language_ja")
-                    : lng === "zh-CN"
-                      ? t("settings.language_zhCN")
-                      : t("settings.language_zhHK")}
-              </Text>
-            </Pressable>
-          );
-        })}
+                <Text
+                  style={{
+                    fontWeight: "800",
+                    color: selected ? theme.colors.text : theme.colors.subtext,
+                  }}
+                >
+                  {lng === "en"
+                    ? t("settings.language_en")
+                    : lng === "ja"
+                      ? t("settings.language_ja")
+                      : lng === "zh-CN"
+                        ? t("settings.language_zhCN")
+                        : t("settings.language_zhHK")}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
-      <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
-        {t("settings.theme")}
-      </Text>
-      <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-        {(["system", "light", "dark"] as const).map((value) => {
-          const selected = mode === value;
-          const label =
-            value === "system"
-              ? t("settings.theme_system")
-              : value === "light"
-                ? t("settings.theme_light")
-                : t("settings.theme_dark");
-          return (
-            <Pressable
-              key={value}
-              onPress={() => setMode(value)}
-              style={{
-                padding: 10,
-                borderWidth: 1,
-                borderColor: selected
-                  ? theme.colors.okBorder
-                  : theme.colors.border,
-                borderRadius: 10,
-                opacity: selected ? 1 : 0.6,
-                backgroundColor: selected
-                  ? theme.colors.okBg
-                  : theme.colors.surface,
-              }}
-            >
-              <Text
+      <View style={sectionCardStyle}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <MaterialCommunityIcons
+            name="palette"
+            size={18}
+            color={brandIconColor}
+          />
+          <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
+            {t("settings.theme")}
+          </Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+          {(["system", "light", "dark"] as const).map((value) => {
+            const selected = mode === value;
+            const label =
+              value === "system"
+                ? t("settings.theme_system")
+                : value === "light"
+                  ? t("settings.theme_light")
+                  : t("settings.theme_dark");
+            return (
+              <Pressable
+                key={value}
+                onPress={() => setMode(value)}
                 style={{
-                  fontWeight: "800",
-                  color: selected ? theme.colors.okText : theme.colors.text,
+                  paddingVertical: 8,
+                  paddingHorizontal: 12,
+                  borderWidth: 1,
+                  borderColor: selected
+                    ? theme.colors.brandBorder
+                    : theme.colors.border,
+                  borderRadius: 999,
+                  opacity: selected ? 1 : 0.65,
+                  backgroundColor: selected
+                    ? theme.colors.brandSurfaceAlt
+                    : theme.colors.surface,
                 }}
               >
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
+                <Text
+                  style={{
+                    fontWeight: "800",
+                    color: selected ? theme.colors.text : theme.colors.subtext,
+                  }}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       <Pressable
         onPress={onLogout}
-        style={{
+        style={({ pressed }) => ({
           padding: 12,
-          borderRadius: 10,
+          borderRadius: 12,
           borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.dangerBorder,
+          backgroundColor: pressed
+            ? theme.colors.dangerBg
+            : theme.colors.surface,
           alignItems: "center",
-        }}
+        })}
       >
-        <Text
-          style={{ fontWeight: "800", color: theme.colors.settingsActionText }}
-        >
+        <Text style={{ fontWeight: "800", color: theme.colors.dangerText }}>
           {t("settings.logout")}
         </Text>
       </Pressable>

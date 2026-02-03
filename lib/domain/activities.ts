@@ -134,6 +134,26 @@ export async function fetchMembershipRowsForUser(
   return (data ?? []) as MembershipRow[];
 }
 
+export async function fetchActivityMemberCounts(
+  activityIds: string[]
+): Promise<Map<string, number>> {
+  if (activityIds.length === 0) return new Map();
+
+  const { data, error } =
+    await backend.activities.fetchActivityMemberCounts(activityIds);
+
+  if (error) throw error;
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    const id = (row as any).activity_id as string | undefined;
+    if (!id) continue;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
 // :zap: CHANGE 3: Helper to upsert joined state (works for join + re-join).
 export async function upsertJoin(activityId: string, userId: string) {
   const { error } = await backend.activities.upsertActivityMember({
