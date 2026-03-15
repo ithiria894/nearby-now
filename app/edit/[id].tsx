@@ -9,6 +9,7 @@ import InviteForm, {
 } from "../../components/InviteForm";
 import { useT } from "../../lib/i18n/useT";
 import { Screen } from "../../src/ui/common";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
 
 type ActivityRow = {
   id: string;
@@ -45,6 +46,7 @@ function formatPlace(
 export default function EditActivityScreen() {
   const router = useRouter();
   const { t } = useT();
+  const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const activityId = String(id);
 
@@ -246,6 +248,14 @@ export default function EditActivityScreen() {
       <Text style={{ fontSize: 18, fontWeight: "800" }}>
         {t("edit.titlePrefix")}{" "}
         {activity.title_text ?? t("edit.fallbackInviteTitle")}
+      </Text>
+      <Text
+        style={{ fontSize: 14, fontWeight: "800", color: theme.colors.title }}
+      >
+        {t("edit.introTitle")}
+      </Text>
+      <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
+        {t("edit.introBody")}
       </Text>
 
       <InviteForm

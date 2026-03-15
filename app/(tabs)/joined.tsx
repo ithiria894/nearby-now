@@ -2,6 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { TAB_GAP, TAB_HEIGHT } from "../../src/ui/tabbar";
 
 import ActivityCard, {
   type ActivityCardActivity,
@@ -16,12 +23,22 @@ import {
 import { isActiveActivity } from "../../lib/domain/activities";
 import { subscribeToJoinedActivityChanges } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
-import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
+import {
+  Screen,
+  SegmentedTabs,
+  PrimaryButton,
+  PageTitle,
+} from "../../src/ui/common";
 import { handleError } from "../../lib/ui/handleError";
 
 export default function JoinedScreen() {
   const router = useRouter();
   const { t } = useT();
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const TAB_BOTTOM = 8 + insets.bottom;
+  const tabBarSpace = TAB_HEIGHT + TAB_BOTTOM + TAB_GAP;
+  const brandIconColor = theme.colors.brand;
 
   const PAGE_SIZE = 30;
 
@@ -193,39 +210,96 @@ export default function JoinedScreen() {
 
   // :zap: CHANGE 4: Header tabs UI (Active / Inactive / Left).
   const header = useMemo(() => {
+    const subtitle =
+      tab === "active"
+        ? t("joined.subtitle_active")
+        : tab === "inactive"
+          ? t("joined.subtitle_inactive")
+          : t("joined.subtitle_left");
+
+    const softCardStyle = {
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: theme.isDark
+        ? theme.colors.border
+        : theme.colors.brandBorder,
+      backgroundColor: theme.isDark
+        ? theme.colors.surface
+        : theme.colors.brandSurface,
+      padding: 14,
+      gap: 10,
+      shadowColor: theme.colors.shadow,
+      shadowOpacity: 0.06,
+      shadowRadius: 10,
+      shadowOffset: { width: 0, height: 4 },
+    } as const;
+
     return (
       <View style={{ padding: 16, gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>
-          {t("joined.headerTitle")}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: theme.isDark
+                ? theme.colors.otherBg
+                : theme.colors.brandSoft,
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1,
+              borderColor: theme.isDark
+                ? theme.colors.border
+                : theme.colors.brandBorder,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="account-group"
+              size={20}
+              color={brandIconColor}
+            />
+          </View>
+          <View style={{ flex: 1, gap: 4 }}>
+            <PageTitle>{t("joined.headerTitle")}</PageTitle>
+            <Text style={{ fontSize: 12.5, color: theme.colors.subtitleText }}>
+              {subtitle}
+            </Text>
+          </View>
+        </View>
 
-        <SegmentedTabs
-          value={tab}
-          onChange={setTab}
-          items={[
-            {
-              value: "active",
-              label: t("joined.tab_active", { count: activeJoined.length }),
-            },
-            {
-              value: "inactive",
-              label: t("joined.tab_inactive", { count: inactiveJoined.length }),
-            },
-            {
-              value: "left",
-              label: t("joined.tab_left", { count: leftRooms.length }),
-            },
-          ]}
-        />
-
-        <Text style={{ opacity: 0.7 }}>
-          {tab === "active" && t("joined.subtitle_active")}
-          {tab === "inactive" && t("joined.subtitle_inactive")}
-          {tab === "left" && t("joined.subtitle_left")}
-        </Text>
+        <View style={softCardStyle}>
+          <SegmentedTabs
+            value={tab}
+            onChange={setTab}
+            items={[
+              {
+                value: "active",
+                label: t("joined.tab_active", { count: activeJoined.length }),
+              },
+              {
+                value: "inactive",
+                label: t("joined.tab_inactive", {
+                  count: inactiveJoined.length,
+                }),
+              },
+              {
+                value: "left",
+                label: t("joined.tab_left", { count: leftRooms.length }),
+              },
+            ]}
+          />
+        </View>
       </View>
     );
-  }, [tab, activeJoined.length, inactiveJoined.length, leftRooms.length, t]);
+  }, [
+    tab,
+    activeJoined.length,
+    inactiveJoined.length,
+    leftRooms.length,
+    t,
+    theme,
+    brandIconColor,
+  ]);
 
   if (loading) {
     return (
@@ -236,69 +310,91 @@ export default function JoinedScreen() {
   }
 
   return (
-    <FlatList
-      data={dataToShow}
-      keyExtractor={(a) => a.id}
-      ListHeaderComponent={header}
-      contentContainerStyle={{ paddingBottom: 16 }}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.6}
-      initialNumToRender={6}
-      windowSize={5}
-      maxToRenderPerBatch={8}
-      updateCellsBatchingPeriod={50}
-      removeClippedSubviews
-      renderItem={({ item: a }) => {
-        const membershipState: MembershipState =
-          tab === "left" ? "left" : "joined";
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+      <FlatList
+        data={dataToShow}
+        keyExtractor={(a) => a.id}
+        ListHeaderComponent={header}
+        contentContainerStyle={{ paddingBottom: tabBarSpace }}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.6}
+        initialNumToRender={6}
+        windowSize={5}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews
+        renderItem={({ item: a }) => {
+          const membershipState: MembershipState =
+            tab === "left" ? "left" : "joined";
 
-        return (
-          <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
-            <ActivityCard
-              activity={a}
-              currentUserId={userId}
-              membershipState={membershipState}
-              isJoining={false}
-              onPressCard={() => router.push(`/room/${a.id}`)}
-              onPressEdit={
-                a.creator_id === userId
-                  ? () => router.push(`/edit/${a.id}`)
-                  : undefined
-              }
-            />
+          return (
+            <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+              <ActivityCard
+                activity={a}
+                currentUserId={userId}
+                membershipState={membershipState}
+                isJoining={false}
+                onPressCard={() => router.push(`/room/${a.id}`)}
+                onPressEdit={
+                  a.creator_id === userId
+                    ? () => router.push(`/edit/${a.id}`)
+                    : undefined
+                }
+              />
+            </View>
+          );
+        }}
+        ListEmptyComponent={
+          <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
+            <View
+              style={{
+                borderRadius: 18,
+                borderWidth: 1,
+                borderColor: theme.isDark
+                  ? theme.colors.border
+                  : theme.colors.brandBorder,
+                backgroundColor: theme.isDark
+                  ? theme.colors.surface
+                  : theme.colors.brandSurface,
+                padding: 14,
+                gap: 10,
+              }}
+            >
+              <Text style={{ opacity: 0.8 }}>
+                {tab === "active" && t("joined.empty_active")}
+                {tab === "inactive" && t("joined.empty_inactive")}
+                {tab === "left" && t("joined.empty_left")}
+              </Text>
+              {tab === "active" ? (
+                <PrimaryButton
+                  label={t("joined.empty_active_cta")}
+                  onPress={() => router.push("/(tabs)/browse")}
+                />
+              ) : null}
+            </View>
           </View>
-        );
-      }}
-      ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
-          <Text style={{ opacity: 0.8 }}>
-            {tab === "active" && t("joined.empty_active")}
-            {tab === "inactive" && t("joined.empty_inactive")}
-            {tab === "left" && t("joined.empty_left")}
-          </Text>
-          {tab === "active" ? (
-            <PrimaryButton
-              label={t("joined.empty_active_cta")}
-              onPress={() => router.push("/(tabs)/browse")}
-            />
-          ) : null}
-        </View>
-      }
-      ListFooterComponent={
-        loadingMore ? (
-          <View style={{ paddingVertical: 12 }}>
-            <ActivityIndicator />
-          </View>
-        ) : !hasMore && items.length > 0 ? (
-          <View style={{ paddingVertical: 12 }}>
-            <Text style={{ textAlign: "center", opacity: 0.6 }}>
-              {t("common.noMore")}
-            </Text>
-          </View>
-        ) : null
-      }
-    />
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={{ paddingVertical: 12 }}>
+              <ActivityIndicator />
+            </View>
+          ) : !hasMore && items.length > 0 ? (
+            <View style={{ paddingVertical: 12 }}>
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: theme.colors.subtitleText,
+                }}
+              >
+                {t("common.noMore")}
+              </Text>
+            </View>
+          ) : null
+        }
+      />
+    </SafeAreaView>
   );
 }

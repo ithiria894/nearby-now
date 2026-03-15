@@ -21,6 +21,10 @@ npx expo start --tunnel -c
 
 npx expo start --tunnel --no-dev --minify -c
 
+# Precommit hook
+
+npx lint-staged
+
 ---
 
 如果你之後只能用 ChatGPT（copy code）會唔會麻煩？

@@ -1,5 +1,13 @@
 import React from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import {
+  Keyboard,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "./theme/ThemeProvider";
 
 export function Screen({
@@ -17,31 +25,45 @@ export function Screen({
 
   if (scroll) {
     return (
-      <ScrollView
-        style={{ backgroundColor: theme.colors.bg }}
-        contentContainerStyle={{
-          padding,
-          gap: 12,
-          justifyContent: center ? "center" : undefined,
-        }}
-      >
-        {children}
-      </ScrollView>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
+          <ScrollView
+            style={{ backgroundColor: theme.colors.bg }}
+            contentContainerStyle={{
+              padding,
+              gap: 12,
+              justifyContent: center ? "center" : undefined,
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
     );
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        padding,
-        gap: 12,
-        justifyContent: center ? "center" : undefined,
-        backgroundColor: theme.colors.bg,
-      }}
-    >
-      {children}
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: theme.colors.bg,
+        }}
+      >
+        <View
+          style={{
+            flex: 1,
+            padding,
+            gap: 12,
+            justifyContent: center ? "center" : undefined,
+            backgroundColor: theme.colors.bg,
+          }}
+        >
+          {children}
+        </View>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -61,24 +83,92 @@ export function SegmentedTabs<T extends string>({
       {items.map((item) => {
         const selected = item.value === value;
         return (
-          <Pressable
+          <PillButton
             key={item.value}
+            label={item.label}
             onPress={() => onChange(item.value)}
-            style={{
-              paddingVertical: 8,
-              paddingHorizontal: 12,
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              backgroundColor: theme.colors.surface,
-              opacity: selected ? 1 : 0.6,
-            }}
-          >
-            <Text style={{ fontWeight: "800" }}>{item.label}</Text>
-          </Pressable>
+            selected={selected}
+            textColor={theme.colors.segmentedTabTextInactive}
+          />
         );
       })}
     </View>
+  );
+}
+
+export function PillButton({
+  label,
+  onPress,
+  selected,
+  disabled,
+  tone = "default",
+  textColor,
+  icon,
+}: {
+  label: string;
+  onPress: () => void;
+  selected?: boolean;
+  disabled?: boolean;
+  tone?: "default" | "success" | "danger";
+  textColor?: string;
+  icon?: React.ReactNode;
+}) {
+  const theme = useTheme();
+  const isSelected = !!selected;
+  const isSuccess = tone === "success";
+  const isDanger = tone === "danger";
+
+  const baseBorder = isSuccess
+    ? theme.colors.okBorder
+    : isDanger
+      ? theme.colors.dangerBorder
+      : isSelected
+        ? theme.colors.brandBorder
+        : theme.colors.border;
+
+  const baseBg = isSuccess
+    ? theme.colors.okBg
+    : isDanger
+      ? theme.colors.dangerBg
+      : isSelected
+        ? theme.colors.brandSurfaceAlt
+        : theme.colors.surface;
+
+  const pressedBg = isSuccess
+    ? theme.colors.okBg
+    : isDanger
+      ? theme.colors.dangerBg
+      : isSelected
+        ? theme.colors.brandSurfacePressed
+        : theme.colors.surfaceAlt;
+
+  const labelColor = isSuccess
+    ? theme.colors.okText
+    : isDanger
+      ? theme.colors.dangerText
+      : isSelected
+        ? theme.colors.text
+        : (textColor ?? theme.colors.text);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => ({
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: baseBorder,
+        backgroundColor: pressed ? pressedBg : baseBg,
+        opacity: disabled ? 0.6 : 1,
+      })}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        {icon}
+        <Text style={{ fontWeight: "800", color: labelColor }}>{label}</Text>
+      </View>
+    </Pressable>
   );
 }
 
@@ -108,6 +198,23 @@ export function PrimaryButton({
     >
       <Text style={{ fontWeight: "800" }}>{label}</Text>
     </Pressable>
+  );
+}
+
+export function PageTitle({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
+  return (
+    <Text
+      style={{
+        fontFamily: "ShortStack",
+        fontSize: 24,
+        fontWeight: "800",
+        color: theme.colors.ink,
+        letterSpacing: 0.2,
+      }}
+    >
+      {children}
+    </Text>
   );
 }
 

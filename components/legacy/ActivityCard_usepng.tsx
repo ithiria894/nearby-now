@@ -282,8 +282,8 @@ export default function ActivityCard({
                 justifyContent: "center",
                 zIndex: 10,
                 backgroundColor: pressed
-                  ? "rgba(255,255,255,0.70)"
-                  : "rgba(255,255,255,0.55)",
+                  ? theme.colors.otherBg
+                  : theme.colors.surface,
               })}
             >
               <Text
@@ -311,7 +311,7 @@ export default function ActivityCard({
                   width: 28,
                   height: 28,
                   borderRadius: 14,
-                  backgroundColor: "rgba(255,255,255,0.86)",
+                  backgroundColor: theme.colors.surface,
                   alignItems: "center",
                   justifyContent: "center",
                 }}

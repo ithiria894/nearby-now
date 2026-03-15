@@ -6,11 +6,23 @@ export async function requireUser(): Promise<{
   id: string;
   email: string | null;
 }> {
-  const { user, error } = await backend.auth.getUser();
+  const { session, error } = await backend.auth.getSession();
 
   if (error) throw error;
+  const user = session?.user ?? null;
   if (!user) throw new Error("Not authenticated");
   return { id: user.id, email: user.email ?? null };
+}
+
+export function isAuthMissingError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const message = "message" in error ? String((error as any).message) : "";
+  const name = "name" in error ? String((error as any).name) : "";
+  return (
+    name === "AuthSessionMissingError" ||
+    message === "Not authenticated" ||
+    message === "Auth session missing!"
+  );
 }
 
 // :zap: CHANGE 2: Keep existing helper for places that only need id.

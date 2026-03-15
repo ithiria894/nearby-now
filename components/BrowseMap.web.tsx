@@ -18,10 +18,12 @@ export default function BrowseMap({ onRequestList }: Props) {
         flex: 1,
         padding: 16,
         gap: 10,
-        backgroundColor: theme.colors.bg,
+        backgroundColor: "transparent",
       }}
     >
-      <Text style={{ opacity: 0.8 }}>{t("browseMap.webNotSupported")}</Text>
+      <Text style={{ color: theme.colors.subtitleText }}>
+        {t("browseMap.webNotSupported")}
+      </Text>
       <Pressable
         onPress={onRequestList}
         style={{
@@ -34,7 +36,9 @@ export default function BrowseMap({ onRequestList }: Props) {
           alignSelf: "flex-start",
         }}
       >
-        <Text style={{ fontWeight: "700" }}>{t("browseMap.goToList")}</Text>
+        <Text style={{ fontWeight: "700", color: theme.colors.text }}>
+          {t("browseMap.goToList")}
+        </Text>
       </Pressable>
     </View>
   );
