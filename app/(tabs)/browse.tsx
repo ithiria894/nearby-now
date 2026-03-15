@@ -583,10 +583,10 @@ export default function BrowseScreen() {
               marginBottom: 12,
               borderRadius: 18,
               borderWidth: 1,
-              borderColor: theme.colors.brandBorder,
+              borderColor: theme.colors.composerBorder,
               backgroundColor: pressed
                 ? theme.colors.brandSurfaceAlt
-                : theme.colors.brandSurface,
+                : theme.colors.composerBg,
               padding: 12,
               gap: 10,
               shadowColor: theme.colors.shadow,

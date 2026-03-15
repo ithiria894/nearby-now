@@ -1,6 +1,18 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Text, TextInput, useColorScheme } from "react-native";
-import { darkTheme, lightTheme, type ThemeTokens } from "./tokens";
+import {
+  darkTheme,
+  darkThemeElectricViolet,
+  darkThemeSunsetCoral,
+  darkThemeForestGlass,
+  darkThemeCompassTeal,
+  lightTheme,
+  lightThemeElectricViolet,
+  lightThemeSunsetCoral,
+  lightThemeCompassTeal,
+  lightThemeSagePaper,
+  type ThemeTokens,
+} from "./tokens";
 import {
   getStoredThemeMode,
   setStoredThemeMode,
@@ -34,8 +46,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const resolvedScheme = mode === "system" ? scheme : mode;
-  const theme = resolvedScheme === "dark" ? darkTheme : lightTheme;
+  const resolvedMode =
+    mode === "system" ? (scheme === "dark" ? "dark" : "light") : mode;
+
+  const themeMap: Record<string, ThemeTokens> = {
+    light: lightTheme,
+    dark: darkTheme,
+    sagePaper: lightThemeSagePaper,
+    forestGlass: darkThemeForestGlass,
+    compassTeal: lightThemeCompassTeal,
+    compassTealDark: darkThemeCompassTeal,
+    sunsetCoral: lightThemeSunsetCoral,
+    sunsetCoralDark: darkThemeSunsetCoral,
+    electricViolet: lightThemeElectricViolet,
+    electricVioletDark: darkThemeElectricViolet,
+  };
+
+  const theme = themeMap[resolvedMode] ?? lightTheme;
 
   const setModeAndStore = (next: ThemeMode) => {
     setMode(next);

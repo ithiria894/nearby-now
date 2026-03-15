@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { backend } from "../lib/backend";
 import { requireUserId } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
-import { Screen, PrimaryButton } from "../src/ui/common";
+import { PageTitle, Screen } from "../src/ui/common";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
 import {
   getIpLocation,
@@ -71,6 +71,49 @@ export default function ComposeScreen() {
     ],
     [t]
   );
+
+  const cardShadow = {
+    shadowColor: theme.colors.shadow,
+    shadowOpacity: theme.isDark ? 0.18 : 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: theme.isDark ? 2 : 3,
+  } as const;
+
+  const softCardStyle = {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.isDark ? theme.colors.border : theme.colors.brandBorder,
+    backgroundColor: theme.isDark
+      ? theme.colors.surface
+      : theme.colors.brandSurface,
+    padding: 14,
+    gap: 10,
+    ...cardShadow,
+  } as const;
+
+  const surfaceCardStyle = {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
+    padding: 14,
+    gap: 10,
+    ...cardShadow,
+  } as const;
+
+  const chipBase = {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+  } as const;
+
+  const labelTextStyle = {
+    fontSize: 13,
+    fontWeight: "800",
+    color: theme.colors.title,
+  } as const;
 
   const renderBackdrop = (props: any) => (
     <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} />
@@ -229,43 +272,75 @@ export default function ComposeScreen() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
     >
       <Screen scroll>
-        <Text
-          style={{ fontSize: 20, fontWeight: "800", color: theme.colors.title }}
-        >
-          {t("compose.title")}
-        </Text>
-        <Text style={{ fontSize: 13, color: theme.colors.subtitleText }}>
-          {t("compose.subtitle")}
-        </Text>
+        <View style={{ gap: 6 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 19,
+                borderWidth: 1,
+                borderColor: theme.colors.brandBorder,
+                backgroundColor: theme.isDark
+                  ? theme.colors.brandSurfaceAlt
+                  : theme.colors.brandSoft,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="sparkles" size={16} color={theme.colors.brand} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <PageTitle>{t("compose.title")}</PageTitle>
+              <Text style={{ fontSize: 13, color: theme.colors.subtitleText }}>
+                {t("compose.subtitle")}
+              </Text>
+            </View>
+          </View>
+        </View>
 
-        <View style={{ gap: 8 }}>
-          <Text
-            style={{
-              fontSize: 13,
-              fontWeight: "800",
-              color: theme.colors.title,
-            }}
-          >
-            {t("compose.template_label")}
-          </Text>
+        <View style={softCardStyle}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                borderWidth: 1,
+                borderColor: theme.colors.brandBorder,
+                backgroundColor: theme.isDark
+                  ? theme.colors.brandSurfaceAlt
+                  : theme.colors.brandSoft,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons
+                name="flash-outline"
+                size={16}
+                color={theme.colors.brand}
+              />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={labelTextStyle}>{t("compose.template_label")}</Text>
+              <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
+                {t("compose.template_hint")}
+              </Text>
+            </View>
+          </View>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {templates.map((tpl) => (
               <Pressable
                 key={tpl}
                 onPress={() => setText(tpl)}
                 style={({ pressed }) => ({
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
+                  ...chipBase,
+                  borderColor: pressed
+                    ? theme.colors.brandBorder
+                    : theme.colors.chipBorder,
                   backgroundColor: pressed
-                    ? theme.isDark
-                      ? theme.colors.surfaceAlt
-                      : theme.colors.brandSurfaceAlt
-                    : theme.isDark
-                      ? theme.colors.surface
-                      : theme.colors.brandSurface,
+                    ? theme.colors.brandSurfacePressed
+                    : theme.colors.chipBg,
                 })}
               >
                 <Text
@@ -280,20 +355,17 @@ export default function ComposeScreen() {
               </Pressable>
             ))}
           </View>
-          <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-            {t("compose.template_hint")}
-          </Text>
         </View>
 
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            borderRadius: 14,
-            backgroundColor: theme.colors.surface,
-            padding: 12,
-          }}
-        >
+        <View style={surfaceCardStyle}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={16}
+              color={theme.colors.subtext}
+            />
+            <Text style={labelTextStyle}>{t("compose.placeholder")}</Text>
+          </View>
           <TextInput
             value={text}
             onChangeText={setText}
@@ -309,32 +381,32 @@ export default function ComposeScreen() {
           />
         </View>
 
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
-            {t("compose.area_label")}
-          </Text>
+        <View style={surfaceCardStyle}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons
+              name="location-outline"
+              size={16}
+              color={theme.colors.subtext}
+            />
+            <Text style={labelTextStyle}>{t("compose.area_label")}</Text>
+          </View>
           <Pressable
             onPress={async () => {
               await loadSuggestedArea();
               areaSheetRef.current?.present();
             }}
             style={({ pressed }) => ({
+              ...chipBase,
               alignSelf: "flex-start",
               flexDirection: "row",
               alignItems: "center",
               gap: 6,
-              paddingHorizontal: 12,
-              paddingVertical: 8,
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
+              borderColor: pressed
+                ? theme.colors.brandBorder
+                : theme.colors.chipBorder,
               backgroundColor: pressed
-                ? theme.isDark
-                  ? theme.colors.surfaceAlt
-                  : theme.colors.brandSurfaceAlt
-                : theme.isDark
-                  ? theme.colors.surface
-                  : theme.colors.brandSurface,
+                ? theme.colors.brandSurfacePressed
+                : theme.colors.chipBg,
             })}
           >
             <Ionicons name="location" size={14} color={theme.colors.text} />
@@ -355,11 +427,41 @@ export default function ComposeScreen() {
           </Pressable>
         </View>
 
-        <PrimaryButton
-          label={submitting ? t("common.loading") : t("compose.submit")}
+        <Pressable
           onPress={onSubmit}
           disabled={submitting || !text.trim()}
-        />
+          style={({ pressed }) => ({
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: theme.isDark
+              ? theme.colors.border
+              : theme.colors.brandBorder,
+            backgroundColor: theme.isDark
+              ? theme.colors.surface
+              : theme.colors.brandSurfaceAlt,
+            paddingVertical: 14,
+            alignItems: "center",
+            opacity: submitting || !text.trim() ? 0.6 : pressed ? 0.85 : 1,
+            ...cardShadow,
+          })}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons
+              name="paper-plane-outline"
+              size={16}
+              color={theme.colors.text}
+            />
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "900",
+                color: theme.colors.text,
+              }}
+            >
+              {submitting ? t("common.loading") : t("compose.submit")}
+            </Text>
+          </View>
+        </Pressable>
 
         <BottomSheetModal
           ref={successSheetRef}

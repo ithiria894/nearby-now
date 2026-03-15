@@ -9,7 +9,7 @@ import {
   type SupportedLang,
 } from "../../lib/i18n/i18n";
 import { useT } from "../../lib/i18n/useT";
-import { PageTitle, Screen } from "../../src/ui/common";
+import { PageTitle, PillButton, Screen } from "../../src/ui/common";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
 import { requireUserId } from "../../lib/domain/auth";
@@ -187,40 +187,21 @@ export default function SettingsScreen() {
             color: theme.colors.text,
           }}
         />
-        <Pressable
-          onPress={onSaveDisplayName}
-          disabled={nameSaving || nameLoading}
-          style={({ pressed }) => ({
-            alignSelf: "flex-start",
-            paddingHorizontal: 12,
-            paddingVertical: 8,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: nameSaved
-              ? theme.colors.okBorder
-              : theme.colors.brandBorder,
-            backgroundColor: nameSaved
-              ? theme.colors.okBg
-              : pressed
-                ? theme.colors.brandSurfacePressed
-                : theme.colors.brandSurfaceAlt,
-            opacity: nameSaving || nameLoading ? 0.6 : 1,
-          })}
-        >
-          <Text
-            style={{
-              fontWeight: "800",
-              color: nameSaved ? theme.colors.okText : theme.colors.text,
-            }}
-          >
-            {nameSaving
-              ? t("common.loading")
-              : nameSaved
-                ? t("settings.displayNameSaved")
-                : t("settings.displayNameSave")}
-            {nameSaved ? " ✓" : ""}
-          </Text>
-        </Pressable>
+        <View style={{ alignSelf: "flex-start" }}>
+          <PillButton
+            label={`${
+              nameSaving
+                ? t("common.loading")
+                : nameSaved
+                  ? t("settings.displayNameSaved")
+                  : t("settings.displayNameSave")
+            }${nameSaved ? " ✓" : ""}`}
+            onPress={onSaveDisplayName}
+            disabled={nameSaving || nameLoading}
+            selected={!nameSaved}
+            tone={nameSaved ? "success" : "default"}
+          />
+        </View>
       </View>
 
       <View style={sectionCardStyle}>
@@ -293,14 +274,44 @@ export default function SettingsScreen() {
           </Text>
         </View>
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-          {(["system", "light", "dark"] as const).map((value) => {
+          {(
+            [
+              "system",
+              "light",
+              "dark",
+              "sagePaper",
+              "forestGlass",
+              "compassTeal",
+              "compassTealDark",
+              "sunsetCoral",
+              "sunsetCoralDark",
+              "electricViolet",
+              "electricVioletDark",
+            ] as const
+          ).map((value) => {
             const selected = mode === value;
             const label =
               value === "system"
                 ? t("settings.theme_system")
                 : value === "light"
                   ? t("settings.theme_light")
-                  : t("settings.theme_dark");
+                  : value === "dark"
+                    ? t("settings.theme_dark")
+                    : value === "sagePaper"
+                      ? t("settings.theme_sage_paper")
+                      : value === "forestGlass"
+                        ? t("settings.theme_forest_glass")
+                        : value === "compassTeal"
+                          ? t("settings.theme_compass_teal")
+                          : value === "compassTealDark"
+                            ? t("settings.theme_compass_teal_dark")
+                            : value === "sunsetCoral"
+                              ? t("settings.theme_sunset_coral")
+                              : value === "sunsetCoralDark"
+                                ? t("settings.theme_sunset_coral_dark")
+                                : value === "electricViolet"
+                                  ? t("settings.theme_electric_violet")
+                                  : t("settings.theme_electric_violet_dark");
             return (
               <Pressable
                 key={value}

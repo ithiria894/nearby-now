@@ -83,33 +83,92 @@ export function SegmentedTabs<T extends string>({
       {items.map((item) => {
         const selected = item.value === value;
         return (
-          <Pressable
+          <PillButton
             key={item.value}
+            label={item.label}
             onPress={() => onChange(item.value)}
-            style={{
-              paddingVertical: 8,
-              paddingHorizontal: 12,
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              backgroundColor: theme.colors.surface,
-              opacity: selected ? 1 : 0.6,
-            }}
-          >
-            <Text
-              style={{
-                fontWeight: "800",
-                color: selected
-                  ? theme.colors.segmentedTabTextActive
-                  : theme.colors.segmentedTabTextInactive,
-              }}
-            >
-              {item.label}
-            </Text>
-          </Pressable>
+            selected={selected}
+            textColor={theme.colors.segmentedTabTextInactive}
+          />
         );
       })}
     </View>
+  );
+}
+
+export function PillButton({
+  label,
+  onPress,
+  selected,
+  disabled,
+  tone = "default",
+  textColor,
+  icon,
+}: {
+  label: string;
+  onPress: () => void;
+  selected?: boolean;
+  disabled?: boolean;
+  tone?: "default" | "success" | "danger";
+  textColor?: string;
+  icon?: React.ReactNode;
+}) {
+  const theme = useTheme();
+  const isSelected = !!selected;
+  const isSuccess = tone === "success";
+  const isDanger = tone === "danger";
+
+  const baseBorder = isSuccess
+    ? theme.colors.okBorder
+    : isDanger
+      ? theme.colors.dangerBorder
+      : isSelected
+        ? theme.colors.brandBorder
+        : theme.colors.border;
+
+  const baseBg = isSuccess
+    ? theme.colors.okBg
+    : isDanger
+      ? theme.colors.dangerBg
+      : isSelected
+        ? theme.colors.brandSurfaceAlt
+        : theme.colors.surface;
+
+  const pressedBg = isSuccess
+    ? theme.colors.okBg
+    : isDanger
+      ? theme.colors.dangerBg
+      : isSelected
+        ? theme.colors.brandSurfacePressed
+        : theme.colors.surfaceAlt;
+
+  const labelColor = isSuccess
+    ? theme.colors.okText
+    : isDanger
+      ? theme.colors.dangerText
+      : isSelected
+        ? theme.colors.text
+        : (textColor ?? theme.colors.text);
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => ({
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: baseBorder,
+        backgroundColor: pressed ? pressedBg : baseBg,
+        opacity: disabled ? 0.6 : 1,
+      })}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        {icon}
+        <Text style={{ fontWeight: "800", color: labelColor }}>{label}</Text>
+      </View>
+    </Pressable>
   );
 }
 
