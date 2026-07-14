@@ -3,15 +3,21 @@
 // Rendered live in /uidocs; these are what screens will adopt on rollout.
 // Each takes `c: UIColors` so it works with the UIDocs local scheme toggle.
 // =============================================================================
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  Keyboard,
+  Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
   View,
   type DimensionValue,
+  type TextInputProps,
   type ViewStyle,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Svg, {
   Defs,
   Filter,
@@ -163,6 +169,75 @@ export function Container({
     >
       {children}
     </View>
+  );
+}
+
+/* ---------- screen container (paper bg + grain + safe area + web-safe dismiss) ---------- */
+export function BScreen({
+  c,
+  children,
+  scroll,
+  center,
+  texture = true,
+}: {
+  c: UIColors;
+  children: React.ReactNode;
+  scroll?: boolean;
+  center?: boolean;
+  texture?: boolean;
+}) {
+  // Cap the content column and center it so cards never stretch full-width on
+  // a wide / tablet / desktop-web window (paper margins fill the sides).
+  const column = (
+    <View
+      style={{
+        width: "100%",
+        maxWidth: layout.maxContentWidth,
+        alignSelf: "center",
+        gap: space.md,
+      }}
+    >
+      {children}
+    </View>
+  );
+  const body = scroll ? (
+    <ScrollView
+      style={{ backgroundColor: "transparent" }}
+      contentContainerStyle={{
+        padding: layout.screenPadding,
+        flexGrow: 1,
+        justifyContent: center ? "center" : undefined,
+      }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      {column}
+    </ScrollView>
+  ) : (
+    <View
+      style={{
+        flex: 1,
+        padding: layout.screenPadding,
+        justifyContent: center ? "center" : undefined,
+      }}
+    >
+      {column}
+    </View>
+  );
+
+  const framed = (
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
+      {texture ? <PaperTexture opacity={0.06} /> : null}
+      <SafeAreaView style={{ flex: 1 }}>{body}</SafeAreaView>
+    </View>
+  );
+
+  // Native: tap outside to dismiss the keyboard. Web: NOT (it steals input focus).
+  if (Platform.OS === "web") return framed;
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      {framed}
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -341,6 +416,10 @@ export function BInput({
   hint,
   error,
   value,
+  onChangeText,
+  secureTextEntry,
+  keyboardType,
+  autoCapitalize,
 }: {
   c: UIColors;
   label: string;
@@ -348,14 +427,22 @@ export function BInput({
   hint?: string;
   error?: string;
   value?: string;
+  onChangeText?: (t: string) => void;
+  secureTextEntry?: boolean;
+  keyboardType?: TextInputProps["keyboardType"];
+  autoCapitalize?: TextInputProps["autoCapitalize"];
 }) {
   return (
     <View style={{ gap: 6 }}>
       <Text style={txt(typeScale.label, c.subtext)}>{label}</Text>
       <TextInput
-        defaultValue={value}
+        value={value}
+        onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={c.faint}
+        secureTextEntry={secureTextEntry}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
         style={{
           height: controls.inputHeight,
           borderRadius: controls.inputRadius,
@@ -483,6 +570,7 @@ export function BActivityRow({
           style={{
             width: 44,
             height: 44,
+            borderRadius: radius.sm,
             borderWidth: borders.base,
             borderColor: c.border,
             backgroundColor: iconBg,
@@ -515,6 +603,87 @@ export function BActivityRow({
   );
 }
 
+/* ---------- composer (the big "create" entry with a ROTATING placeholder) ---------- */
+// The primary create entry on the Feed. Its placeholder cycles through activity
+// prompts to hint what NearbyNow is for (its positioning) — so a new user learns
+// the app at a glance. Prominent: a large card with a bigger hard shadow.
+export function BComposer({
+  c,
+  heading,
+  placeholders,
+  onPress,
+}: {
+  c: UIColors;
+  heading: string;
+  placeholders: string[];
+  onPress?: () => void;
+}) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (placeholders.length < 2) return;
+    const id = setInterval(
+      () => setI((x) => (x + 1) % placeholders.length),
+      3200
+    );
+    return () => clearInterval(id);
+  }, [placeholders.length]);
+  const ph = placeholders[i] ?? "";
+  const Quick = ({ icon, text }: { icon: string; text: string }) => (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+      <MaterialCommunityIcons name={icon as any} size={16} color={c.subtext} />
+      <Text style={txt(typeScale.label, c.subtext)}>{text}</Text>
+    </View>
+  );
+  return (
+    <BCard c={c} offset={hardShadow.lg}>
+      <Text style={txt(typeScale.title, c.ink)}>{heading}</Text>
+      <Pressable
+        onPress={onPress}
+        style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
+      >
+        <View
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: radius.sm,
+            borderWidth: borders.base,
+            borderColor: c.border,
+            backgroundColor: c.surfaceAlt,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <MaterialCommunityIcons
+            name="compass-rose"
+            size={22}
+            color={c.brand}
+          />
+        </View>
+        <View
+          style={{
+            flex: 1,
+            height: 44,
+            borderRadius: radius.pill,
+            borderWidth: borders.base,
+            borderColor: c.border,
+            backgroundColor: c.surface,
+            justifyContent: "center",
+            paddingHorizontal: space.md,
+          }}
+        >
+          <Text numberOfLines={1} style={txt(typeScale.body, c.faint)}>
+            {ph}
+          </Text>
+        </View>
+      </Pressable>
+      <View style={{ flexDirection: "row", gap: space.lg }}>
+        <Quick icon="message-outline" text="Quick post" />
+        <Quick icon="account-group" text="Join" />
+      </View>
+    </BCard>
+  );
+}
+
 /* ---------- skeleton (loading placeholders) ---------- */
 export function BSkeleton({
   c,
@@ -538,6 +707,7 @@ export function BSkeleton({
         {
           width,
           height,
+          borderRadius: radius.sm,
           backgroundColor: c.surfaceAlt,
           borderWidth: borders.base,
           borderColor: c.border,
@@ -626,6 +796,7 @@ export function BTabBar({
               style={{
                 width: 52,
                 height: 30,
+                borderRadius: radius.pill,
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: on ? c.brand : "transparent",

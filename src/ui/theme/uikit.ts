@@ -1,11 +1,11 @@
 // =============================================================================
-// NearbyNow — Rebrand Design Tokens ("UIKit")  ·  NEO-BRUTALISM
+// NearbyNow — Rebrand Design Tokens ("UIKit")  ·  SOFT NEO-BRUTALISM
 // Single source of truth for the redesign. Rendered live in /uidocs.
 // Standalone from the current theme (tokens.ts) so it can be tuned in isolation.
 //
-// Direction: NEOBRUTALISM — bold flat color on warm *paper* (subtle grain),
-// thick ink borders, HARD offset shadows (no blur), chunky rounded corners,
-// heavy confident type. Bold + encouraging. Content is capped to a max width
+// Direction: SOFT NEOBRUTALISM — bold flat color on warm *paper* (subtle grain),
+// medium ink borders, SMALL hard offset shadows, ROUNDED corners, confident
+// (not heavy) type. Friendly + encouraging. Content is capped to a max width
 // and centered so cards never over-stretch on wide / tablet / web screens.
 // =============================================================================
 
@@ -121,14 +121,14 @@ export type TypeStyle = {
 export const typeScale: Record<string, TypeStyle> = {
   display: {
     font: fonts.display,
-    size: 34,
-    lineHeight: 40,
-    weight: "800",
+    size: 30,
+    lineHeight: 36,
+    weight: "700",
     letterSpacing: 0.2,
   },
-  h1: { font: fonts.display, size: 26, lineHeight: 32, weight: "800" },
-  h2: { font: fonts.heading, size: 20, lineHeight: 26, weight: "700" },
-  title: { font: fonts.heading, size: 17, lineHeight: 23, weight: "700" },
+  h1: { font: fonts.display, size: 24, lineHeight: 30, weight: "700" },
+  h2: { font: fonts.heading, size: 19, lineHeight: 25, weight: "700" },
+  title: { font: fonts.heading, size: 16, lineHeight: 22, weight: "600" },
   body: { font: fonts.body, size: 15, lineHeight: 22, weight: "400" },
   bodyStrong: {
     font: fonts.bodyStrong,
@@ -140,8 +140,8 @@ export const typeScale: Record<string, TypeStyle> = {
     font: fonts.bodyStrong,
     size: 12,
     lineHeight: 16,
-    weight: "700",
-    letterSpacing: 1,
+    weight: "600",
+    letterSpacing: 0.5,
     uppercase: true,
   },
   caption: { font: fonts.body, size: 12, lineHeight: 16, weight: "400" },
@@ -157,15 +157,16 @@ export const space = {
   xxl: 24,
   xxxl: 32,
 } as const;
-// NO border radius — hard, square corners are core to the brutalist look.
-export const radius = { sm: 0, md: 0, lg: 0, xl: 0, pill: 0 } as const;
-export const borders = { hair: 1, base: 2, thick: 3 } as const;
+// Soft-brutalism: ROUNDED corners (friendlier than hard square).
+export const radius = { sm: 12, md: 16, lg: 20, xl: 26, pill: 999 } as const;
+// Thinner borders than classic neobrutalism — a little less bold.
+export const borders = { hair: 1, base: 1.5, thick: 2 } as const;
 
-// HARD (no-blur) offset shadow, the neobrutalist signature. Offsets in px.
+// Small hard (no-blur) offset shadow — the brutalist signature, softened.
 export const hardShadow = {
-  sm: { x: 3, y: 3 },
-  md: { x: 5, y: 5 },
-  lg: { x: 8, y: 8 },
+  sm: { x: 2, y: 2 },
+  md: { x: 3, y: 3 },
+  lg: { x: 5, y: 5 },
 } as const;
 
 // --- Layout: cap content width, center on wide screens ----------------------

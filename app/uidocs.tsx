@@ -30,6 +30,7 @@ import {
   BButton,
   BCard,
   BChip,
+  BComposer,
   BIconButton,
   BInput,
   BList,
@@ -391,7 +392,7 @@ export default function UIDocs() {
               v="display"
               c={c}
               color={c.ink}
-              style={{ marginTop: space.md }}
+              style={{ marginTop: space.md, fontFamily: "ShortStack" }}
             >
               nearby now
             </BText>
@@ -410,7 +411,7 @@ export default function UIDocs() {
                 marginTop: space.sm,
               }}
             >
-              <BChip c={c} label="Neobrutalism v1" tone="brand" />
+              <BChip c={c} label="Soft brutalism v2" tone="brand" />
               <BChip c={c} label="edit → uikit.ts" />
             </View>
           </View>
@@ -498,7 +499,7 @@ export default function UIDocs() {
           <Section
             c={c}
             title="Foundations"
-            note="4-based spacing · rounded-chunky radii · thick ink borders · HARD offset shadow."
+            note="4-based spacing · rounded corners · medium ink borders · small hard shadow."
           >
             <BCard c={c}>
               <BText v="label" c={c} color={c.subtext}>
@@ -751,7 +752,6 @@ export default function UIDocs() {
                 c={c}
                 label="Password"
                 placeholder="Min 6 characters"
-                value="secret"
                 error="Password is too short."
               />
             </BCard>
@@ -766,6 +766,39 @@ export default function UIDocs() {
                 "Don't use the placeholder as the label",
                 "Don't drop the border on focus",
                 "Don't block focus on web",
+              ]}
+            />
+          </Section>
+
+          {/* Composer */}
+          <Section
+            c={c}
+            title="Composer"
+            note="The big create entry on the Feed. Its placeholder ROTATES through activity prompts — teaching new users what NearbyNow is for (its positioning)."
+          >
+            <BComposer
+              c={c}
+              heading="What do you feel like doing?"
+              placeholders={[
+                "Anyone up for board games?",
+                "Grab a coffee nearby?",
+                "Hotpot tonight?",
+                "Karaoke, anyone?",
+                "Badminton drop-in?",
+                "Down for a walk?",
+              ]}
+            />
+            <Rules
+              c={c}
+              dos={[
+                "Keep it the biggest, top entry on the Feed",
+                "Rotate the placeholder (~3s) to signal the app’s purpose",
+                "Prompts = real activities people actually post",
+              ]}
+              donts={[
+                "Don’t hide it behind a small icon button",
+                "Don’t use a static placeholder",
+                "Don’t rotate faster than people can read",
               ]}
             />
           </Section>
