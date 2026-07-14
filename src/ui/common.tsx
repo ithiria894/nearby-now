@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Keyboard,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -9,6 +10,21 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "./theme/ThemeProvider";
+
+// Tap-to-dismiss-keyboard wrapper. On web, react-native-web's
+// TouchableWithoutFeedback fires onPress for clicks that BUBBLE up from
+// children (including TextInputs), so wrapping the screen here would call
+// Keyboard.dismiss() on every field tap and immediately blur the input —
+// making typing impossible. Web has no soft keyboard to dismiss anyway, so we
+// only apply the wrapper on native.
+function DismissKeyboardWrapper({ children }: { children: React.ReactNode }) {
+  if (Platform.OS === "web") return <>{children}</>;
+  return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      {children}
+    </TouchableWithoutFeedback>
+  );
+}
 
 export function Screen({
   children,
@@ -25,7 +41,7 @@ export function Screen({
 
   if (scroll) {
     return (
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <DismissKeyboardWrapper>
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
           <ScrollView
             style={{ backgroundColor: theme.colors.bg }}
@@ -39,12 +55,12 @@ export function Screen({
             {children}
           </ScrollView>
         </SafeAreaView>
-      </TouchableWithoutFeedback>
+      </DismissKeyboardWrapper>
     );
   }
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    <DismissKeyboardWrapper>
       <SafeAreaView
         style={{
           flex: 1,
@@ -63,7 +79,7 @@ export function Screen({
           {children}
         </View>
       </SafeAreaView>
-    </TouchableWithoutFeedback>
+    </DismissKeyboardWrapper>
   );
 }
 
