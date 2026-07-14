@@ -232,7 +232,7 @@ export default function ComposeScreen() {
       const userId = await requireUserId();
       const { data, error } = await backend.activities.createActivity({
         creator_id: userId,
-        title_text: text.trim(),
+        title_text: text.replace(/\s+/g, " ").trim().slice(0, 200),
         lat: area?.lat ?? null,
         lng: area?.lng ?? null,
         location_source:

@@ -19,7 +19,7 @@ export default function LoginScreen() {
   const brandIconColor = theme.colors.brand;
 
   async function onLogin() {
-    if (!email.trim() || !password) {
+    if (!email.trim() || !password.trim()) {
       Alert.alert(t("auth.login.missingTitle"), t("auth.login.missingBody"));
       return;
     }

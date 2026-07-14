@@ -250,6 +250,14 @@ export default function InviteForm(props: Props) {
     }
     return null;
   }, [startParsed, endParsed, t]);
+  const startPastError = useMemo(() => {
+    if (mode !== "create") return null;
+    if (startParsed.error) return null;
+    if (startParsed.date && startParsed.date.getTime() < Date.now()) {
+      return t("inviteForm.timePastError");
+    }
+    return null;
+  }, [mode, startParsed, t]);
 
   const titleError =
     didSubmit && !title.trim() ? t("inviteForm.titleRequired") : null;
@@ -259,6 +267,7 @@ export default function InviteForm(props: Props) {
   const endTimeError =
     didSubmit && endParsed.error ? t("inviteForm.timeFormatError") : null;
   const timeRangeDisplayError = didSubmit ? timeRangeError : null;
+  const startPastDisplayError = didSubmit ? startPastError : null;
 
   const handleSubmit = async () => {
     setDidSubmit(true);
@@ -267,7 +276,8 @@ export default function InviteForm(props: Props) {
       parsedCapacity.error ||
       startParsed.error ||
       endParsed.error ||
-      timeRangeError
+      timeRangeError ||
+      startPastError
     ) {
       return;
     }
@@ -297,12 +307,10 @@ export default function InviteForm(props: Props) {
         : null;
     const locationSource = selectedPlace
       ? (selectedPlace.source ?? null)
-      : manualPlace.trim() || placeQuery.trim()
+      : manualPlace.trim()
         ? "manual"
         : null;
-    const placeTextValue = selectedPlace
-      ? null
-      : manualPlace.trim() || placeQuery.trim() || null;
+    const placeTextValue = selectedPlace ? null : manualPlace.trim() || null;
 
     await onSubmit({
       title_text: title.trim(),
@@ -384,7 +392,7 @@ export default function InviteForm(props: Props) {
 
   const summaryItems = useMemo(() => {
     const items: Array<{ key: string; label: string }> = [];
-    if (selectedPlace || manualPlace.trim() || placeQuery.trim()) {
+    if (selectedPlace || manualPlace.trim()) {
       items.push({ key: "place", label: t("inviteForm.summary_place") });
     }
     if (startTime.trim()) {
@@ -471,6 +479,7 @@ export default function InviteForm(props: Props) {
       <TextInput
         value={title}
         onChangeText={setTitle}
+        maxLength={200}
         placeholder={t("inviteForm.titlePlaceholder")}
         style={{
           borderWidth: 1,
@@ -688,6 +697,11 @@ export default function InviteForm(props: Props) {
         {startTimeError ? (
           <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
             {startTimeError}
+          </Text>
+        ) : null}
+        {startPastDisplayError ? (
+          <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
+            {startPastDisplayError}
           </Text>
         ) : null}
         <TextInput

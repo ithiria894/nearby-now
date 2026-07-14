@@ -355,7 +355,6 @@ export default function BrowseScreen() {
           return;
         }
         handleError(t("browse.loadErrorTitle"), e);
-        router.replace("/login");
       } finally {
         setLoading(false);
       }
@@ -799,7 +798,7 @@ export default function BrowseScreen() {
                     <Text style={{ opacity: 0.8 }}>{t("browse.empty")}</Text>
                     <PrimaryButton
                       label={t("browse.empty_cta")}
-                      onPress={() => router.push("/create")}
+                      onPress={() => router.push("/compose")}
                     />
                   </View>
                 )
@@ -938,21 +937,6 @@ export default function BrowseScreen() {
                 color={theme.colors.subtext}
               />
             </Pressable>
-          </View>
-
-          <View style={{ gap: 6 }}>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: "800",
-                color: theme.colors.text,
-              }}
-            >
-              Filters
-            </Text>
-            <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-              Filters will live here.
-            </Text>
           </View>
         </BottomSheetView>
       </BottomSheetModal>

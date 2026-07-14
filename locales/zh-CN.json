@@ -54,7 +54,9 @@
       "successTitle": "成功",
       "successBody": "账号已创建，请登录。",
       "errorTitle": "注册失败",
-      "backToLogin": "返回登录"
+      "backToLogin": "返回登录",
+      "maybeExistsTitle": "可能已注册",
+      "maybeExistsBody": "这个邮箱可能已有账户，请尝试直接登录。"
     }
   },
   "create": {
@@ -421,7 +423,8 @@
     "summary_gender": "性别",
     "summary_expiry": "到期",
     "submitting": "提交中…",
-    "cancel": "暂时不填"
+    "cancel": "暂时不填",
+    "timePastError": "这个时间已经过去了。"
   },
   "browseMap": {
     "webNotSupported": "Web 端不支持地图模式，请切换到列表。",

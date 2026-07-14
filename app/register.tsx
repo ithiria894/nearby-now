@@ -18,7 +18,7 @@ export default function RegisterScreen() {
   const brandIconColor = theme.colors.brand;
 
   async function onRegister() {
-    if (!email.trim() || !password) {
+    if (!email.trim() || !password.trim()) {
       Alert.alert(
         t("auth.register.missingTitle"),
         t("auth.register.missingBody")
@@ -52,8 +52,8 @@ export default function RegisterScreen() {
         router.replace("/(tabs)/browse");
       } else {
         Alert.alert(
-          t("auth.register.successTitle"),
-          t("auth.register.successBody")
+          t("auth.register.maybeExistsTitle"),
+          t("auth.register.maybeExistsBody")
         );
         router.replace("/login");
       }

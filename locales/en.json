@@ -54,7 +54,9 @@
       "successTitle": "Success",
       "successBody": "Account created. Please sign in.",
       "errorTitle": "Register failed",
-      "backToLogin": "Back to login"
+      "backToLogin": "Back to login",
+      "maybeExistsTitle": "Already registered?",
+      "maybeExistsBody": "This email may already have an account. Try logging in instead."
     }
   },
   "create": {
@@ -421,7 +423,8 @@
     "summary_gender": "Gender",
     "summary_expiry": "Expiry",
     "submitting": "Submitting...",
-    "cancel": "Skip for now"
+    "cancel": "Skip for now",
+    "timePastError": "That time is already in the past."
   },
   "browseMap": {
     "webNotSupported": "Map view is not supported on web. Switch to List to continue.",

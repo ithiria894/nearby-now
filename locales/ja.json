@@ -54,7 +54,9 @@
       "successTitle": "成功",
       "successBody": "アカウントを作成しました。サインインしてください。",
       "errorTitle": "登録に失敗",
-      "backToLogin": "ログインに戻る"
+      "backToLogin": "ログインに戻る",
+      "maybeExistsTitle": "登録済みかも",
+      "maybeExistsBody": "このメールは既に登録されている可能性があります。ログインをお試しください。"
     }
   },
   "create": {
@@ -421,7 +423,8 @@
     "summary_gender": "性別",
     "summary_expiry": "期限",
     "submitting": "送信中...",
-    "cancel": "あとで"
+    "cancel": "あとで",
+    "timePastError": "その時間はすでに過ぎています。"
   },
   "browseMap": {
     "webNotSupported": "Webでは地図表示は利用できません。リストに切り替えてください。",

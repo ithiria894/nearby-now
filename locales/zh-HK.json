@@ -54,7 +54,9 @@
       "successTitle": "成功",
       "successBody": "帳戶已建立，請登入。",
       "errorTitle": "註冊失敗",
-      "backToLogin": "返回登入"
+      "backToLogin": "返回登入",
+      "maybeExistsTitle": "可能已註冊",
+      "maybeExistsBody": "呢個電郵可能已經有帳戶，試下直接登入。"
     }
   },
   "create": {
@@ -421,7 +423,8 @@
     "summary_gender": "性別",
     "summary_expiry": "到期",
     "submitting": "提交中…",
-    "cancel": "暫時唔填"
+    "cancel": "暫時唔填",
+    "timePastError": "呢個時間已經過咗。"
   },
   "browseMap": {
     "webNotSupported": "Web 版唔支援地圖模式，請切換到列表。",

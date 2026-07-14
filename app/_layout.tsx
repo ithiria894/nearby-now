@@ -100,7 +100,13 @@ export default function RootLayout() {
     let active = true;
     (async () => {
       try {
-        await initI18n();
+        // Timeout guard: if initI18n() hangs (e.g. a stuck storage read),
+        // proceed after the deadline so the app never stays on a null/splash
+        // screen forever. The finally below always runs the race resolves.
+        await Promise.race([
+          initI18n(),
+          new Promise<void>((resolve) => setTimeout(resolve, 4000)),
+        ]);
       } catch (e) {
         console.error("i18n init failed:", e);
       } finally {

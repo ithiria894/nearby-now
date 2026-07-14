@@ -64,3 +64,7 @@ supabase/.cache/
 
 CLAUDE.local.md
 thoughts/
+
+# Android signing (local credentials for EAS)
+credentials/
+credentials.json

@@ -20,16 +20,21 @@ const INITIAL_REGION = {
   longitudeDelta: 0.08,
 };
 
-export default function BrowseMap({ items, onPressCard, onRequestList }: Props) {
+export default function BrowseMap({
+  items,
+  onPressCard,
+  onRequestList,
+}: Props) {
   const { t } = useT();
   const theme = useTheme();
 
   const mappable = useMemo(
     () =>
       items.filter(
-        (a) => Number.isFinite(a.lat as number) && Number.isFinite(a.lng as number),
+        (a) =>
+          Number.isFinite(a.lat as number) && Number.isFinite(a.lng as number)
       ),
-    [items],
+    [items]
   );
 
   const markers = useMemo<MapMarker[]>(
@@ -41,8 +46,29 @@ export default function BrowseMap({ items, onPressCard, onRequestList }: Props) 
         title: a.title_text,
         subtitle: a.place_name ?? a.place_text ?? null,
       })),
-    [mappable],
+    [mappable]
   );
+
+  // Fit the viewport to the markers so the pins are actually visible, instead of
+  // always showing the hardcoded Vancouver default. Falls back to Vancouver when
+  // there are no markers to frame.
+  const initialRegion = useMemo(() => {
+    if (markers.length === 0) return INITIAL_REGION;
+    const lats = markers.map((m) => m.lat);
+    const lngs = markers.map((m) => m.lng);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    return {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      // Pad the span so edge pins aren't flush to the frame; clamp to a minimum
+      // so a single marker doesn't over-zoom.
+      latitudeDelta: Math.max((maxLat - minLat) * 1.4, 0.02),
+      longitudeDelta: Math.max((maxLng - minLng) * 1.4, 0.02),
+    };
+  }, [markers]);
 
   const handleMarkerPress = (id: string) => {
     const activity = mappable.find((a) => a.id === id);
@@ -53,7 +79,7 @@ export default function BrowseMap({ items, onPressCard, onRequestList }: Props) 
     <View style={{ flex: 1 }}>
       <AppMap
         markers={markers}
-        initialRegion={INITIAL_REGION}
+        initialRegion={initialRegion}
         onMarkerPress={handleMarkerPress}
         onRequestList={onRequestList}
       />
