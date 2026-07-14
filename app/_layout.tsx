@@ -177,6 +177,14 @@ export default function RootLayout() {
                 headerLeft: () => <StackBackButton />,
               }}
             />
+            {/* Hidden design-system route (URL only): /uidocs */}
+            <Stack.Screen
+              name="uidocs"
+              options={{
+                title: "UIDocs",
+                headerLeft: () => <StackBackButton />,
+              }}
+            />
           </Stack>
         </ThemeProvider>
       </BottomSheetModalProvider>
