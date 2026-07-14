@@ -63,6 +63,7 @@ import {
   BButton,
   BText,
   BChip,
+  BToggle,
   BIconButton,
 } from "../../src/ui/components/brutal";
 import { activityIcon, activityTileColor } from "../../lib/ui/activityIcon";
@@ -547,22 +548,19 @@ export default function BrowseScreen() {
       />
 
       {/* List / Map toggle */}
-      <View style={{ flexDirection: "row", gap: space.sm }}>
-        <Pressable onPress={() => setViewMode("list")}>
-          <BChip
-            c={c}
-            label={t("browse.mapButton_list")}
-            selected={viewMode === "list"}
-          />
-        </Pressable>
-        <Pressable onPress={() => setViewMode("map")}>
-          <BChip
-            c={c}
-            label={t("browse.mapButton_map")}
-            selected={viewMode === "map"}
-          />
-        </Pressable>
-      </View>
+      <BToggle<"list" | "map">
+        c={c}
+        value={viewMode}
+        onChange={setViewMode}
+        options={[
+          {
+            value: "list",
+            label: t("browse.mapButton_list"),
+            icon: "format-list-bulleted",
+          },
+          { value: "map", label: t("browse.mapButton_map"), icon: "map" },
+        ]}
+      />
 
       {/* What's happening + area pill */}
       <View

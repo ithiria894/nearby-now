@@ -794,7 +794,7 @@ export default function RoomScreen() {
               ) : (
                 <BButton
                   c={c}
-                  tone="danger"
+                  tone="secondary"
                   label={t("common.leave")}
                   onPress={confirmLeave}
                 />

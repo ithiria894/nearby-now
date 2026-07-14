@@ -408,6 +408,65 @@ export function BChip({
   );
 }
 
+/* ---------- toggle (segmented switch) ---------- */
+// A single pill container with 2+ segments; the active one is brand-filled.
+// Use for view switches like List / Map. NO per-segment borders.
+export function BToggle<T extends string>({
+  c,
+  value,
+  onChange,
+  options,
+}: {
+  c: UIColors;
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: NoInfer<T>; label: string; icon?: string }[];
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignSelf: "flex-start",
+        borderWidth: controls.borderWidth,
+        borderColor: c.border,
+        borderRadius: radius.pill,
+        backgroundColor: c.surface,
+        padding: 3,
+      }}
+    >
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => onChange(o.value)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              paddingVertical: 7,
+              paddingHorizontal: space.md,
+              borderRadius: radius.pill,
+              backgroundColor: on ? c.brand : "transparent",
+            }}
+          >
+            {o.icon ? (
+              <MaterialCommunityIcons
+                name={o.icon as any}
+                size={16}
+                color={on ? c.onBrand : c.subtext}
+              />
+            ) : null}
+            <Text style={txt(typeScale.label, on ? c.onBrand : c.subtext)}>
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 /* ---------- input ---------- */
 export function BInput({
   c,

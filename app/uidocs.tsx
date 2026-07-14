@@ -38,6 +38,7 @@ import {
   BSkeletonList,
   BTabBar,
   BText,
+  BToggle,
   Container,
   HardShadow,
   PaperTexture,
@@ -266,6 +267,7 @@ function NavDemo({ c }: { c: UIColors }) {
 
 export default function UIDocs() {
   const [scheme, setScheme] = useState<UIScheme>("light");
+  const [view, setView] = useState<"list" | "map">("list");
   const c = uiColors[scheme];
 
   // Animation demo state — "a new activity arrives"
@@ -733,6 +735,45 @@ export default function UIDocs() {
                 <BBadge c={c} label="New" fill={c.pink} />
               </View>
             </BCard>
+          </Section>
+
+          {/* Toggle */}
+          <Section
+            c={c}
+            title="Toggle"
+            note="A segmented switch for view/mode changes (e.g. List / Map). One pill; the active segment is brand-filled, no per-segment borders."
+          >
+            <BCard c={c}>
+              <BToggle<"list" | "map">
+                c={c}
+                value={view}
+                onChange={setView}
+                options={[
+                  {
+                    value: "list",
+                    label: "List",
+                    icon: "format-list-bulleted",
+                  },
+                  { value: "map", label: "Map", icon: "map" },
+                ]}
+              />
+              <BText v="caption" c={c} color={c.subtext}>
+                Selected: {view}
+              </BText>
+            </BCard>
+            <Rules
+              c={c}
+              dos={[
+                "2-3 mutually exclusive options",
+                "Active segment = brand fill",
+                "Use for view/mode switches (List/Map)",
+              ]}
+              donts={[
+                "Don't use for a single on/off",
+                "Don't exceed 3 segments",
+                "Don't border each segment",
+              ]}
+            />
           </Section>
 
           {/* Inputs */}
