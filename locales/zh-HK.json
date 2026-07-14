@@ -41,7 +41,9 @@
     },
     "register": {
       "title": "建立帳戶",
+      "emailLabel": "電郵",
       "emailPlaceholder": "電郵",
+      "passwordLabel": "密碼",
       "passwordPlaceholder": "密碼（最少 6 個字）",
       "missingTitle": "未填",
       "missingBody": "請輸入電郵同密碼。",

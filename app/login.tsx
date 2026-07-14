@@ -9,10 +9,7 @@ import { useT } from "../lib/i18n/useT";
 import { Screen, PrimaryButton } from "../src/ui/common";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
 
-// :zap: CHANGE 1: Keep imports at top (ESM/Metro requirement). Log inside component instead.
 export default function LoginScreen() {
-  console.log("LOGIN SCREEN RENDER");
-
   const router = useRouter();
   const { t } = useT();
   const theme = useTheme();
@@ -35,8 +32,13 @@ export default function LoginScreen() {
       });
       if (error) throw error;
 
-      // :zap: CHANGE 2: Create profile row after login (optional)
-      await ensureProfile();
+      // Profile creation is best-effort — a transient failure must not strand
+      // an already-authenticated user on the Login screen.
+      try {
+        await ensureProfile();
+      } catch (pe) {
+        console.error("ensureProfile (login):", pe);
+      }
 
       router.replace("/");
     } catch (_e: any) {

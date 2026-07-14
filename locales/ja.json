@@ -41,7 +41,9 @@
     },
     "register": {
       "title": "アカウント作成",
+      "emailLabel": "メール",
       "emailPlaceholder": "メール",
+      "passwordLabel": "パスワード",
       "passwordPlaceholder": "パスワード（6文字以上）",
       "missingTitle": "未入力",
       "missingBody": "メールとパスワードを入力してください。",

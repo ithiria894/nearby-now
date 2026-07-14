@@ -38,19 +38,25 @@ export default function RegisterScreen() {
       });
       if (error) throw error;
 
-      // If email confirmation is ON, user may not be fully logged in yet.
-      // This still works when user completes confirmation and signs in.
-      try {
-        await ensureProfile();
-      } catch {
-        // ignore if not logged in yet
+      // With email confirmation OFF (our backend), signUp returns a live
+      // session so the user is already logged in — go straight into the app
+      // instead of forcing a second manual login. If confirmation is ON there
+      // is no session yet, so fall back to Login and ask them to sign in.
+      const { session } = await backend.auth.getSession();
+      if (session?.user) {
+        try {
+          await ensureProfile();
+        } catch (pe) {
+          console.error("ensureProfile (register):", pe);
+        }
+        router.replace("/(tabs)/browse");
+      } else {
+        Alert.alert(
+          t("auth.register.successTitle"),
+          t("auth.register.successBody")
+        );
+        router.replace("/login");
       }
-
-      Alert.alert(
-        t("auth.register.successTitle"),
-        t("auth.register.successBody")
-      );
-      router.replace("/login");
     } catch (_e: any) {
       console.error(_e);
       Alert.alert(
@@ -121,7 +127,7 @@ export default function RegisterScreen() {
           }}
         >
           <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-            {t("auth.register.emailPlaceholder")}
+            {t("auth.register.emailLabel")}
           </Text>
           <TextInput
             value={email}
@@ -143,7 +149,7 @@ export default function RegisterScreen() {
           />
 
           <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-            {t("auth.register.passwordPlaceholder")}
+            {t("auth.register.passwordLabel")}
           </Text>
           <TextInput
             value={password}

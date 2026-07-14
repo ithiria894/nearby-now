@@ -41,7 +41,9 @@
     },
     "register": {
       "title": "创建账号",
+      "emailLabel": "邮箱",
       "emailPlaceholder": "邮箱",
+      "passwordLabel": "密码",
       "passwordPlaceholder": "密码（至少 6 位）",
       "missingTitle": "未填写",
       "missingBody": "请输入邮箱和密码。",

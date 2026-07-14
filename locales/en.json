@@ -41,7 +41,9 @@
     },
     "register": {
       "title": "Create account",
+      "emailLabel": "Email",
       "emailPlaceholder": "Email",
+      "passwordLabel": "Password",
       "passwordPlaceholder": "Password (min 6 chars)",
       "missingTitle": "Missing",
       "missingBody": "Please enter email and password.",

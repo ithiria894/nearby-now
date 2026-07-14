@@ -14,7 +14,12 @@ export function useAuthGuard() {
       const { session, error } = await backend.auth.getSession();
 
       if (!isMounted) return;
-      if (error) console.error("getSession error:", error);
+      if (error) {
+        // Transient/offline getSession failure: keep the user where they are
+        // instead of falsely logging out an authenticated (but offline) user.
+        console.error("getSession error:", error);
+        return;
+      }
 
       const inAuthScreen =
         segments[0] === "login" || segments[0] === "register";
