@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test": "jest",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -70,6 +71,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.1.0",
     "@typescript-eslint/eslint-plugin": "^8.53.1",
     "@typescript-eslint/parser": "^8.53.1",
@@ -80,6 +83,8 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-unused-imports": "^4.3.0",
     "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "jest-expo": "^55.0.18",
     "lint-staged": "^16.2.7",
     "prettier": "^3.8.1",
     "supabase": "^2.72.8",
