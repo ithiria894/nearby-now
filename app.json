@@ -23,6 +23,15 @@
           "locationAlwaysAndWhenInUsePermission": "Allow NearbyNow to use your location to find activities near you.",
           "locationWhenInUsePermission": "Allow NearbyNow to use your location to find activities near you."
         }
+      ],
+      [
+        "@maplibre/maplibre-react-native",
+        {
+          "android": {
+            "locationEngine": "default"
+          },
+          "ios": {}
+        }
       ]
     ],
     "runtimeVersion": {
