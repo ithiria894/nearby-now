@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  Text,
   TextInput,
   View,
 } from "react-native";
@@ -15,12 +14,18 @@ import {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
 import { backend } from "../lib/backend";
 import { requireUserId } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
-import { PageTitle, Screen } from "../src/ui/common";
-import { useTheme } from "../src/ui/theme/ThemeProvider";
+import { useUIKit } from "../src/ui/theme/useUIKit";
+import { space, radius } from "../src/ui/theme/uikit";
+import {
+  BButton,
+  BCard,
+  BChip,
+  BScreen,
+  BText,
+} from "../src/ui/components/brutal";
 import {
   getIpLocation,
   requestDeviceLocation,
@@ -34,7 +39,7 @@ const RECENT_AREAS_KEY = "browse.recentAreas.v1";
 export default function ComposeScreen() {
   const router = useRouter();
   const { t } = useT();
-  const theme = useTheme();
+  const c = useUIKit();
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -72,49 +77,6 @@ export default function ComposeScreen() {
     ],
     [t]
   );
-
-  const cardShadow = {
-    shadowColor: theme.colors.shadow,
-    shadowOpacity: theme.isDark ? 0.18 : 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: theme.isDark ? 2 : 3,
-  } as const;
-
-  const softCardStyle = {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: theme.isDark ? theme.colors.border : theme.colors.brandBorder,
-    backgroundColor: theme.isDark
-      ? theme.colors.surface
-      : theme.colors.brandSurface,
-    padding: 14,
-    gap: 10,
-    ...cardShadow,
-  } as const;
-
-  const surfaceCardStyle = {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    padding: 14,
-    gap: 10,
-    ...cardShadow,
-  } as const;
-
-  const chipBase = {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    borderWidth: 1,
-  } as const;
-
-  const labelTextStyle = {
-    fontSize: 13,
-    fontWeight: "800",
-    color: theme.colors.title,
-  } as const;
 
   const renderBackdrop = (props: any) => (
     <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} />
@@ -285,197 +247,91 @@ export default function ComposeScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
     >
-      <Screen scroll>
-        <View style={{ gap: 6 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <View
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                borderWidth: 1,
-                borderColor: theme.colors.brandBorder,
-                backgroundColor: theme.isDark
-                  ? theme.colors.brandSurfaceAlt
-                  : theme.colors.brandSoft,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons name="sparkles" size={16} color={theme.colors.brand} />
-            </View>
-            <View style={{ flex: 1, gap: 2 }}>
-              <PageTitle>{t("compose.title")}</PageTitle>
-              <Text style={{ fontSize: 13, color: theme.colors.subtitleText }}>
-                {t("compose.subtitle")}
-              </Text>
-            </View>
-          </View>
+      <BScreen c={c} scroll>
+        <View style={{ gap: space.xs }}>
+          <BText c={c} v="h1">
+            {t("compose.title")}
+          </BText>
+          <BText c={c} v="body" color={c.subtext}>
+            {t("compose.subtitle")}
+          </BText>
         </View>
 
-        <View style={softCardStyle}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: theme.colors.brandBorder,
-                backgroundColor: theme.isDark
-                  ? theme.colors.brandSurfaceAlt
-                  : theme.colors.brandSoft,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons
-                name="flash-outline"
-                size={16}
-                color={theme.colors.brand}
-              />
-            </View>
-            <View style={{ flex: 1, gap: 2 }}>
-              <Text style={labelTextStyle}>{t("compose.template_label")}</Text>
-              <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-                {t("compose.template_hint")}
-              </Text>
-            </View>
-          </View>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        <BCard c={c}>
+          <BText c={c} v="label" color={c.subtext}>
+            {t("compose.template_label")}
+          </BText>
+          <BText c={c} v="caption" color={c.subtext}>
+            {t("compose.template_hint")}
+          </BText>
+          <View
+            style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
+          >
             {templates.map((tpl) => (
-              <Pressable
-                key={tpl}
-                onPress={() => setText(tpl)}
-                style={({ pressed }) => ({
-                  ...chipBase,
-                  borderColor: pressed
-                    ? theme.colors.brandBorder
-                    : theme.colors.chipBorder,
-                  backgroundColor: pressed
-                    ? theme.colors.brandSurfacePressed
-                    : theme.colors.chipBg,
-                })}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: theme.colors.text,
-                  }}
-                >
-                  {tpl}
-                </Text>
+              <Pressable key={tpl} onPress={() => setText(tpl)}>
+                <BChip c={c} label={tpl} />
               </Pressable>
             ))}
           </View>
-        </View>
+        </BCard>
 
-        <View style={surfaceCardStyle}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Ionicons
-              name="chatbubble-ellipses-outline"
-              size={16}
-              color={theme.colors.subtext}
-            />
-            <Text style={labelTextStyle}>{t("compose.placeholder")}</Text>
-          </View>
+        <BCard c={c}>
+          <BText c={c} v="label" color={c.subtext}>
+            {t("compose.placeholder")}
+          </BText>
           <TextInput
             value={text}
             onChangeText={setText}
             placeholder={t("compose.placeholder")}
-            placeholderTextColor={theme.colors.subtext}
+            placeholderTextColor={c.faint}
             multiline
             textAlignVertical="top"
             style={{
               minHeight: 120,
+              borderWidth: 2,
+              borderColor: c.border,
+              borderRadius: radius.lg,
+              backgroundColor: c.surface,
+              padding: space.md,
               fontSize: 16,
-              color: theme.colors.text,
+              color: c.text,
             }}
           />
-        </View>
+        </BCard>
 
-        <View style={surfaceCardStyle}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Ionicons
-              name="location-outline"
-              size={16}
-              color={theme.colors.subtext}
-            />
-            <Text style={labelTextStyle}>{t("compose.area_label")}</Text>
-          </View>
+        <BCard c={c}>
+          <BText c={c} v="label" color={c.subtext}>
+            {t("compose.area_label")}
+          </BText>
           <Pressable
             onPress={async () => {
               await loadSuggestedArea();
               areaSheetRef.current?.present();
             }}
-            style={({ pressed }) => ({
-              ...chipBase,
-              alignSelf: "flex-start",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              borderColor: pressed
-                ? theme.colors.brandBorder
-                : theme.colors.chipBorder,
-              backgroundColor: pressed
-                ? theme.colors.brandSurfacePressed
-                : theme.colors.chipBg,
-            })}
           >
-            <Ionicons name="location" size={14} color={theme.colors.text} />
-            <Text style={{ fontSize: 12.5, color: theme.colors.text }}>
-              {areaLoading
-                ? t("browse.area_detecting")
-                : currentArea?.approx
-                  ? `${currentArea?.label ?? t("browse.area_unknown")} ${t(
-                      "browse.area_approx"
-                    )}`
-                  : (currentArea?.label ?? t("browse.area_unknown"))}
-            </Text>
-            <Ionicons
-              name="chevron-down"
-              size={14}
-              color={theme.colors.subtext}
+            <BChip
+              c={c}
+              label={
+                areaLoading
+                  ? t("browse.area_detecting")
+                  : currentArea?.approx
+                    ? `${currentArea?.label ?? t("browse.area_unknown")} ${t(
+                        "browse.area_approx"
+                      )}`
+                    : (currentArea?.label ?? t("browse.area_unknown"))
+              }
+              selected={!!currentArea}
             />
           </Pressable>
-        </View>
+        </BCard>
 
-        <Pressable
+        <BButton
+          c={c}
+          tone="primary"
+          full
+          label={submitting ? t("common.loading") : t("compose.submit")}
           onPress={onSubmit}
-          disabled={submitting || !text.trim()}
-          style={({ pressed }) => ({
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: theme.isDark
-              ? theme.colors.border
-              : theme.colors.brandBorder,
-            backgroundColor: theme.isDark
-              ? theme.colors.surface
-              : theme.colors.brandSurfaceAlt,
-            paddingVertical: 14,
-            alignItems: "center",
-            opacity: submitting || !text.trim() ? 0.6 : pressed ? 0.85 : 1,
-            ...cardShadow,
-          })}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Ionicons
-              name="paper-plane-outline"
-              size={16}
-              color={theme.colors.text}
-            />
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "900",
-                color: theme.colors.text,
-              }}
-            >
-              {submitting ? t("common.loading") : t("compose.submit")}
-            </Text>
-          </View>
-        </Pressable>
+        />
 
         <BottomSheetModal
           ref={successSheetRef}
@@ -483,96 +339,58 @@ export default function ComposeScreen() {
           enablePanDownToClose
           backdropComponent={renderBackdrop}
           backgroundStyle={{
-            backgroundColor: theme.colors.surface,
-            borderTopLeftRadius: 18,
-            borderTopRightRadius: 18,
+            backgroundColor: c.surface,
+            borderTopLeftRadius: radius.lg,
+            borderTopRightRadius: radius.lg,
           }}
           handleIndicatorStyle={{
-            backgroundColor: theme.colors.border,
+            backgroundColor: c.border,
           }}
         >
-          <BottomSheetView style={{ padding: 16, gap: 12 }}>
-            <Text
+          <BottomSheetView style={{ padding: space.lg, gap: space.md }}>
+            <BText c={c} v="h2" color={c.ink}>
+              {t("compose.success_title")}
+            </BText>
+            <BText c={c} v="body" color={c.subtext}>
+              {successLine}
+            </BText>
+            <BText c={c} v="body" color={c.subtext}>
+              {t("compose.success_guidance")}
+            </BText>
+
+            <View
               style={{
-                fontSize: 18,
-                fontWeight: "800",
-                color: theme.colors.title,
+                flexDirection: "row",
+                gap: space.sm,
+                marginTop: space.xs,
               }}
             >
-              {t("compose.success_title")}
-            </Text>
-            <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
-              {successLine}
-            </Text>
-            <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
-              {t("compose.success_guidance")}
-            </Text>
-
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
-              <Pressable
-                onPress={() => {
-                  successSheetRef.current?.dismiss();
-                  router.replace("/(tabs)/browse");
-                }}
-                style={({ pressed }) => ({
-                  flex: 1,
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  backgroundColor: pressed
-                    ? theme.isDark
-                      ? theme.colors.surfaceAlt
-                      : theme.colors.brandSurfaceAlt
-                    : theme.isDark
-                      ? theme.colors.surface
-                      : theme.colors.brandSurface,
-                  alignItems: "center",
-                })}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "800",
-                    color: theme.colors.text,
+              <View style={{ flex: 1 }}>
+                <BButton
+                  c={c}
+                  tone="secondary"
+                  full
+                  label={t("compose.success_wait")}
+                  onPress={() => {
+                    successSheetRef.current?.dismiss();
+                    router.replace("/(tabs)/browse");
                   }}
-                >
-                  {t("compose.success_wait")}
-                </Text>
-              </Pressable>
+                />
+              </View>
 
-              <Pressable
-                onPress={() => {
-                  if (!createdId) return;
-                  successSheetRef.current?.dismiss();
-                  router.push(`/edit/${createdId}`);
-                }}
-                style={({ pressed }) => ({
-                  flex: 1,
-                  paddingVertical: 12,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  backgroundColor: pressed
-                    ? theme.isDark
-                      ? theme.colors.surfaceAlt
-                      : theme.colors.brandSurfacePressed
-                    : theme.isDark
-                      ? theme.colors.surface
-                      : theme.colors.brandSurfaceAlt,
-                  alignItems: "center",
-                })}
-              >
-                <Text
-                  style={{
-                    fontSize: 13,
-                    fontWeight: "800",
-                    color: theme.colors.text,
+              <View style={{ flex: 1 }}>
+                <BButton
+                  c={c}
+                  tone="primary"
+                  full
+                  label={t("compose.success_edit")}
+                  onPress={() => {
+                    if (!createdId) return;
+                    successSheetRef.current?.dismiss();
+                    router.push(`/edit/${createdId}`);
                   }}
-                >
-                  {t("compose.success_edit")}
-                </Text>
-              </Pressable>
+                />
+              </View>
             </View>
           </BottomSheetView>
         </BottomSheetModal>
@@ -583,126 +401,67 @@ export default function ComposeScreen() {
           enablePanDownToClose
           backdropComponent={renderBackdrop}
           backgroundStyle={{
-            backgroundColor: theme.colors.surface,
-            borderTopLeftRadius: 18,
-            borderTopRightRadius: 18,
+            backgroundColor: c.surface,
+            borderTopLeftRadius: radius.lg,
+            borderTopRightRadius: radius.lg,
           }}
           handleIndicatorStyle={{
-            backgroundColor: theme.colors.border,
+            backgroundColor: c.border,
           }}
         >
-          <BottomSheetView style={{ padding: 16, gap: 12 }}>
-            <View style={{ gap: 6 }}>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: "800",
-                  color: theme.colors.title,
-                }}
-              >
+          <BottomSheetView style={{ padding: space.lg, gap: space.md }}>
+            <View style={{ gap: space.xs }}>
+              <BText c={c} v="h2" color={c.ink}>
                 {t("browse.area_sheet_title")}
-              </Text>
-              <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
+              </BText>
+              <BText c={c} v="caption" color={c.subtext}>
                 {t("browse.area_sheet_subtitle")}
-              </Text>
+              </BText>
             </View>
 
-            <Pressable
+            <BButton
+              c={c}
+              tone="secondary"
+              full
+              label={t("browse.area_use_current")}
               onPress={async () => {
                 await setAreaFromDevice();
                 areaSheetRef.current?.dismiss();
               }}
-              style={({ pressed }) => ({
-                paddingHorizontal: 12,
-                paddingVertical: 12,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: pressed
-                  ? theme.colors.otherBg
-                  : theme.colors.surface,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 10,
-              })}
-            >
-              <Ionicons name="navigate" size={16} color={theme.colors.text} />
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "800",
-                  color: theme.colors.text,
-                }}
-              >
-                {t("browse.area_use_current")}
-              </Text>
-            </Pressable>
+            />
 
-            <View style={{ gap: 8 }}>
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: "800",
-                  color: theme.colors.text,
-                }}
-              >
+            <View style={{ gap: space.sm }}>
+              <BText c={c} v="label" color={c.subtext}>
                 {t("browse.area_choose_manual")}
-              </Text>
-              <View
+              </BText>
+              <TextInput
+                value={areaQuery}
+                onChangeText={setAreaQuery}
+                placeholder={t("browse.area_search_placeholder")}
+                placeholderTextColor={c.faint}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.isDark
-                    ? theme.colors.surfaceAlt
-                    : theme.colors.inputBg,
+                  borderWidth: 2,
+                  borderColor: c.border,
+                  borderRadius: radius.md,
+                  backgroundColor: c.surface,
+                  paddingHorizontal: space.md,
+                  paddingVertical: space.md,
+                  fontSize: 14,
+                  color: c.text,
                 }}
-              >
-                <Ionicons
-                  name="search"
-                  size={16}
-                  color={theme.colors.subtext}
-                />
-                <TextInput
-                  value={areaQuery}
-                  onChangeText={setAreaQuery}
-                  placeholder={t("browse.area_search_placeholder")}
-                  placeholderTextColor={theme.colors.subtext}
-                  style={{
-                    flex: 1,
-                    fontSize: 14,
-                    color: theme.colors.text,
-                  }}
-                />
-                <Pressable
-                  onPress={() => setAreaQuery("")}
-                  hitSlop={6}
-                  style={{ padding: 2 }}
-                >
-                  <Ionicons
-                    name={areaQuery ? "close-circle" : "chevron-down"}
-                    size={18}
-                    color={theme.colors.subtext}
-                  />
-                </Pressable>
-              </View>
+              />
             </View>
 
             {areaQuery.trim().length > 0 ? (
-              <View style={{ gap: 8 }}>
+              <View style={{ gap: space.sm }}>
                 {areaSearching ? (
-                  <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
+                  <BText c={c} v="caption" color={c.subtext}>
                     {t("browse.area_searching")}
-                  </Text>
+                  </BText>
                 ) : areaResults.length === 0 ? (
-                  <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
+                  <BText c={c} v="caption" color={c.subtext}>
                     {t("browse.area_no_results")}
-                  </Text>
+                  </BText>
                 ) : (
                   areaResults.map((place) => (
                     <Pressable
@@ -720,40 +479,24 @@ export default function ComposeScreen() {
                         setAreaQuery("");
                         areaSheetRef.current?.dismiss();
                       }}
-                      style={({ pressed }) => ({
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: theme.colors.border,
-                        backgroundColor: pressed
-                          ? theme.colors.otherBg
-                          : theme.colors.surface,
-                      })}
                     >
-                      <Text style={{ fontSize: 14, fontWeight: "800" }}>
-                        {place.name}
-                      </Text>
-                      <Text
-                        style={{ fontSize: 12, color: theme.colors.subtext }}
-                      >
-                        {place.address}
-                      </Text>
+                      <BCard c={c}>
+                        <BText c={c} v="title" color={c.ink}>
+                          {place.name}
+                        </BText>
+                        <BText c={c} v="caption" color={c.subtext}>
+                          {place.address}
+                        </BText>
+                      </BCard>
                     </Pressable>
                   ))
                 )}
               </View>
             ) : recentAreas.length > 0 ? (
-              <View style={{ gap: 8 }}>
-                <Text
-                  style={{
-                    fontSize: 12.5,
-                    fontWeight: "800",
-                    color: theme.colors.text,
-                  }}
-                >
+              <View style={{ gap: space.sm }}>
+                <BText c={c} v="label" color={c.subtext}>
                   {t("browse.area_recent")}
-                </Text>
+                </BText>
                 {recentAreas.map((area) => (
                   <Pressable
                     key={`${area.label}-${area.lat}-${area.lng}`}
@@ -761,27 +504,19 @@ export default function ComposeScreen() {
                       selectArea(area, area.source ?? "manual");
                       areaSheetRef.current?.dismiss();
                     }}
-                    style={({ pressed }) => ({
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: theme.colors.border,
-                      backgroundColor: pressed
-                        ? theme.colors.otherBg
-                        : theme.colors.surface,
-                    })}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: "800" }}>
-                      {area.label}
-                    </Text>
+                    <BCard c={c}>
+                      <BText c={c} v="title" color={c.ink}>
+                        {area.label}
+                      </BText>
+                    </BCard>
                   </Pressable>
                 ))}
               </View>
             ) : null}
           </BottomSheetView>
         </BottomSheetModal>
-      </Screen>
+      </BScreen>
     </KeyboardAvoidingView>
   );
 }

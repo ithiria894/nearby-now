@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useUIKit } from "../../src/ui/theme/useUIKit";
+import { layout, space } from "../../src/ui/theme/uikit";
 import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import { useTheme } from "../../src/ui/theme/ThemeProvider";
-import { TAB_GAP, TAB_HEIGHT } from "../../src/ui/tabbar";
+  BActivityRow,
+  BBadge,
+  BButton,
+  BChip,
+  BText,
+  PaperTexture,
+} from "../../src/ui/components/brutal";
 
-import ActivityCard, {
-  type MembershipState,
-} from "../../components/ActivityCard";
+import { type MembershipState } from "../../components/ActivityCard";
 import type { ActivityCardActivity } from "../../lib/domain/activities";
 import { isAuthMissingError, requireUserId } from "../../lib/domain/auth";
 import {
@@ -23,22 +25,14 @@ import {
 import { isActiveActivity } from "../../lib/domain/activities";
 import { subscribeToJoinedActivityChanges } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
-import {
-  Screen,
-  SegmentedTabs,
-  PrimaryButton,
-  PageTitle,
-} from "../../src/ui/common";
+import { formatCapacity, formatExpiryLabel } from "../../lib/i18n/i18n_format";
+import { activityIcon, activityTileColor } from "../../lib/ui/activityIcon";
 import { handleError } from "../../lib/ui/handleError";
 
 export default function JoinedScreen() {
   const router = useRouter();
   const { t } = useT();
-  const theme = useTheme();
-  const insets = useSafeAreaInsets();
-  const TAB_BOTTOM = 8 + insets.bottom;
-  const tabBarSpace = TAB_HEIGHT + TAB_BOTTOM + TAB_GAP;
-  const brandIconColor = theme.colors.brand;
+  const c = useUIKit();
 
   const PAGE_SIZE = 30;
 
@@ -220,184 +214,168 @@ export default function JoinedScreen() {
           ? t("joined.subtitle_inactive")
           : t("joined.subtitle_left");
 
-    const softCardStyle = {
-      borderRadius: 18,
-      borderWidth: 1,
-      borderColor: theme.isDark
-        ? theme.colors.border
-        : theme.colors.brandBorder,
-      backgroundColor: theme.isDark
-        ? theme.colors.surface
-        : theme.colors.brandSurface,
-      padding: 14,
-      gap: 10,
-      shadowColor: theme.colors.shadow,
-      shadowOpacity: 0.06,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-    } as const;
-
     return (
-      <View style={{ padding: 16, gap: 12 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: theme.isDark
-                ? theme.colors.otherBg
-                : theme.colors.brandSoft,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: theme.isDark
-                ? theme.colors.border
-                : theme.colors.brandBorder,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="account-group"
-              size={20}
-              color={brandIconColor}
-            />
-          </View>
-          <View style={{ flex: 1, gap: 4 }}>
-            <PageTitle>{t("joined.headerTitle")}</PageTitle>
-            <Text style={{ fontSize: 12.5, color: theme.colors.subtitleText }}>
-              {subtitle}
-            </Text>
-          </View>
+      <View
+        style={{ paddingTop: space.md, paddingBottom: space.lg, gap: space.md }}
+      >
+        <View style={{ gap: space.xs }}>
+          <BText c={c} v="h1">
+            {t("joined.headerTitle")}
+          </BText>
+          <BText c={c} v="caption" color={c.subtext}>
+            {subtitle}
+          </BText>
         </View>
 
-        <View style={softCardStyle}>
-          <SegmentedTabs
-            value={tab}
-            onChange={setTab}
-            items={[
-              {
-                value: "active" as const,
-                label: t("joined.tab_active", { count: activeJoined.length }),
-              },
-              {
-                value: "inactive" as const,
-                label: t("joined.tab_inactive", {
-                  count: inactiveJoined.length,
-                }),
-              },
-              {
-                value: "left" as const,
-                label: t("joined.tab_left", { count: leftRooms.length }),
-              },
-            ]}
-          />
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+          <Pressable onPress={() => setTab("active")}>
+            <BChip
+              c={c}
+              label={t("joined.tab_active", { count: activeJoined.length })}
+              selected={tab === "active"}
+            />
+          </Pressable>
+          <Pressable onPress={() => setTab("inactive")}>
+            <BChip
+              c={c}
+              label={t("joined.tab_inactive", { count: inactiveJoined.length })}
+              selected={tab === "inactive"}
+            />
+          </Pressable>
+          <Pressable onPress={() => setTab("left")}>
+            <BChip
+              c={c}
+              label={t("joined.tab_left", { count: leftRooms.length })}
+              selected={tab === "left"}
+            />
+          </Pressable>
         </View>
       </View>
     );
-  }, [
-    tab,
-    activeJoined.length,
-    inactiveJoined.length,
-    leftRooms.length,
-    t,
-    theme,
-    brandIconColor,
-  ]);
+  }, [tab, activeJoined.length, inactiveJoined.length, leftRooms.length, t, c]);
 
   if (loading) {
     return (
-      <Screen>
-        <Text>{t("common.loading")}</Text>
-      </Screen>
+      <View style={{ flex: 1, backgroundColor: c.bg }}>
+        <PaperTexture opacity={0.06} />
+        <SafeAreaView
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+          edges={["top"]}
+        >
+          <BText c={c} color={c.subtext}>
+            {t("common.loading")}
+          </BText>
+        </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-      <FlatList
-        data={dataToShow}
-        keyExtractor={(a) => a.id}
-        ListHeaderComponent={header}
-        contentContainerStyle={{ paddingBottom: tabBarSpace }}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.6}
-        initialNumToRender={6}
-        windowSize={5}
-        maxToRenderPerBatch={8}
-        updateCellsBatchingPeriod={50}
-        removeClippedSubviews
-        renderItem={({ item: a }) => {
-          const membershipState: MembershipState =
-            tab === "left" ? "left" : "joined";
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
+      <PaperTexture opacity={0.06} />
+      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+        <FlatList
+          data={dataToShow}
+          keyExtractor={(a) => a.id}
+          ListHeaderComponent={header}
+          style={{ flex: 1, backgroundColor: "transparent" }}
+          contentContainerStyle={{
+            width: "100%",
+            maxWidth: layout.maxContentWidth,
+            alignSelf: "center",
+            paddingHorizontal: space.lg,
+            paddingBottom: space.xxl,
+          }}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.6}
+          initialNumToRender={6}
+          windowSize={5}
+          maxToRenderPerBatch={8}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews
+          renderItem={({ item: a }) => {
+            const membershipState: MembershipState =
+              tab === "left" ? "left" : "joined";
+            const placeName = (a.place_name ?? a.place_text ?? "").trim();
+            const expiryLabel = formatExpiryLabel(a.expires_at, Date.now(), t);
+            const capacityLabel = formatCapacity(a.capacity, t);
+            const meta = [placeName, expiryLabel, capacityLabel]
+              .filter(Boolean)
+              .join(" · ");
+            const stateFill =
+              membershipState === "left"
+                ? c.surface
+                : isActiveActivity(a)
+                  ? c.mint
+                  : c.yellow;
+            const stateLabel =
+              membershipState === "left"
+                ? t("joined.tab_left", { count: leftRooms.length })
+                : isActiveActivity(a)
+                  ? t("joined.subtitle_active")
+                  : t("joined.subtitle_inactive");
 
-          return (
-            <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
-              <ActivityCard
-                activity={a}
-                currentUserId={userId}
-                membershipState={membershipState}
-                isJoining={false}
-                onPressCard={() => router.push(`/room/${a.id}`)}
-                onPressEdit={
-                  a.creator_id === userId
-                    ? () => router.push(`/edit/${a.id}`)
-                    : undefined
-                }
-              />
-            </View>
-          );
-        }}
-        ListEmptyComponent={
-          <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
+            return (
+              <View style={{ marginBottom: space.sm }}>
+                <BActivityRow
+                  c={c}
+                  icon={activityIcon(a.title_text)}
+                  iconBg={activityTileColor(a.id, [
+                    c.coral,
+                    c.mint,
+                    c.sky,
+                    c.yellow,
+                    c.grape,
+                    c.pink,
+                  ])}
+                  title={a.title_text}
+                  meta={meta}
+                  badges={<BBadge c={c} label={stateLabel} fill={stateFill} />}
+                  onPress={() => router.push(`/room/${a.id}`)}
+                />
+              </View>
+            );
+          }}
+          ListEmptyComponent={
             <View
               style={{
-                borderRadius: 18,
-                borderWidth: 1,
-                borderColor: theme.isDark
-                  ? theme.colors.border
-                  : theme.colors.brandBorder,
-                backgroundColor: theme.isDark
-                  ? theme.colors.surface
-                  : theme.colors.brandSurface,
-                padding: 14,
-                gap: 10,
+                alignItems: "center",
+                gap: space.md,
+                paddingTop: space.xxl,
               }}
             >
-              <Text style={{ opacity: 0.8 }}>
+              <BText c={c} color={c.subtext}>
                 {tab === "active" && t("joined.empty_active")}
                 {tab === "inactive" && t("joined.empty_inactive")}
                 {tab === "left" && t("joined.empty_left")}
-              </Text>
+              </BText>
               {tab === "active" ? (
-                <PrimaryButton
+                <BButton
+                  c={c}
+                  tone="primary"
                   label={t("joined.empty_active_cta")}
                   onPress={() => router.push("/(tabs)/browse")}
                 />
               ) : null}
             </View>
-          </View>
-        }
-        ListFooterComponent={
-          loadingMore ? (
-            <View style={{ paddingVertical: 12 }}>
-              <ActivityIndicator />
-            </View>
-          ) : !hasMore && items.length > 0 ? (
-            <View style={{ paddingVertical: 12 }}>
-              <Text
-                style={{
-                  textAlign: "center",
-                  color: theme.colors.subtitleText,
-                }}
-              >
-                {t("common.noMore")}
-              </Text>
-            </View>
-          ) : null
-        }
-      />
-    </SafeAreaView>
+          }
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={{ paddingVertical: space.md, alignItems: "center" }}>
+                <ActivityIndicator />
+              </View>
+            ) : !hasMore && items.length > 0 ? (
+              <View style={{ paddingVertical: space.md, alignItems: "center" }}>
+                <BText c={c} color={c.subtext}>
+                  {t("common.noMore")}
+                </BText>
+              </View>
+            ) : null
+          }
+        />
+      </SafeAreaView>
+    </View>
   );
 }

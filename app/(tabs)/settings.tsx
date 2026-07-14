@@ -1,5 +1,4 @@
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Alert, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { backend } from "../../lib/backend";
@@ -9,10 +8,20 @@ import {
   type SupportedLang,
 } from "../../lib/i18n/i18n";
 import { useT } from "../../lib/i18n/useT";
-import { PageTitle, PillButton, Screen } from "../../src/ui/common";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
 import { requireUserId } from "../../lib/domain/auth";
+import { useUIKit } from "../../src/ui/theme/useUIKit";
+import { space } from "../../src/ui/theme/uikit";
+import {
+  BButton,
+  BCard,
+  BChip,
+  BIconButton,
+  BInput,
+  BScreen,
+  BText,
+} from "../../src/ui/components/brutal";
 
 // :zap: CHANGE 1: Settings tab with Logout action
 export default function SettingsScreen() {
@@ -20,26 +29,11 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { mode, setMode } = useThemeSettings();
   const { t, i18n } = useT();
+  const c = useUIKit();
   const [displayName, setDisplayName] = useState("");
   const [nameLoading, setNameLoading] = useState(true);
   const [nameSaving, setNameSaving] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
-  const brandIconColor = theme.colors.brand;
-
-  const sectionCardStyle = {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: theme.isDark ? theme.colors.border : theme.colors.brandBorder,
-    backgroundColor: theme.isDark
-      ? theme.colors.surface
-      : theme.colors.brandSurface,
-    padding: 14,
-    gap: 10,
-    shadowColor: theme.colors.shadow,
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-  } as const;
 
   useEffect(() => {
     let alive = true;
@@ -99,7 +93,7 @@ export default function SettingsScreen() {
   }
 
   return (
-    <Screen scroll>
+    <BScreen c={c} scroll>
       <View
         style={{
           flexDirection: "row",
@@ -107,115 +101,62 @@ export default function SettingsScreen() {
           justifyContent: "space-between",
         }}
       >
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={8}
-          style={({ pressed }) => ({
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: theme.isDark
-              ? theme.colors.border
-              : theme.colors.brandBorder,
-            backgroundColor: pressed
-              ? theme.colors.brandSurfacePressed
-              : theme.colors.brandSurfaceAlt,
-          })}
-        >
-          <Ionicons name="chevron-back" size={14} color={theme.colors.text} />
-          <Text style={{ fontSize: 12.5, color: theme.colors.text }}>
-            {t("common.back")}
-          </Text>
-        </Pressable>
+        <BIconButton c={c} icon="chevron-left" onPress={() => router.back()} />
         <View />
       </View>
 
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: space.md }}
+      >
         <View
           style={{
             width: 44,
             height: 44,
             borderRadius: 22,
-            backgroundColor: theme.isDark
-              ? theme.colors.otherBg
-              : theme.colors.brandSoft,
+            backgroundColor: c.yellow,
             alignItems: "center",
             justifyContent: "center",
-            borderWidth: 1,
-            borderColor: theme.isDark
-              ? theme.colors.border
-              : theme.colors.brandBorder,
+            borderWidth: 2,
+            borderColor: c.border,
           }}
         >
-          <Ionicons name="settings" size={20} color={brandIconColor} />
+          <BIconButton c={c} icon="cog" color={c.ink} />
         </View>
-        <PageTitle>{t("settings.title")}</PageTitle>
+        <BText c={c} v="h1" color={c.ink}>
+          {t("settings.title")}
+        </BText>
       </View>
 
-      <View style={sectionCardStyle}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <MaterialCommunityIcons
-            name="account"
-            size={18}
-            color={brandIconColor}
-          />
-          <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
-            {t("settings.displayNameLabel")}
-          </Text>
-        </View>
-        <TextInput
+      <BCard c={c}>
+        <BInput
+          c={c}
+          label={t("settings.displayNameLabel")}
+          placeholder={t("settings.displayNamePlaceholder")}
           value={displayName}
           onChangeText={(value) => {
             setDisplayName(value);
             if (nameSaved) setNameSaved(false);
           }}
-          placeholder={t("settings.displayNamePlaceholder")}
-          placeholderTextColor={theme.colors.subtext}
-          editable={!nameLoading}
-          style={{
-            borderWidth: 1,
-            borderRadius: 12,
-            padding: 12,
-            borderColor: theme.colors.border,
-            backgroundColor: theme.isDark
-              ? theme.colors.surfaceAlt
-              : theme.colors.surface,
-            color: theme.colors.text,
-          }}
         />
-        <View style={{ alignSelf: "flex-start" }}>
-          <PillButton
-            label={`${
-              nameSaving
-                ? t("common.loading")
-                : nameSaved
-                  ? t("settings.displayNameSaved")
-                  : t("settings.displayNameSave")
-            }${nameSaved ? " ✓" : ""}`}
-            onPress={onSaveDisplayName}
-            disabled={nameSaving || nameLoading}
-            selected={!nameSaved}
-            tone={nameSaved ? "success" : "default"}
-          />
-        </View>
-      </View>
+        <BButton
+          c={c}
+          tone={nameSaved ? "secondary" : "primary"}
+          label={`${
+            nameSaving
+              ? t("common.loading")
+              : nameSaved
+                ? t("settings.displayNameSaved")
+                : t("settings.displayNameSave")
+          }${nameSaved ? " ✓" : ""}`}
+          onPress={onSaveDisplayName}
+        />
+      </BCard>
 
-      <View style={sectionCardStyle}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <MaterialCommunityIcons
-            name="translate"
-            size={18}
-            color={brandIconColor}
-          />
-          <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
-            {t("settings.language")}
-          </Text>
-        </View>
-        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+      <BCard c={c}>
+        <BText c={c} v="label" color={c.subtext}>
+          {t("settings.language")}
+        </BText>
+        <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
           {SUPPORTED_LANGS.map((lng) => {
             const selected = i18n.language === lng;
             return (
@@ -228,52 +169,31 @@ export default function SettingsScreen() {
                     handleError(t("settings.language"), e);
                   }
                 }}
-                style={{
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  borderWidth: 1,
-                  borderColor: selected
-                    ? theme.colors.brandBorder
-                    : theme.colors.border,
-                  borderRadius: 999,
-                  opacity: selected ? 1 : 0.65,
-                  backgroundColor: selected
-                    ? theme.colors.brandSurfaceAlt
-                    : theme.colors.surface,
-                }}
               >
-                <Text
-                  style={{
-                    fontWeight: "800",
-                    color: selected ? theme.colors.text : theme.colors.subtext,
-                  }}
-                >
-                  {lng === "en"
-                    ? t("settings.language_en")
-                    : lng === "ja"
-                      ? t("settings.language_ja")
-                      : lng === "zh-CN"
-                        ? t("settings.language_zhCN")
-                        : t("settings.language_zhHK")}
-                </Text>
+                <BChip
+                  c={c}
+                  selected={selected}
+                  label={
+                    lng === "en"
+                      ? t("settings.language_en")
+                      : lng === "ja"
+                        ? t("settings.language_ja")
+                        : lng === "zh-CN"
+                          ? t("settings.language_zhCN")
+                          : t("settings.language_zhHK")
+                  }
+                />
               </Pressable>
             );
           })}
         </View>
-      </View>
+      </BCard>
 
-      <View style={sectionCardStyle}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <MaterialCommunityIcons
-            name="palette"
-            size={18}
-            color={brandIconColor}
-          />
-          <Text style={{ fontWeight: "800", color: theme.colors.settingsText }}>
-            {t("settings.theme")}
-          </Text>
-        </View>
-        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+      <BCard c={c}>
+        <BText c={c} v="label" color={c.subtext}>
+          {t("settings.theme")}
+        </BText>
+        <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
           {(
             [
               "system",
@@ -313,54 +233,21 @@ export default function SettingsScreen() {
                                   ? t("settings.theme_electric_violet")
                                   : t("settings.theme_electric_violet_dark");
             return (
-              <Pressable
-                key={value}
-                onPress={() => setMode(value)}
-                style={{
-                  paddingVertical: 8,
-                  paddingHorizontal: 12,
-                  borderWidth: 1,
-                  borderColor: selected
-                    ? theme.colors.brandBorder
-                    : theme.colors.border,
-                  borderRadius: 999,
-                  opacity: selected ? 1 : 0.65,
-                  backgroundColor: selected
-                    ? theme.colors.brandSurfaceAlt
-                    : theme.colors.surface,
-                }}
-              >
-                <Text
-                  style={{
-                    fontWeight: "800",
-                    color: selected ? theme.colors.text : theme.colors.subtext,
-                  }}
-                >
-                  {label}
-                </Text>
+              <Pressable key={value} onPress={() => setMode(value)}>
+                <BChip c={c} selected={selected} label={label} />
               </Pressable>
             );
           })}
         </View>
-      </View>
+      </BCard>
 
-      <Pressable
+      <BButton
+        c={c}
+        tone="danger"
+        full
+        label={t("settings.logout")}
         onPress={onLogout}
-        style={({ pressed }) => ({
-          padding: 12,
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: theme.colors.dangerBorder,
-          backgroundColor: pressed
-            ? theme.colors.dangerBg
-            : theme.colors.surface,
-          alignItems: "center",
-        })}
-      >
-        <Text style={{ fontWeight: "800", color: theme.colors.dangerText }}>
-          {t("settings.logout")}
-        </Text>
-      </Pressable>
-    </Screen>
+      />
+    </BScreen>
   );
 }
