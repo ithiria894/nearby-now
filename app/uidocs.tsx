@@ -44,6 +44,39 @@ import {
   PaperTexture,
 } from "../src/ui/components/brutal";
 
+// Sample rows for the Tag Filter element. The first entry (key null) is the
+// "All" chip; the rest mirror lib/ui/activityIcon categories.
+const TAG_DEMO: {
+  key: string | null;
+  label: string;
+  icon: string;
+  tint: "coral" | "mint" | "sky" | "yellow" | "pink" | "grape";
+  title: string;
+}[] = [
+  { key: null, label: "All", icon: "star-four-points", tint: "sky", title: "" },
+  {
+    key: "music",
+    label: "Music",
+    icon: "microphone-variant",
+    tint: "coral",
+    title: "Live music jam session",
+  },
+  {
+    key: "food",
+    label: "Food",
+    icon: "silverware-fork-knife",
+    tint: "yellow",
+    title: "Hotpot dinner, need 3 more",
+  },
+  {
+    key: "sports",
+    label: "Sports",
+    icon: "badminton",
+    tint: "mint",
+    title: "Badminton drop-in at the park",
+  },
+];
+
 function Section({
   c,
   title,
@@ -268,6 +301,7 @@ function NavDemo({ c }: { c: UIColors }) {
 export default function UIDocs() {
   const [scheme, setScheme] = useState<UIScheme>("light");
   const [view, setView] = useState<"list" | "map">("list");
+  const [tag, setTag] = useState<string | null>(null);
   const c = uiColors[scheme];
 
   // Animation demo state — "a new activity arrives"
@@ -737,11 +771,64 @@ export default function UIDocs() {
             </BCard>
           </Section>
 
+          {/* Tag Filter */}
+          <Section
+            c={c}
+            title="Tag Filter"
+            note="A scrolling chip bar to narrow a list by category. 'All' + one chip per category present. The matching colored badge repeats on each row so a tag reads the same in the filter and in the list."
+          >
+            <BCard c={c}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  gap: space.sm,
+                  paddingRight: space.sm,
+                }}
+              >
+                {TAG_DEMO.map((t) => (
+                  <Pressable key={t.key ?? "all"} onPress={() => setTag(t.key)}>
+                    <BChip c={c} label={t.label} selected={tag === t.key} />
+                  </Pressable>
+                ))}
+              </ScrollView>
+              <View style={{ gap: space.sm, marginTop: space.md }}>
+                {TAG_DEMO.filter(
+                  (t) => t.key !== null && (tag === null || tag === t.key)
+                ).map((t, i, arr) => (
+                  <BActivityRow
+                    key={t.key}
+                    c={c}
+                    icon={t.icon}
+                    iconBg={c[t.tint]}
+                    title={t.title}
+                    meta="Pomona · 2.6km away"
+                    badges={<BBadge c={c} label={t.label} fill={c[t.tint]} />}
+                    last={i === arr.length - 1}
+                  />
+                ))}
+              </View>
+            </BCard>
+            <Rules
+              c={c}
+              dos={[
+                "Lead with an 'All' chip (clears the filter)",
+                "Show only categories actually present in the list",
+                "Reuse the same color for the chip & the row badge",
+              ]}
+              donts={[
+                "Don't show empty categories",
+                "Don't stack multiple filter bars",
+                "Don't add borders to the row badges",
+              ]}
+            />
+          </Section>
+
           {/* Toggle */}
           <Section
             c={c}
             title="Toggle"
-            note="A segmented switch for view/mode changes (e.g. List / Map). One pill; the active segment is brand-filled, no per-segment borders."
+            note="A segmented switch for view/mode changes (e.g. List / Map). One pill; the active segment gets a soft neutral fill (not brand) so it reads as a quiet control, not a call to action. No per-segment borders."
           >
             <BCard c={c}>
               <BToggle<"list" | "map">
@@ -765,12 +852,12 @@ export default function UIDocs() {
               c={c}
               dos={[
                 "2-3 mutually exclusive options",
-                "Active segment = brand fill",
+                "Active segment = soft neutral fill",
                 "Use for view/mode switches (List/Map)",
               ]}
               donts={[
                 "Don't use for a single on/off",
-                "Don't exceed 3 segments",
+                "Don't brand-fill the active segment (too loud)",
                 "Don't border each segment",
               ]}
             />

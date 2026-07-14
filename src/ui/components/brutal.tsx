@@ -447,17 +447,18 @@ export function BToggle<T extends string>({
               paddingVertical: 7,
               paddingHorizontal: space.md,
               borderRadius: radius.pill,
-              backgroundColor: on ? c.brand : "transparent",
+              // subtle "raised" fill for the active segment — no color pop
+              backgroundColor: on ? c.surfaceAlt : "transparent",
             }}
           >
             {o.icon ? (
               <MaterialCommunityIcons
                 name={o.icon as any}
                 size={16}
-                color={on ? c.onBrand : c.subtext}
+                color={on ? c.ink : c.subtext}
               />
             ) : null}
-            <Text style={txt(typeScale.label, on ? c.onBrand : c.subtext)}>
+            <Text style={txt(typeScale.label, on ? c.ink : c.subtext)}>
               {o.label}
             </Text>
           </Pressable>

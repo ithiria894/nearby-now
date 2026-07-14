@@ -5,6 +5,7 @@ import {
   FlatList,
   Keyboard,
   Pressable,
+  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -66,7 +67,10 @@ import {
   BToggle,
   BIconButton,
 } from "../../src/ui/components/brutal";
-import { activityIcon, activityTileColor } from "../../lib/ui/activityIcon";
+import {
+  activityCategory,
+  type ActivityCategory,
+} from "../../lib/ui/activityIcon";
 
 function distanceKm(a: DeviceLocation, b: DeviceLocation) {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -358,6 +362,26 @@ export default function BrowseScreen() {
       .filter(Boolean) as ActivityCardActivity[];
   }, [currentArea, items, radiusKm]);
 
+  // Tag system: derive a category per activity and let the user filter by it.
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const presentCats = useMemo(() => {
+    const seen = new Map<string, ActivityCategory>();
+    for (const x of filteredItems) {
+      const cat = activityCategory(x.title_text);
+      if (!seen.has(cat.key)) seen.set(cat.key, cat);
+    }
+    return Array.from(seen.values());
+  }, [filteredItems]);
+  const shownItems = useMemo(
+    () =>
+      tagFilter
+        ? filteredItems.filter(
+            (x) => activityCategory(x.title_text).key === tagFilter
+          )
+        : filteredItems,
+    [filteredItems, tagFilter]
+  );
+
   useEffect(() => {
     (async () => {
       try {
@@ -579,13 +603,7 @@ export default function BrowseScreen() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              gap: 6,
-              borderWidth: 2,
-              borderColor: c.border,
-              borderRadius: radius.pill,
-              paddingHorizontal: space.md,
-              paddingVertical: 8,
-              backgroundColor: c.surface,
+              gap: 4,
               maxWidth: 200,
             }}
           >
@@ -594,7 +612,7 @@ export default function BrowseScreen() {
               size={16}
               color={c.brand}
             />
-            <BText c={c} v="label" color={c.text} numberOfLines={1}>
+            <BText c={c} v="bodyStrong" color={c.text} numberOfLines={1}>
               {areaPillLabel}
             </BText>
             <MaterialCommunityIcons
@@ -605,6 +623,25 @@ export default function BrowseScreen() {
           </View>
         </Pressable>
       </View>
+
+      {/* Tag filter — find activities fast by category */}
+      {presentCats.length > 1 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ gap: space.sm, paddingVertical: 2 }}
+        >
+          <Pressable onPress={() => setTagFilter(null)}>
+            <BChip c={c} label="All" selected={tagFilter === null} />
+          </Pressable>
+          {presentCats.map((cat) => (
+            <Pressable key={cat.key} onPress={() => setTagFilter(cat.key)}>
+              <BChip c={c} label={cat.label} selected={tagFilter === cat.key} />
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
     </View>
   );
 
@@ -618,7 +655,7 @@ export default function BrowseScreen() {
               {ListHeader}
               <View style={{ flex: 1 }}>
                 <BrowseMap
-                  items={filteredItems}
+                  items={shownItems}
                   onPressCard={onPressCard}
                   onRequestList={() => setViewMode("list")}
                 />
@@ -626,7 +663,7 @@ export default function BrowseScreen() {
             </View>
           ) : (
             <FlatList
-              data={filteredItems}
+              data={shownItems}
               keyExtractor={(x) => x.id}
               style={{ flex: 1, backgroundColor: "transparent" }}
               contentContainerStyle={{
@@ -665,25 +702,26 @@ export default function BrowseScreen() {
                   typeof item.capacity === "number" && item.capacity >= 1
                     ? formatCapacity(item.capacity, t)
                     : null;
+                const cat = activityCategory(item.title_text);
                 return (
                   <View style={{ marginBottom: space.sm }}>
                     <BActivityRow
                       c={c}
-                      icon={activityIcon(item.title_text)}
-                      iconBg={activityTileColor(item.id, [
-                        c.coral,
-                        c.mint,
-                        c.sky,
-                        c.yellow,
-                        c.grape,
-                        c.pink,
-                      ])}
+                      icon={cat.icon}
+                      iconBg={c[cat.tint]}
                       title={item.title_text}
                       meta={meta}
                       badges={
-                        capacityLabel ? (
-                          <BBadge c={c} label={capacityLabel} fill={c.mint} />
-                        ) : undefined
+                        <>
+                          <BBadge c={c} label={cat.label} fill={c[cat.tint]} />
+                          {capacityLabel ? (
+                            <BBadge
+                              c={c}
+                              label={capacityLabel}
+                              fill={c.surface}
+                            />
+                          ) : null}
+                        </>
                       }
                       onPress={() => onPressCard(item)}
                     />
@@ -722,7 +760,7 @@ export default function BrowseScreen() {
                   <View style={{ paddingVertical: space.md }}>
                     <ActivityIndicator color={c.brand} />
                   </View>
-                ) : !hasMore && filteredItems.length > 0 ? (
+                ) : !hasMore && shownItems.length > 0 ? (
                   <View style={{ paddingVertical: space.md }}>
                     <BText
                       c={c}
