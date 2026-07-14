@@ -12,7 +12,7 @@ import { TAB_GAP, TAB_HEIGHT } from "../../src/ui/tabbar";
 
 import ActivityCard from "../../components/ActivityCard";
 import type { ActivityCardActivity } from "../../lib/domain/activities";
-import { requireUserId } from "../../lib/domain/auth";
+import { isAuthMissingError, requireUserId } from "../../lib/domain/auth";
 import {
   getCreatedPage,
   getMembershipForUser,
@@ -113,8 +113,11 @@ export default function CreatedScreen() {
       try {
         await loadInitial();
       } catch (e: any) {
+        if (isAuthMissingError(e)) {
+          router.replace("/login");
+          return;
+        }
         handleError(t("created.loadErrorTitle"), e);
-        router.replace("/login");
       } finally {
         setLoading(false);
       }

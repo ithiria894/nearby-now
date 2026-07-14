@@ -294,7 +294,8 @@
         "never": "到期：已设置 -> 永不",
         "datetime": "到期：{{to}}"
       }
-    }
+    },
+    "loadErrorTitle": "无法加载房间"
   },
   "activityCard": {
     "place_none": "未设地点",

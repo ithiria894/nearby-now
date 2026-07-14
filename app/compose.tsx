@@ -38,6 +38,7 @@ export default function ComposeScreen() {
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const createdActivityIdRef = useRef<string | null>(null);
   const [successLine, setSuccessLine] = useState<string>("");
   const successSheetRef = useRef<BottomSheetModal>(null);
   const areaSheetRef = useRef<BottomSheetModal>(null);
@@ -230,20 +231,29 @@ export default function ComposeScreen() {
         return;
       }
       const userId = await requireUserId();
-      const { data, error } = await backend.activities.createActivity({
-        creator_id: userId,
-        title_text: text.replace(/\s+/g, " ").trim().slice(0, 200),
-        lat: area?.lat ?? null,
-        lng: area?.lng ?? null,
-        location_source:
-          areaSource ?? (area?.approx ? "ip" : area ? "device" : null),
-        status: "open",
-      });
 
-      if (error) throw error;
+      let activityId = createdActivityIdRef.current;
+      if (!activityId) {
+        const { data, error } = await backend.activities.createActivity({
+          creator_id: userId,
+          title_text: text.replace(/\s+/g, " ").trim().slice(0, 200),
+          lat: area?.lat ?? null,
+          lng: area?.lng ?? null,
+          location_source:
+            areaSource ?? (area?.approx ? "ip" : area ? "device" : null),
+          status: "open",
+        });
+
+        if (error) throw error;
+
+        // Remember the created activity id so a failed auto-join below does not
+        // create a duplicate activity when the user re-taps Post.
+        activityId = data.id;
+        createdActivityIdRef.current = activityId;
+      }
 
       const { error: joinErr } = await backend.activities.upsertActivityMember({
-        activity_id: data.id,
+        activity_id: activityId,
         user_id: userId,
         role: "creator",
         state: "joined",
@@ -251,7 +261,11 @@ export default function ComposeScreen() {
 
       if (joinErr) throw joinErr;
 
-      setCreatedId(data.id);
+      // Success: clear the retry guard and the composed text so a
+      // dismiss-then-resubmit of the success sheet can't insert a duplicate.
+      createdActivityIdRef.current = null;
+      setCreatedId(activityId);
+      setText("");
       const pick =
         successLines[Math.floor(Math.random() * successLines.length)] ??
         t("compose.success_line_1");

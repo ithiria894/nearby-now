@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { backend } from "../../lib/backend";
-import { requireUserId } from "../../lib/domain/auth";
+import { isAuthMissingError, requireUserId } from "../../lib/domain/auth";
 import { joinWithSystemMessage } from "../../lib/domain/activities";
 import {
   fetchRoomEventById,
@@ -317,9 +317,13 @@ export default function RoomScreen() {
         const uid = await requireUserId();
         setUserId(uid);
         await loadAll(uid);
-      } catch (_e: any) {
-        Alert.alert(t("room.authRequiredTitle"), t("room.authRequiredBody"));
-        router.replace("/login");
+      } catch (e: any) {
+        if (isAuthMissingError(e)) {
+          Alert.alert(t("room.authRequiredTitle"), t("room.authRequiredBody"));
+          router.replace("/login");
+          return;
+        }
+        Alert.alert(t("room.loadErrorTitle"), e?.message ?? "Unknown error");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -433,15 +437,6 @@ export default function RoomScreen() {
     if (!userId) return;
 
     try {
-      if (!roomState.isReadOnly) {
-        await backend.roomEvents.insertRoomEvent({
-          activity_id: activityId,
-          user_id: userId,
-          type: "system",
-          content: JSON.stringify({ k: "room.system.left" }),
-        });
-      }
-
       const { error } = await backend.activities.updateActivityMemberState(
         activityId,
         userId,
@@ -449,6 +444,19 @@ export default function RoomScreen() {
       );
 
       if (error) throw error;
+
+      if (!roomState.isReadOnly) {
+        try {
+          await backend.roomEvents.insertRoomEvent({
+            activity_id: activityId,
+            user_id: userId,
+            type: "system",
+            content: JSON.stringify({ k: "room.system.left" }),
+          });
+        } catch (postErr) {
+          console.error(postErr);
+        }
+      }
 
       router.back();
     } catch (e: any) {
@@ -999,7 +1007,9 @@ export default function RoomScreen() {
             <Text style={{ color: TOKENS.subtext }}>{t("room.joinToSee")}</Text>
           ) : (
             <FlatList
-              ref={(r) => { listRef.current = r; }}
+              ref={(r) => {
+                listRef.current = r;
+              }}
               data={chatItems}
               keyExtractor={(x) => x.id}
               renderItem={renderChatItem}
@@ -1051,7 +1061,9 @@ export default function RoomScreen() {
         {/* Input bar */}
         <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
           <TextInput
-            ref={(r) => { inputRef.current = r; }}
+            ref={(r) => {
+              inputRef.current = r;
+            }}
             value={message}
             onChangeText={setMessage}
             placeholder={
@@ -1083,7 +1095,7 @@ export default function RoomScreen() {
 
           <Pressable
             onPress={() => sendChat(message)}
-            disabled={!canInteract}
+            disabled={!canInteract || !message.trim()}
             style={({ pressed }) => ({
               paddingVertical: 12,
               paddingHorizontal: 14,
@@ -1091,7 +1103,8 @@ export default function RoomScreen() {
               borderWidth: 1,
               borderColor: TOKENS.border,
               backgroundColor: TOKENS.surface,
-              opacity: !canInteract ? 0.5 : pressed ? 0.85 : 1,
+              opacity:
+                !canInteract || !message.trim() ? 0.5 : pressed ? 0.85 : 1,
             })}
           >
             <Text style={{ fontWeight: "900", color: TOKENS.text }}>

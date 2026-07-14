@@ -294,7 +294,8 @@
         "never": "期限: 設定 -> なし",
         "datetime": "期限: {{to}}"
       }
-    }
+    },
+    "loadErrorTitle": "ルームを読み込めません"
   },
   "activityCard": {
     "place_none": "場所なし",

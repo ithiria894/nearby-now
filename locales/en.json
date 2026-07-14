@@ -294,7 +294,8 @@
         "never": "expires: set -> never",
         "datetime": "expires: {{to}}"
       }
-    }
+    },
+    "loadErrorTitle": "Couldn’t load the room"
   },
   "activityCard": {
     "place_none": "No place",

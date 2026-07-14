@@ -10,9 +10,11 @@ import {
 import { useTheme } from "../../src/ui/theme/ThemeProvider";
 import { TAB_GAP, TAB_HEIGHT } from "../../src/ui/tabbar";
 
-import ActivityCard, { type MembershipState } from "../../components/ActivityCard";
+import ActivityCard, {
+  type MembershipState,
+} from "../../components/ActivityCard";
 import type { ActivityCardActivity } from "../../lib/domain/activities";
-import { requireUserId } from "../../lib/domain/auth";
+import { isAuthMissingError, requireUserId } from "../../lib/domain/auth";
 import {
   getJoinedPage,
   getMembershipForUser,
@@ -123,8 +125,11 @@ export default function JoinedScreen() {
       try {
         await loadInitial();
       } catch (e: any) {
+        if (isAuthMissingError(e)) {
+          router.replace("/login");
+          return;
+        }
         handleError(t("joined.loadErrorTitle"), e);
-        router.replace("/login");
       } finally {
         setLoading(false);
       }

@@ -294,7 +294,8 @@
         "never": "到期：已設定 -> 永不",
         "datetime": "到期：{{to}}"
       }
-    }
+    },
+    "loadErrorTitle": "載入唔到房間"
   },
   "activityCard": {
     "place_none": "未有地點",

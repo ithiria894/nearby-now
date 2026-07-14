@@ -55,6 +55,7 @@ export function isJoinableActivity(
   if (a.status !== "open") return false;
   if (a.expires_at && new Date(a.expires_at).getTime() <= Date.now())
     return false;
+  if (joinedSet.has(a.id)) return false;
   return true;
 }
 
