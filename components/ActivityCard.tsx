@@ -5,31 +5,7 @@ import { useT } from "../lib/i18n/useT";
 import { formatExpiryLabel } from "../lib/i18n/i18n_format";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
 
-/* =======================
- * Types
- * ======================= */
-export type ActivityCardActivity = {
-  id: string;
-  creator_id: string;
-  title_text: string;
-  place_name: string | null;
-  place_address: string | null;
-  place_text?: string | null;
-  lat?: number | null;
-  lng?: number | null;
-  expires_at: string | null;
-  start_time?: string | null;
-  end_time?: string | null;
-  gender_pref: string;
-  capacity: number | null;
-  joined_count?: number | null;
-  status: string;
-  created_at?: string | null;
-
-  // Optional (frontend-only; backend can add later)
-  creator_display_name?: string | null;
-  distance_km?: number | null;
-};
+import type { ActivityCardActivity } from "../lib/domain/activities";
 
 export type MembershipState = "none" | "joined" | "left";
 

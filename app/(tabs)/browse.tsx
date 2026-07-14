@@ -23,9 +23,8 @@ import {
 } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import ActivityCard, {
-  type ActivityCardActivity,
-} from "../../components/ActivityCard";
+import ActivityCard from "../../components/ActivityCard";
+import type { ActivityCardActivity } from "../../lib/domain/activities";
 import BrowseMap from "../../components/BrowseMap";
 import {
   searchPlacesNominatim,

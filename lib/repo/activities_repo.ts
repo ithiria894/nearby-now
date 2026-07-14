@@ -10,7 +10,7 @@ import {
   type ActivityCursor,
   type MembershipRow,
 } from "../domain/activities";
-import type { ActivityCardActivity } from "../../components/ActivityCard";
+import type { ActivityCardActivity } from "../domain/activities";
 
 export type ActivitiesPage = {
   rows: ActivityCardActivity[];

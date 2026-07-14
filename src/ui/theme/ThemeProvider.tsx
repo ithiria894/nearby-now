@@ -72,18 +72,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const baseTextStyle = { color: theme.colors.text };
 
-    Text.defaultProps = Text.defaultProps ?? {};
-    const prevTextStyle = Text.defaultProps.style ?? [];
-    Text.defaultProps.style = Array.isArray(prevTextStyle)
-      ? [...prevTextStyle, baseTextStyle]
-      : [prevTextStyle, baseTextStyle];
-
-    TextInput.defaultProps = TextInput.defaultProps ?? {};
-    const prevInputStyle = TextInput.defaultProps.style ?? [];
-    TextInput.defaultProps.style = Array.isArray(prevInputStyle)
-      ? [...prevInputStyle, baseTextStyle]
-      : [prevInputStyle, baseTextStyle];
-    TextInput.defaultProps.placeholderTextColor = theme.colors.subtext;
+    (Text as any).defaultProps = { ...(Text as any).defaultProps, style: baseTextStyle };
+    (TextInput as any).defaultProps = {
+      ...(TextInput as any).defaultProps,
+      style: baseTextStyle,
+      placeholderTextColor: theme.colors.subtext,
+    };
   }, [theme]);
 
   return (

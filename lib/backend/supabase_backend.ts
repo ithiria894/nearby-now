@@ -1,4 +1,4 @@
-import type { ActivityCardActivity } from "../components/ActivityCard";
+import type { ActivityCardActivity } from "../domain/activities";
 import { supabase } from "../api/supabase";
 
 type ActivityCursor = { created_at: string; id: string };

@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { Alert, Image, Modal, Pressable, Text, View } from "react-native";
-import { useT } from "../lib/i18n/useT";
-import { useTheme } from "../src/ui/theme/ThemeProvider";
-import { lightTheme } from "../src/ui/theme/tokens";
+import { useT } from "../../lib/i18n/useT";
+import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { lightTheme } from "../../src/ui/theme/tokens";
 
 /* =======================
  * Types

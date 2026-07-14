@@ -10,7 +10,6 @@ import {
   Compass,
   PaperPlaneTilt,
   Lightning,
-  PartyPopper,
   MagicWand,
   Fire,
   ChatTeardropDots,
@@ -105,8 +104,8 @@ export default function IconPreviewScreen() {
       },
       {
         key: "party",
-        label: "PartyPopper",
-        Comp: PartyPopper,
+        label: "Confetti",
+        Comp: Confetti,
         vibe: "brand",
         note: "small fun hangouts",
       },

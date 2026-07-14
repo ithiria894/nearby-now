@@ -5,6 +5,8 @@ import {
   type RoomEventRow,
 } from "../domain/room_events";
 
+export type { RoomEventCursor, RoomEventRow };
+
 export type RoomEventsPage = {
   rows: RoomEventRow[];
   cursor: RoomEventCursor | null;

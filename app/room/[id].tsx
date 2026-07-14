@@ -358,10 +358,6 @@ export default function RoomScreen() {
         fetchRoomEventById(id)
           .then((evt) => {
             if (!evt) return;
-            if (myMembershipState === "left" && leftAt) {
-              const ts = new Date(evt.created_at).getTime();
-              if (ts > leftAt.getTime()) return;
-            }
             appendEventIfMissing(evt);
           })
           .catch((e) => console.error(e));
@@ -1003,7 +999,7 @@ export default function RoomScreen() {
             <Text style={{ color: TOKENS.subtext }}>{t("room.joinToSee")}</Text>
           ) : (
             <FlatList
-              ref={(r) => (listRef.current = r)}
+              ref={(r) => { listRef.current = r; }}
               data={chatItems}
               keyExtractor={(x) => x.id}
               renderItem={renderChatItem}
@@ -1055,7 +1051,7 @@ export default function RoomScreen() {
         {/* Input bar */}
         <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
           <TextInput
-            ref={(r) => (inputRef.current = r)}
+            ref={(r) => { inputRef.current = r; }}
             value={message}
             onChangeText={setMessage}
             placeholder={

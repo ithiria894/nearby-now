@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 import MapView, { Marker } from "react-native-maps";
-import type { ActivityCardActivity } from "./ActivityCard";
+import type { ActivityCardActivity } from "../lib/domain/activities";
 import { useT } from "../lib/i18n/useT";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
 

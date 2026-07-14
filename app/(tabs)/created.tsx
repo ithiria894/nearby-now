@@ -10,9 +10,8 @@ import {
 import { useTheme } from "../../src/ui/theme/ThemeProvider";
 import { TAB_GAP, TAB_HEIGHT } from "../../src/ui/tabbar";
 
-import ActivityCard, {
-  type ActivityCardActivity,
-} from "../../components/ActivityCard";
+import ActivityCard from "../../components/ActivityCard";
+import type { ActivityCardActivity } from "../../lib/domain/activities";
 import { requireUserId } from "../../lib/domain/auth";
 import {
   getCreatedPage,
@@ -218,11 +217,11 @@ export default function CreatedScreen() {
             onChange={setTab}
             items={[
               {
-                value: "active",
+                value: "active" as const,
                 label: t("created.tab_active", { count: activeCount }),
               },
               {
-                value: "inactive",
+                value: "inactive" as const,
                 label: t("created.tab_inactive", { count: inactiveCount }),
               },
             ]}

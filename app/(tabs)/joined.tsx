@@ -10,10 +10,8 @@ import {
 import { useTheme } from "../../src/ui/theme/ThemeProvider";
 import { TAB_GAP, TAB_HEIGHT } from "../../src/ui/tabbar";
 
-import ActivityCard, {
-  type ActivityCardActivity,
-  type MembershipState,
-} from "../../components/ActivityCard";
+import ActivityCard, { type MembershipState } from "../../components/ActivityCard";
+import type { ActivityCardActivity } from "../../lib/domain/activities";
 import { requireUserId } from "../../lib/domain/auth";
 import {
   getJoinedPage,
@@ -273,17 +271,17 @@ export default function JoinedScreen() {
             onChange={setTab}
             items={[
               {
-                value: "active",
+                value: "active" as const,
                 label: t("joined.tab_active", { count: activeJoined.length }),
               },
               {
-                value: "inactive",
+                value: "inactive" as const,
                 label: t("joined.tab_inactive", {
                   count: inactiveJoined.length,
                 }),
               },
               {
-                value: "left",
+                value: "left" as const,
                 label: t("joined.tab_left", { count: leftRooms.length }),
               },
             ]}

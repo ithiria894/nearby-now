@@ -146,31 +146,29 @@ export default function RootLayout() {
               name="create"
               options={{
                 title: t("rootNav.create"),
-                headerLeft: StackBackButton,
+                headerLeft: () => <StackBackButton />,
               }}
             />
             <Stack.Screen
               name="compose"
               options={{
                 title: t("compose.navTitle"),
-                headerLeft: StackBackButton,
+                headerLeft: () => <StackBackButton />,
               }}
             />
             <Stack.Screen
               name="edit/[id]"
               options={{
                 title: t("rootNav.editInvite"),
-                headerLeft: StackBackButton,
+                headerLeft: () => <StackBackButton />,
               }}
             />
             <Stack.Screen
               name="room/[id]"
               options={{
                 title: t("rootNav.room"),
-                headerBackTitleVisible: false,
-                headerBackTitle: "",
                 headerBackButtonDisplayMode: "minimal",
-                headerLeft: StackBackButton,
+                headerLeft: () => <StackBackButton />,
               }}
             />
           </Stack>

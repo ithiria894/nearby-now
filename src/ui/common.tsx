@@ -73,7 +73,7 @@ export function SegmentedTabs<T extends string>({
   items,
 }: {
   value: T;
-  onChange: (v: T) => void;
+  onChange: (v: NoInfer<T>) => void;
   items: Array<{ value: T; label: string }>;
 }) {
   const theme = useTheme();

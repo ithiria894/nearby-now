@@ -5,9 +5,7 @@ export function handleError(
   error: unknown,
   fallbackMessage = "Unknown error"
 ) {
-  if (__DEV__) {
-    console.error(error);
-  }
+  console.error(`[${title}]`, error);
   const message =
     error && typeof error === "object" && "message" in error
       ? String((error as any).message)
