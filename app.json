@@ -1,10 +1,30 @@
 {
   "expo": {
-    "name": "nearby-now",
+    "name": "NearbyNow",
     "slug": "nearby-now",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "nearbynow",
     "owner": "ithiria137",
-    "plugins": ["expo-secure-store", "expo-font"],
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow NearbyNow to use your location to find activities near you.",
+          "locationWhenInUsePermission": "Allow NearbyNow to use your location to find activities near you."
+        }
+      ]
+    ],
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -16,7 +36,23 @@
         "projectId": "6e5dab48-215a-44ea-957a-57b63291e706"
       }
     },
-    "android": {},
-    "ios": {}
+    "ios": {
+      "bundleIdentifier": "com.ithiria137.nearbynow",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "NearbyNow uses your location to show activities near you."
+      }
+    },
+    "android": {
+      "package": "com.ithiria137.nearbynow",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    }
   }
 }
