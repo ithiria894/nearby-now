@@ -44,7 +44,13 @@ export function formatExpiryLabel(
   const mins = Math.ceil((ts - nowMs) / 60000);
   if (mins < 60) return t("time.in_minutes", { n: mins });
 
-  const h = Math.floor(mins / 60);
+  const totalHours = Math.floor(mins / 60);
+  // For long spans (e.g. the default 30-day expiry) show days, not raw hours
+  // like "718 小時 30 分鐘".
+  if (totalHours >= 48) {
+    return t("time.in_days", { d: Math.floor(totalHours / 24) });
+  }
+  const h = totalHours;
   const m = mins % 60;
   if (m === 0) return t("time.in_hours", { h });
   return t("time.in_hours_minutes", { h, m });

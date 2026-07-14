@@ -451,7 +451,8 @@
   "time": {
     "in_minutes": "{{n}}分後",
     "in_hours": "{{h}}時間後",
-    "in_hours_minutes": "{{h}}時間{{m}}分後"
+    "in_hours_minutes": "{{h}}時間{{m}}分後",
+    "in_days": "{{d}} 日後"
   },
   "place": {
     "none": "場所なし"

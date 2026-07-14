@@ -316,7 +316,7 @@
     "hint_time_next": "In the next few days",
     "hint_time_window": "Time: {{label}}.",
     "hint_expiry": "Trying to wrap by {{when}}.",
-    "hint_expiry_short": "Wrap by {{when}}",
+    "hint_expiry_short": "closes {{when}}",
     "hint_capacity": "Looking for up to {{count}} people.",
     "hint_capacity_max": "Up to {{cap}} people",
     "hint_capacity_ratio": "Joined {{joined}}/{{cap}}",
@@ -451,7 +451,8 @@
   "time": {
     "in_minutes": "in {{n}} minutes",
     "in_hours": "in {{h}} hours",
-    "in_hours_minutes": "in {{h}}h {{m}}m"
+    "in_hours_minutes": "in {{h}}h {{m}}m",
+    "in_days": "in {{d}} days"
   },
   "place": {
     "none": "No place"

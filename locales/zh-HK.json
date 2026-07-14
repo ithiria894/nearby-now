@@ -316,7 +316,7 @@
     "hint_time_next": "下個星期左右",
     "hint_time_window": "時間：{{label}}。",
     "hint_expiry": "想 {{when}} 前搞掂。",
-    "hint_expiry_short": "{{when}} 前完",
+    "hint_expiry_short": "{{when}}到期",
     "hint_capacity": "想搵最多 {{count}} 個人。",
     "hint_capacity_max": "最多 {{cap}} 人",
     "hint_capacity_ratio": "已入 {{joined}}/{{cap}} 人",
@@ -451,7 +451,8 @@
   "time": {
     "in_minutes": "{{n}} 分鐘後",
     "in_hours": "{{h}} 小時後",
-    "in_hours_minutes": "{{h}} 小時 {{m}} 分鐘後"
+    "in_hours_minutes": "{{h}} 小時 {{m}} 分鐘後",
+    "in_days": "{{d}} 日後"
   },
   "place": {
     "none": "未有地點"
