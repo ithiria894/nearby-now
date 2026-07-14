@@ -12,6 +12,7 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
+      "credentialsSource": "local",
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xvbvmvawgccoefvnqoea.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_oCxT-EVCm-gyAJDHZQIDEQ_sCHQ0hNB"
