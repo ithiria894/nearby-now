@@ -335,35 +335,22 @@ export default function RoomScreen() {
   const canReadEvents =
     myMembershipState === "joined" || myMembershipState === "left";
 
+  // Join directly on tap — the user already previewed the room, joining is
+  // reversible (Leave), and a confirm Alert is a no-op on react-native-web.
   async function join() {
-    if (!userId) return;
-    if (roomState.isReadOnly) {
+    if (!userId || roomState.isReadOnly) return;
+    try {
+      await joinWithSystemMessage(activityId, userId);
+      await loadAll(userId);
+      scrollToBottom(false);
+      inputRef.current?.focus?.();
+    } catch (e: any) {
+      console.error("[join]", e);
       Alert.alert(
-        t("room.joinNotAvailableTitle"),
-        t("room.joinNotAvailableBody")
+        t("room.joinFailedTitle"),
+        friendlyDbError(t, e?.message ?? "Unknown error")
       );
-      return;
     }
-
-    Alert.alert(t("room.joinConfirmTitle"), t("room.joinConfirmBody"), [
-      { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("common.join"),
-        onPress: async () => {
-          try {
-            await joinWithSystemMessage(activityId, userId);
-            await loadAll(userId);
-            scrollToBottom(false);
-            inputRef.current?.focus?.();
-          } catch (e: any) {
-            Alert.alert(
-              t("room.joinFailedTitle"),
-              friendlyDbError(t, e?.message ?? "Unknown error")
-            );
-          }
-        },
-      },
-    ]);
   }
 
   async function doLeave() {
