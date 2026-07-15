@@ -303,6 +303,49 @@ export const backend = {
       return { data: (data ?? []) as any[], error };
     },
   },
+  safety: {
+    // Flag another user for moderation (reporter_id defaults to auth.uid()).
+    async reportUser(params: {
+      reportedUserId: string;
+      activityId?: string | null;
+      reason?: string | null;
+    }) {
+      const { error } = await supabase.from("user_reports").insert({
+        reported_user_id: params.reportedUserId,
+        activity_id: params.activityId ?? null,
+        reason: params.reason ?? null,
+      });
+      return { error };
+    },
+    // Block a user (blocker_id defaults to auth.uid()). Idempotent.
+    async blockUser(blockedId: string) {
+      const { error } = await supabase
+        .from("user_blocks")
+        .upsert(
+          { blocked_id: blockedId },
+          { onConflict: "blocker_id,blocked_id" }
+        );
+      return { error };
+    },
+    async unblockUser(blockedId: string) {
+      // RLS scopes the delete to the caller's own rows (blocker_id = auth.uid()).
+      const { error } = await supabase
+        .from("user_blocks")
+        .delete()
+        .eq("blocked_id", blockedId);
+      return { error };
+    },
+    // The ids this user has blocked (used to filter feed + room content).
+    async getBlockedIds() {
+      const { data, error } = await supabase
+        .from("user_blocks")
+        .select("blocked_id");
+      const ids = ((data ?? []) as { blocked_id: string }[]).map(
+        (r) => r.blocked_id
+      );
+      return { data: ids, error };
+    },
+  },
   realtime: {
     subscribeToBrowseActivities(onChange: (payload: any) => void) {
       const channel = supabase
