@@ -65,9 +65,13 @@ export async function markRead(
 ): Promise<void> {
   if (!activityId || !Number.isFinite(atMs) || atMs <= 0) return;
   try {
+    // room_events.created_at is microsecond-precision, but atMs is millisecond-
+    // floored (JS Date) and unread_counts filters with a strict `>`. Without a
+    // nudge, the newest message's sub-ms remainder stays > the watermark and it
+    // never clears (stuck at 1 unread). +1ms puts the watermark just past it.
     await backend.roomReads.markRoomRead(
       activityId,
-      new Date(atMs).toISOString()
+      new Date(atMs + 1).toISOString()
     );
   } catch {
     // best-effort; ignore
