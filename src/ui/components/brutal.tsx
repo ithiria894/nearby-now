@@ -35,6 +35,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import {
   borders,
   controls,
+  fonts,
   hardShadow,
   layout,
   radius,
@@ -43,11 +44,36 @@ import {
   type TypeStyle,
   type UIColors,
 } from "../theme/uikit";
+import i18n from "../../../lib/i18n/i18n";
 
 /* ---------- text ---------- */
+// Per-language Noto CJK fallback order, so Chinese/Japanese glyphs render in the
+// regionally-correct Noto face (SC vs TC vs JP forms differ).
+function notoCjkStack(): string {
+  switch (i18n.language) {
+    case "ja":
+      return '"Noto Sans JP", "Noto Sans SC", "Noto Sans TC"';
+    case "zh-CN":
+      return '"Noto Sans SC", "Noto Sans TC", "Noto Sans JP"';
+    case "zh-HK":
+      return '"Noto Sans TC", "Noto Sans SC", "Noto Sans JP"';
+    default:
+      return '"Noto Sans SC", "Noto Sans TC", "Noto Sans JP"';
+  }
+}
+
 export function txt(style: TypeStyle, color: string) {
+  // New direction: Noto for all UI text, loaded from Google Fonts on web (see
+  // app/_layout.tsx). Latin uses Noto Sans, CJK falls through to the matching
+  // Noto CJK face. The handwritten wordmark keeps its accent font. Native is
+  // untouched — we deliberately don't bundle Noto (esp. the heavy CJK) there.
+  let fontFamily: string = style.font;
+  if (Platform.OS === "web") {
+    const base = style.font === fonts.accent ? style.font : "Noto Sans";
+    fontFamily = `${base}, ${notoCjkStack()}, sans-serif`;
+  }
   return {
-    fontFamily: style.font,
+    fontFamily,
     fontSize: style.size,
     lineHeight: style.lineHeight,
     fontWeight: style.weight as any,

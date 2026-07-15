@@ -7,7 +7,7 @@ import { initI18n } from "../lib/i18n/i18n";
 import { useT } from "../lib/i18n/useT";
 import { ThemeProvider } from "../src/ui/theme/ThemeProvider";
 import { useAuthGuard } from "../lib/hooks/useAuthGuard";
-import { Pressable, Text } from "react-native";
+import { Platform, Pressable, Text } from "react-native";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
@@ -94,6 +94,20 @@ export default function RootLayout() {
     CaveatSemi: Caveat_600SemiBold,
     CaveatBold: Caveat_700Bold,
   });
+
+  // Load Noto (Latin + CJK) from Google Fonts on web — our UI typeface. Native
+  // keeps its bundled fonts; we don't ship Noto (esp. the heavy CJK) to devices.
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
+    const id = "noto-fonts";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap";
+    document.head.appendChild(link);
+  }, []);
 
   // :zap: CHANGE 4: Init i18n before rendering
   useEffect(() => {
