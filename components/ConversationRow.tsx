@@ -43,9 +43,11 @@ export function ConversationRow({
   const now = Date.now();
 
   const lm = summary?.lastMessage ?? null;
-  // Dim previews that aren't real chat — system events ("… joined the lobby")
-  // and the empty-room placeholder read as secondary, not as a message.
-  const previewMuted = !lm || lm.event.type === "system";
+  // Dim previews that aren't real typed chat — system events ("… joined the
+  // lobby"), quick pings ("I'm here"), and the empty-room placeholder all read
+  // as secondary, so only an actual message stands out.
+  const previewMuted =
+    !lm || lm.event.type === "system" || lm.event.type === "quick";
   let preview: string;
   if (!lm) {
     preview = t("activityCard.no_messages");
