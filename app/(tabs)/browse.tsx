@@ -42,6 +42,7 @@ import { subscribeToBrowseActivities } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
 import {
   formatCapacity,
+  formatExpiryLabel,
   formatGenderPref,
   formatLocalDateTime,
 } from "../../lib/i18n/i18n_format";
@@ -546,20 +547,71 @@ export default function BrowseScreen() {
     : currentArea?.approx
       ? `${areaLabel} ${t("browse.area_approx")}`
       : areaLabel;
+  // Compact label for the header — city only (the sheet shows the full label).
+  const areaShort = areaLoading
+    ? t("browse.area_detecting")
+    : areaLabel.split(",")[0].trim();
+
+  const tagFilterBar =
+    presentCats.length > 1 ? (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          gap: space.sm,
+          paddingVertical: 2,
+          alignItems: "center",
+        }}
+      >
+        <Pressable onPress={() => setTagFilter(null)}>
+          <BChip c={c} label="All" selected={tagFilter === null} />
+        </Pressable>
+        {presentCats.map((cat) => (
+          <Pressable key={cat.key} onPress={() => setTagFilter(cat.key)}>
+            <BChip c={c} label={cat.label} selected={tagFilter === cat.key} />
+          </Pressable>
+        ))}
+      </ScrollView>
+    ) : (
+      <View style={{ flex: 1 }} />
+    );
 
   const ListHeader = (
     <View style={{ gap: space.md, paddingTop: space.md }}>
-      {/* Brand row: wordmark + search */}
+      {/* Brand + location + search — location lives up top so it never clips */}
       <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
+        style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
       >
         <BText c={c} v="display" style={{ fontFamily: "ShortStack" }}>
           {t("app.name")}
         </BText>
+        <View style={{ flex: 1 }} />
+        <Pressable onPress={openAreaSheet} hitSlop={8}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 3,
+              maxWidth: 150,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="map-marker"
+              size={16}
+              color={c.brand}
+            />
+            <BText c={c} v="bodyStrong" color={c.text} numberOfLines={1}>
+              {areaShort}
+            </BText>
+            <MaterialCommunityIcons
+              name="chevron-down"
+              size={15}
+              color={c.subtext}
+            />
+          </View>
+        </Pressable>
         <BIconButton c={c} icon="magnify" onPress={openSearchSheet} />
       </View>
 
@@ -571,77 +623,25 @@ export default function BrowseScreen() {
         onPress={() => router.push("/compose")}
       />
 
-      {/* List / Map toggle */}
-      <BToggle<"list" | "map">
-        c={c}
-        value={viewMode}
-        onChange={setViewMode}
-        options={[
-          {
-            value: "list",
-            label: t("browse.mapButton_list"),
-            icon: "format-list-bulleted",
-          },
-          { value: "map", label: t("browse.mapButton_map"), icon: "map" },
-        ]}
-      />
-
-      {/* What's happening + area pill */}
+      {/* View toggle + category filter share one row */}
       <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: space.sm,
-        }}
+        style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
       >
-        <BText c={c} v="h2" color={c.text} numberOfLines={1}>
-          {t("browse.whatsHappening")}
-        </BText>
-        <Pressable onPress={openAreaSheet}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 4,
-              maxWidth: 200,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="map-marker"
-              size={16}
-              color={c.brand}
-            />
-            <BText c={c} v="bodyStrong" color={c.text} numberOfLines={1}>
-              {areaPillLabel}
-            </BText>
-            <MaterialCommunityIcons
-              name="chevron-down"
-              size={16}
-              color={c.subtext}
-            />
-          </View>
-        </Pressable>
+        <BToggle<"list" | "map">
+          c={c}
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            {
+              value: "list",
+              label: t("browse.mapButton_list"),
+              icon: "format-list-bulleted",
+            },
+            { value: "map", label: t("browse.mapButton_map"), icon: "map" },
+          ]}
+        />
+        {tagFilterBar}
       </View>
-
-      {/* Tag filter — find activities fast by category */}
-      {presentCats.length > 1 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ gap: space.sm, paddingVertical: 2 }}
-        >
-          <Pressable onPress={() => setTagFilter(null)}>
-            <BChip c={c} label="All" selected={tagFilter === null} />
-          </Pressable>
-          {presentCats.map((cat) => (
-            <Pressable key={cat.key} onPress={() => setTagFilter(cat.key)}>
-              <BChip c={c} label={cat.label} selected={tagFilter === cat.key} />
-            </Pressable>
-          ))}
-        </ScrollView>
-      ) : null}
     </View>
   );
 
@@ -687,15 +687,18 @@ export default function BrowseScreen() {
               updateCellsBatchingPeriod={50}
               removeClippedSubviews
               renderItem={({ item }) => {
-                const place = (item.place_name ?? item.place_text ?? "").trim();
-                const timeLabel = formatLocalDateTime(item.expires_at, t);
+                // Crucial info only: how far + when it closes. The place is
+                // redundant with the area header, and a raw datetime is noise.
                 const distanceLabel =
                   item.distance_km != null
                     ? t("activityCard.hint_distance_short", {
                         km: item.distance_km.toFixed(1),
                       })
                     : "";
-                const meta = [place, timeLabel, distanceLabel]
+                const closesLabel = t("activityCard.hint_expiry_short", {
+                  when: formatExpiryLabel(item.expires_at, Date.now(), t),
+                });
+                const meta = [distanceLabel, closesLabel]
                   .filter(Boolean)
                   .join(" · ");
                 const capacityLabel =
