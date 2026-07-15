@@ -261,6 +261,48 @@ export const backend = {
       return { data: (data ?? []) as any[], error };
     },
   },
+  roomReads: {
+    // Advance the caller's read watermark for a room (server-side greatest()).
+    async markRoomRead(activityId: string, atIso: string) {
+      const { error } = await supabase.rpc("mark_room_read", {
+        p_activity_id: activityId,
+        p_at: atIso,
+      });
+      return { error };
+    },
+    // Unread counts for a set of rooms in one round-trip.
+    async getUnreadCounts(activityIds: string[]) {
+      const { data, error } = await supabase.rpc("unread_counts", {
+        p_activity_ids: activityIds,
+      });
+      return {
+        data: (data ?? []) as { activity_id: string; unread_count: number }[],
+        error,
+      };
+    },
+    // Read watermark for a single room (for the room's "New messages" divider).
+    async getLastReadAt(userId: string, activityId: string) {
+      const { data, error } = await supabase
+        .from("activity_members")
+        .select("last_read_at")
+        .eq("activity_id", activityId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      return {
+        lastReadAt: ((data as { last_read_at?: string | null } | null)
+          ?.last_read_at ?? null) as string | null,
+        error,
+      };
+    },
+    // All of the caller's read watermarks (activityId -> last_read_at).
+    async getAllLastReads(userId: string) {
+      const { data, error } = await supabase
+        .from("activity_members")
+        .select("activity_id, last_read_at")
+        .eq("user_id", userId);
+      return { data: (data ?? []) as any[], error };
+    },
+  },
   realtime: {
     subscribeToBrowseActivities(onChange: (payload: any) => void) {
       const channel = supabase
