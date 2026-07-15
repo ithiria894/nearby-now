@@ -17,6 +17,7 @@
     "plugins": [
       "expo-secure-store",
       "expo-font",
+      "expo-notifications",
       [
         "expo-location",
         {
@@ -58,10 +59,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ]
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
     }
   }
 }
