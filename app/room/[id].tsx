@@ -38,6 +38,7 @@ import {
   type UIColors,
 } from "../../src/ui/theme/uikit";
 import {
+  BAppBar,
   BBadge,
   BButton,
   BCard,
@@ -527,9 +528,9 @@ export default function RoomScreen() {
     }
   }
 
-  const placeName =
-    (activity?.place_name ?? activity?.place_text ?? "").trim() ||
-    t("activityCard.place_none");
+  const placeRaw = (activity?.place_name ?? activity?.place_text ?? "").trim();
+  const hasPlace = placeRaw.length > 0;
+  const placeName = placeRaw || t("activityCard.place_none");
   const placeAddress = (activity?.place_address ?? "").trim();
 
   // :zap: CHANGE 1: Build "sectioned list items" (Today/Yesterday/Date)
@@ -721,136 +722,112 @@ export default function RoomScreen() {
       keyboardVerticalOffset={keyboardVerticalOffset}
     >
       <PaperTexture opacity={0.06} />
-      <View style={{ flex: 1, padding: space.lg, gap: space.md }}>
-        {/* Header */}
-        <BCard c={c}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              gap: space.md,
-            }}
-          >
-            <View style={{ flex: 1, gap: space.xs, paddingRight: 6 }}>
-              <BText c={c} v="h2" color={c.ink}>
-                {activity?.title_text ?? t("room.fallbackRoomTitle")}
-              </BText>
-
-              <BText c={c} v="bodyStrong" numberOfLines={1}>
+      <BAppBar
+        c={c}
+        onBack={() =>
+          router.canGoBack() ? router.back() : router.replace("/(tabs)/browse")
+        }
+        title={activity?.title_text ?? t("room.fallbackRoomTitle")}
+        meta={
+          <>
+            {hasPlace ? (
+              <BText c={c} v="caption" color={c.subtext} numberOfLines={1}>
                 {placeName}
               </BText>
-
-              {placeAddress ? (
-                <BText c={c} v="caption" color={c.subtext} numberOfLines={1}>
-                  {placeAddress}
-                </BText>
-              ) : null}
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: space.sm,
-                  marginTop: space.xs,
-                }}
-              >
-                <BBadge
-                  c={c}
-                  label={t("room.membersCount", { count: members.length })}
-                  fill={c.surface}
-                />
-
-                {isCreator ? (
-                  <BBadge c={c} label={t("room.createdBadge")} fill={c.mint} />
-                ) : null}
-
-                {roomState.labelKey ? (
-                  <BBadge
-                    c={c}
-                    label={
-                      roomState.labelKey === "closed"
-                        ? t("room.closedBadge")
-                        : t("room.expiredBadge")
-                    }
-                    fill={c.coral}
-                  />
-                ) : null}
-              </View>
-            </View>
-
-            {/* Top-right controls */}
-            <View style={{ gap: space.sm, alignItems: "flex-end" }}>
-              {!joined ? (
-                <BButton
-                  c={c}
-                  tone="primary"
-                  label={
-                    myMembershipState === "left"
-                      ? t("common.rejoin")
-                      : t("common.join")
-                  }
-                  onPress={roomState.isReadOnly ? undefined : join}
-                />
-              ) : (
-                <BButton
-                  c={c}
-                  tone="secondary"
-                  label={t("common.leave")}
-                  onPress={confirmLeave}
-                />
-              )}
-
-              {isCreator ? (
-                <BButton
-                  c={c}
-                  tone="danger"
-                  label={t("common.close")}
-                  onPress={roomState.isReadOnly ? undefined : closeInvite}
-                />
-              ) : null}
-            </View>
+            ) : null}
+            <BBadge
+              c={c}
+              label={t("room.membersCount", { count: members.length })}
+              fill={c.surface}
+            />
+            {isCreator ? (
+              <BBadge c={c} label={t("room.createdBadge")} fill={c.mint} />
+            ) : null}
+            {roomState.labelKey ? (
+              <BBadge
+                c={c}
+                label={
+                  roomState.labelKey === "closed"
+                    ? t("room.closedBadge")
+                    : t("room.expiredBadge")
+                }
+                fill={c.coral}
+              />
+            ) : null}
+          </>
+        }
+        right={
+          <>
+            {!joined ? (
+              <BButton
+                c={c}
+                tone="primary"
+                label={
+                  myMembershipState === "left"
+                    ? t("common.rejoin")
+                    : t("common.join")
+                }
+                onPress={roomState.isReadOnly ? undefined : join}
+              />
+            ) : (
+              <BButton
+                c={c}
+                tone="secondary"
+                label={t("common.leave")}
+                onPress={confirmLeave}
+              />
+            )}
+            {isCreator ? (
+              <BButton
+                c={c}
+                tone="danger"
+                label={t("common.close")}
+                onPress={roomState.isReadOnly ? undefined : closeInvite}
+              />
+            ) : null}
+          </>
+        }
+      />
+      <View style={{ flex: 1, padding: space.lg, gap: space.md }}>
+        {myMembershipState === "left" ? (
+          <View
+            style={{
+              padding: space.md,
+              borderWidth: 2,
+              borderRadius: radius.md,
+              borderColor: c.border,
+              backgroundColor: c.surfaceAlt,
+              gap: space.xs,
+            }}
+          >
+            <BText c={c} v="bodyStrong" color={c.text}>
+              {t("room.leftTitle")}
+            </BText>
+            <BText c={c} v="caption" color={c.subtext}>
+              {t("room.leftBody")}
+            </BText>
           </View>
+        ) : null}
 
-          {myMembershipState === "left" ? (
-            <View
-              style={{
-                padding: space.md,
-                borderWidth: 2,
-                borderRadius: radius.md,
-                borderColor: c.border,
-                backgroundColor: c.surfaceAlt,
-                gap: space.xs,
-              }}
-            >
-              <BText c={c} v="bodyStrong" color={c.text}>
-                {t("room.leftTitle")}
-              </BText>
-              <BText c={c} v="caption" color={c.subtext}>
-                {t("room.leftBody")}
-              </BText>
-            </View>
-          ) : null}
-
-          {roomState.labelKey ? (
-            <View
-              style={{
-                padding: space.md,
-                borderWidth: 2,
-                borderRadius: radius.md,
-                borderColor: c.border,
-                backgroundColor: c.coral,
-                gap: space.xs,
-              }}
-            >
-              <BText c={c} v="bodyStrong" color={c.onBright}>
-                {t("room.readonlyTitle")}
-              </BText>
-              <BText c={c} v="caption" color={c.onBright}>
-                {t("room.readonlyBody")}
-              </BText>
-            </View>
-          ) : null}
-        </BCard>
+        {roomState.labelKey ? (
+          <View
+            style={{
+              padding: space.md,
+              borderWidth: 2,
+              borderRadius: radius.md,
+              borderColor: c.border,
+              backgroundColor: c.coral,
+              gap: space.xs,
+            }}
+          >
+            <BText c={c} v="bodyStrong" color={c.onBright}>
+              {t("room.readonlyTitle")}
+            </BText>
+            <BText c={c} v="caption" color={c.onBright}>
+              {t("room.readonlyBody")}
+            </BText>
+          </View>
+        ) : null}
 
         {/* Chat */}
         <View

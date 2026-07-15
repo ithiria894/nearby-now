@@ -9,7 +9,7 @@ import InviteForm, {
 } from "../../components/InviteForm";
 import { useT } from "../../lib/i18n/useT";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
-import { BScreen, BText } from "../../src/ui/components/brutal";
+import { BAppBar, BScreen, BText } from "../../src/ui/components/brutal";
 
 type ActivityRow = {
   id: string;
@@ -233,9 +233,18 @@ export default function EditActivityScreen() {
     }
   }
 
+  const backToCreated = () =>
+    router.canGoBack() ? router.back() : router.replace("/(tabs)/created");
+
   if (loading) {
     return (
-      <BScreen c={c} scroll>
+      <BScreen
+        c={c}
+        scroll
+        appBar={
+          <BAppBar c={c} onBack={backToCreated} title={t("edit.titlePrefix")} />
+        }
+      >
         <BText c={c} v="body">
           {t("common.loading")}
         </BText>
@@ -246,11 +255,17 @@ export default function EditActivityScreen() {
   if (!activity) return null;
 
   return (
-    <BScreen c={c} scroll>
-      <BText c={c} v="h1">
-        {t("edit.titlePrefix")}{" "}
-        {activity.title_text ?? t("edit.fallbackInviteTitle")}
-      </BText>
+    <BScreen
+      c={c}
+      scroll
+      appBar={
+        <BAppBar
+          c={c}
+          onBack={backToCreated}
+          title={`${t("edit.titlePrefix")} ${activity.title_text ?? t("edit.fallbackInviteTitle")}`}
+        />
+      }
+    >
       <BText c={c} v="label" color={c.subtext}>
         {t("edit.introTitle")}
       </BText>

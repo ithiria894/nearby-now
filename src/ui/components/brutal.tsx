@@ -179,12 +179,16 @@ export function BScreen({
   scroll,
   center,
   texture = true,
+  appBar,
 }: {
   c: UIColors;
   children: React.ReactNode;
   scroll?: boolean;
   center?: boolean;
   texture?: boolean;
+  // Optional <BAppBar/> rendered edge-to-edge above the content. It provides
+  // the top safe-area inset, so the body skips its own top edge.
+  appBar?: React.ReactNode;
 }) {
   // Cap the content column and center it so cards never stretch full-width on
   // a wide / tablet / desktop-web window (paper margins fill the sides).
@@ -228,7 +232,13 @@ export function BScreen({
   const framed = (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       {texture ? <PaperTexture opacity={0.06} /> : null}
-      <SafeAreaView style={{ flex: 1 }}>{body}</SafeAreaView>
+      {appBar}
+      <SafeAreaView
+        style={{ flex: 1 }}
+        edges={appBar ? ["bottom", "left", "right"] : undefined}
+      >
+        {body}
+      </SafeAreaView>
     </View>
   );
 
@@ -887,20 +897,24 @@ export function BIconButton({
   onPress,
   size = 24,
   color,
+  accessibilityLabel,
 }: {
   c: UIColors;
   icon: string;
   onPress?: () => void;
   size?: number;
   color?: string;
+  accessibilityLabel?: string;
 }) {
   return (
     <Pressable
       onPress={onPress}
       hitSlop={controls.hitSlop}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => ({
-        width: 40,
-        height: 40,
+        width: 44,
+        height: 44,
         alignItems: "center",
         justifyContent: "center",
         opacity: pressed ? 0.5 : 1,
@@ -915,36 +929,118 @@ export function BIconButton({
   );
 }
 
-/* ---------- navigation: top header / nav bar ---------- */
-export function BHeader({
+/* ---------- navigation: top app bar ---------- */
+// Soft-brutalist top bar: paper surface + 2px bottom ink border (mirrors the
+// bottom tab bar), safe-area inset, content capped to maxContentWidth. Carries
+// page info so screens don't need the plain native header:
+//   [back] [icon tile?] [ title / subtitle / meta ]  ...  [right actions]
+export function BAppBar({
   c,
   title,
-  action,
+  subtitle,
+  onBack,
+  backLabel,
+  icon,
+  iconBg,
+  meta,
+  right,
 }: {
   c: UIColors;
   title: string;
-  action?: string;
+  subtitle?: string;
+  onBack?: () => void;
+  backLabel?: string;
+  icon?: string;
+  iconBg?: string;
+  meta?: React.ReactNode;
+  right?: React.ReactNode;
 }) {
   return (
     <View
       style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: space.md,
-        paddingHorizontal: space.md,
-        paddingVertical: space.sm,
+        backgroundColor: c.surface,
         borderBottomWidth: controls.borderWidth,
         borderColor: c.border,
-        backgroundColor: c.surface,
-        borderTopLeftRadius: radius.md,
-        borderTopRightRadius: radius.md,
       }}
     >
-      <BIconButton c={c} icon="chevron-left" size={26} />
-      <Text style={[txt(typeScale.h2, c.ink), { flex: 1 }]} numberOfLines={1}>
-        {title}
-      </Text>
-      {action ? <BIconButton c={c} icon={action} /> : null}
+      <SafeAreaView edges={["top"]}>
+        <View
+          style={{
+            width: "100%",
+            maxWidth: layout.maxContentWidth,
+            alignSelf: "center",
+            flexDirection: "row",
+            alignItems: "center",
+            gap: space.sm,
+            paddingHorizontal: space.md,
+            paddingVertical: space.sm,
+          }}
+        >
+          {onBack ? (
+            <BIconButton
+              c={c}
+              icon="chevron-left"
+              size={26}
+              onPress={onBack}
+              accessibilityLabel={backLabel ?? "Go back"}
+            />
+          ) : null}
+          {icon ? (
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: radius.sm,
+                backgroundColor: iconBg ?? c.surfaceAlt,
+                borderWidth: controls.borderWidth,
+                borderColor: c.border,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MaterialCommunityIcons
+                name={icon as any}
+                size={20}
+                color={c.ink}
+              />
+            </View>
+          ) : null}
+          <View style={{ flex: 1, gap: 2, minWidth: 0 }}>
+            <Text style={txt(typeScale.h2, c.ink)} numberOfLines={1}>
+              {title}
+            </Text>
+            {subtitle ? (
+              <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null}
+            {meta ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: space.xs,
+                  marginTop: 2,
+                }}
+              >
+                {meta}
+              </View>
+            ) : null}
+          </View>
+          {right ? (
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: space.xs,
+              }}
+            >
+              {right}
+            </View>
+          ) : null}
+        </View>
+      </SafeAreaView>
     </View>
   );
 }

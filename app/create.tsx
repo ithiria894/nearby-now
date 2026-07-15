@@ -6,7 +6,7 @@ import { requireUserId } from "../lib/domain/auth";
 import InviteForm, { type InviteFormPayload } from "../components/InviteForm";
 import { useT } from "../lib/i18n/useT";
 import { useUIKit } from "../src/ui/theme/useUIKit";
-import { BScreen, BText } from "../src/ui/components/brutal";
+import { BAppBar, BScreen } from "../src/ui/components/brutal";
 
 export default function CreateScreen() {
   const router = useRouter();
@@ -76,11 +76,21 @@ export default function CreateScreen() {
   }
 
   return (
-    <BScreen c={c} scroll>
-      <BText c={c} v="h1">
-        {t("create.title")}
-      </BText>
-
+    <BScreen
+      c={c}
+      scroll
+      appBar={
+        <BAppBar
+          c={c}
+          onBack={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace("/(tabs)/browse")
+          }
+          title={t("create.title")}
+        />
+      }
+    >
       <InviteForm
         mode="create"
         submitting={submitting}

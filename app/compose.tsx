@@ -20,6 +20,7 @@ import { useT } from "../lib/i18n/useT";
 import { useUIKit } from "../src/ui/theme/useUIKit";
 import { space, radius } from "../src/ui/theme/uikit";
 import {
+  BAppBar,
   BButton,
   BCard,
   BChip,
@@ -247,16 +248,22 @@ export default function ComposeScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
     >
-      <BScreen c={c} scroll>
-        <View style={{ gap: space.xs }}>
-          <BText c={c} v="h1">
-            {t("compose.title")}
-          </BText>
-          <BText c={c} v="body" color={c.subtext}>
-            {t("compose.subtitle")}
-          </BText>
-        </View>
-
+      <BScreen
+        c={c}
+        scroll
+        appBar={
+          <BAppBar
+            c={c}
+            onBack={() =>
+              router.canGoBack()
+                ? router.back()
+                : router.replace("/(tabs)/browse")
+            }
+            title={t("compose.title")}
+            subtitle={t("compose.subtitle")}
+          />
+        }
+      >
         <BCard c={c}>
           <BText c={c} v="label" color={c.subtext}>
             {t("compose.template_label")}
