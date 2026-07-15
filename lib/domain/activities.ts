@@ -13,6 +13,7 @@ export type ActivityCardActivity = {
   start_time?: string | null;
   end_time?: string | null;
   gender_pref: string;
+  vibe?: string | null;
   capacity: number | null;
   joined_count?: number | null;
   status: string;

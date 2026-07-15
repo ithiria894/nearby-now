@@ -5,7 +5,7 @@ type ActivityCursor = { created_at: string; id: string };
 type ActivityMemberStateRow = { state: string | null; left_at: string | null };
 
 const ACTIVITY_SELECT =
-  "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, start_time, end_time, gender_pref, capacity, status, created_at";
+  "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, expires_at, start_time, end_time, gender_pref, capacity, status, created_at, vibe";
 
 function applyCursor<T>(query: T, cursor?: ActivityCursor | null): T {
   if (!cursor) return query;

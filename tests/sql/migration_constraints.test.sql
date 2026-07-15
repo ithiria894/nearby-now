@@ -30,6 +30,12 @@ VALUES ('00000000-0000-0000-0000-000000000001', 'test', 'open', 'aliens');
 -- UPDATE profiles SET gender = 'female' WHERE id = auth.uid();  -- OK
 -- UPDATE profiles SET gender = 'xyz'    WHERE id = auth.uid();  -- ERROR chk_profiles_gender
 
+-- activities.vibe (20260715140000) — energy/social-texture, orthogonal to type.
+-- Must match .docs/VIBE_SYSTEM.md + the app's fixed set:
+--   vibe = 'chill' / 'hype' / 'deep' / 'playful' / 'open' / NULL -> OK
+--   vibe = 'party' / 'active' / anything else                   -> ERROR chk_activities_vibe
+-- (Verified 2026-07-15: 'deep' accepted, 'xyz' rejected on cloud, rolled back.)
+
 -- Should fail: title too long (>200 chars)
 INSERT INTO activities (creator_id, title_text, status, gender_pref)
 VALUES ('00000000-0000-0000-0000-000000000001', repeat('x', 201), 'open', 'any');
