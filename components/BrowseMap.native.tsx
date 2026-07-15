@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import { Text, View } from "react-native";
-import MapView, { Marker } from "react-native-maps";
-import type { ActivityCardActivity } from "./ActivityCard";
+import type { ActivityCardActivity } from "../lib/domain/activities";
 import { useT } from "../lib/i18n/useT";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
+import AppMap from "./map/MapView";
+import type { MapMarker } from "./map/MapView.types";
 
 type Props = {
   items: ActivityCardActivity[];
@@ -10,36 +12,77 @@ type Props = {
   onRequestList?: () => void;
 };
 
-export default function BrowseMap({ items, onPressCard }: Props) {
+// Vancouver default viewport (the app is Vancouver-local).
+const INITIAL_REGION = {
+  latitude: 49.2827,
+  longitude: -123.1207,
+  latitudeDelta: 0.08,
+  longitudeDelta: 0.08,
+};
+
+export default function BrowseMap({
+  items,
+  onPressCard,
+  onRequestList,
+}: Props) {
   const { t } = useT();
   const theme = useTheme();
-  const mapRegion = {
-    latitude: 49.2827,
-    longitude: -123.1207,
-    latitudeDelta: 0.08,
-    longitudeDelta: 0.08,
-  };
 
-  const mappable = items.filter(
-    (a) => Number.isFinite(a.lat as number) && Number.isFinite(a.lng as number)
+  const mappable = useMemo(
+    () =>
+      items.filter(
+        (a) =>
+          Number.isFinite(a.lat as number) && Number.isFinite(a.lng as number)
+      ),
+    [items]
   );
+
+  const markers = useMemo<MapMarker[]>(
+    () =>
+      mappable.map((a) => ({
+        id: a.id,
+        lat: a.lat as number,
+        lng: a.lng as number,
+        title: a.title_text,
+        subtitle: a.place_name ?? a.place_text ?? null,
+      })),
+    [mappable]
+  );
+
+  // Fit the viewport to the markers so the pins are actually visible, instead of
+  // always showing the hardcoded Vancouver default. Falls back to Vancouver when
+  // there are no markers to frame.
+  const initialRegion = useMemo(() => {
+    if (markers.length === 0) return INITIAL_REGION;
+    const lats = markers.map((m) => m.lat);
+    const lngs = markers.map((m) => m.lng);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    return {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      // Pad the span so edge pins aren't flush to the frame; clamp to a minimum
+      // so a single marker doesn't over-zoom.
+      latitudeDelta: Math.max((maxLat - minLat) * 1.4, 0.02),
+      longitudeDelta: Math.max((maxLng - minLng) * 1.4, 0.02),
+    };
+  }, [markers]);
+
+  const handleMarkerPress = (id: string) => {
+    const activity = mappable.find((a) => a.id === id);
+    if (activity) onPressCard(activity);
+  };
 
   return (
     <View style={{ flex: 1 }}>
-      <MapView style={{ flex: 1 }} initialRegion={mapRegion}>
-        {mappable.map((a) => (
-          <Marker
-            key={a.id}
-            coordinate={{
-              latitude: a.lat as number,
-              longitude: a.lng as number,
-            }}
-            title={a.title_text}
-            description={a.place_name ?? a.place_text ?? undefined}
-            onPress={() => onPressCard(a)}
-          />
-        ))}
-      </MapView>
+      <AppMap
+        markers={markers}
+        initialRegion={initialRegion}
+        onMarkerPress={handleMarkerPress}
+        onRequestList={onRequestList}
+      />
       <View
         style={{
           position: "absolute",
@@ -55,8 +98,8 @@ export default function BrowseMap({ items, onPressCard }: Props) {
           alignItems: "center",
         }}
       >
-        <Text style={{ fontWeight: "700" }}>
-          {t("browseMap.countInArea", { count: mappable.length })}
+        <Text style={{ fontWeight: "700", color: theme.colors.subtitleText }}>
+          {t("browseMap.countInArea", { count: markers.length })}
         </Text>
       </View>
     </View>

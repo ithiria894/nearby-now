@@ -1,20 +1,31 @@
 import { useState } from "react";
-import { Alert, Pressable, Text, TextInput } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { backend } from "../lib/backend";
 import { ensureProfile } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
-import { Screen, PrimaryButton } from "../src/ui/common";
+import { useUIKit } from "../src/ui/theme/useUIKit";
+import { hardShadow, radius, space } from "../src/ui/theme/uikit";
+import {
+  BButton,
+  BCard,
+  BInput,
+  BScreen,
+  BText,
+  HardShadow,
+} from "../src/ui/components/brutal";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const { t } = useT();
+  const c = useUIKit();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function onRegister() {
-    if (!email.trim() || !password) {
+    if (!email.trim() || !password.trim()) {
       Alert.alert(
         t("auth.register.missingTitle"),
         t("auth.register.missingBody")
@@ -34,19 +45,24 @@ export default function RegisterScreen() {
       });
       if (error) throw error;
 
-      // If email confirmation is ON, user may not be fully logged in yet.
-      // This still works when user completes confirmation and signs in.
-      try {
-        await ensureProfile();
-      } catch {
-        // ignore if not logged in yet
+      // With email confirmation OFF, signUp returns a live session so the user
+      // is already logged in — go straight into the app. If confirmation is ON
+      // there is no session yet, so fall back to Login.
+      const { session } = await backend.auth.getSession();
+      if (session?.user) {
+        try {
+          await ensureProfile();
+        } catch (pe) {
+          console.error("ensureProfile (register):", pe);
+        }
+        router.replace("/(tabs)/browse");
+      } else {
+        Alert.alert(
+          t("auth.register.maybeExistsTitle"),
+          t("auth.register.maybeExistsBody")
+        );
+        router.replace("/login");
       }
-
-      Alert.alert(
-        t("auth.register.successTitle"),
-        t("auth.register.successBody")
-      );
-      router.replace("/login");
     } catch (_e: any) {
       console.error(_e);
       Alert.alert(
@@ -59,46 +75,84 @@ export default function RegisterScreen() {
   }
 
   return (
-    <Screen center>
-      <Text style={{ fontSize: 22, fontWeight: "800" }}>
-        {t("auth.register.title")}
-      </Text>
+    <BScreen c={c} scroll center>
+      <View style={{ alignItems: "center", gap: space.sm }}>
+        <HardShadow c={c} radius={radius.lg} offset={hardShadow.md}>
+          <View
+            style={{
+              width: 74,
+              height: 74,
+              borderRadius: radius.lg,
+              borderWidth: 2,
+              borderColor: c.border,
+              backgroundColor: c.yellow,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MaterialCommunityIcons
+              name="compass-rose"
+              size={40}
+              color={c.ink}
+            />
+          </View>
+        </HardShadow>
+        <BText
+          v="display"
+          c={c}
+          color={c.ink}
+          style={{ marginTop: space.sm, fontFamily: "ShortStack" }}
+        >
+          {t("app.name")}
+        </BText>
+        <BText
+          c={c}
+          color={c.subtext}
+          style={{ fontFamily: "CaveatBold", fontSize: 22 }}
+        >
+          {t("auth.register.submitIdle")}
+        </BText>
+      </View>
 
-      <TextInput
-        value={email}
-        onChangeText={setEmail}
-        placeholder={t("auth.register.emailPlaceholder")}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
-      />
-
-      <TextInput
-        value={password}
-        onChangeText={setPassword}
-        placeholder={t("auth.register.passwordPlaceholder")}
-        secureTextEntry
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
-      />
-
-      <PrimaryButton
-        label={
-          submitting
-            ? t("auth.register.submitBusy")
-            : t("auth.register.submitIdle")
-        }
-        onPress={onRegister}
-        disabled={submitting}
-      />
+      <BCard c={c}>
+        <BInput
+          c={c}
+          label={t("auth.register.emailLabel")}
+          placeholder={t("auth.register.emailPlaceholder")}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <BInput
+          c={c}
+          label={t("auth.register.passwordLabel")}
+          placeholder={t("auth.register.passwordPlaceholder")}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <BButton
+          c={c}
+          tone="primary"
+          full
+          label={
+            submitting
+              ? t("auth.register.submitBusy")
+              : t("auth.register.submitIdle")
+          }
+          onPress={onRegister}
+        />
+      </BCard>
 
       <Pressable
         onPress={() => router.replace("/login")}
-        style={{ padding: 10, alignItems: "center" }}
+        style={{ padding: space.sm, alignItems: "center" }}
       >
-        <Text style={{ fontWeight: "700" }}>
+        <BText v="bodyStrong" c={c} color={c.brand}>
           {t("auth.register.backToLogin")}
-        </Text>
+        </BText>
       </Pressable>
-    </Screen>
+    </BScreen>
   );
 }

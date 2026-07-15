@@ -1,6 +1,6 @@
 -- ============================================================
 -- AUTO-GENERATED: public constraints + indexes
--- Generated at: 2026-01-27T01:20:42Z
+-- Generated at: 2026-02-01T06:26:30Z
 -- ============================================================
 
 -- ---- Constraints (PK / UNIQUE / CHECK) ----
@@ -22,6 +22,14 @@ ALTER TABLE ONLY public.room_events ADD CONSTRAINT room_events_pkey PRIMARY KEY 
 
 
 -- ---- Indexes (excluding constraint-backed indexes) ----
+-- Index: public.activities_creator_created_id_idx
+
+CREATE INDEX activities_creator_created_id_idx ON public.activities USING btree (creator_id, created_at DESC, id DESC);
+
+-- Index: public.activities_status_created_id_idx
+
+CREATE INDEX activities_status_created_id_idx ON public.activities USING btree (status, created_at DESC, id DESC);
+
 -- Index: public.idx_activities_closed_at
 
 CREATE INDEX idx_activities_closed_at ON public.activities USING btree (closed_at);
@@ -54,6 +62,18 @@ CREATE INDEX idx_activities_start_time ON public.activities USING btree (start_t
 
 CREATE INDEX idx_activities_status ON public.activities USING btree (status);
 
+-- Index: public.activity_members_activity_idx
+
+CREATE INDEX activity_members_activity_idx ON public.activity_members USING btree (activity_id);
+
+-- Index: public.activity_members_user_idx
+
+CREATE INDEX activity_members_user_idx ON public.activity_members USING btree (user_id);
+
+-- Index: public.activity_members_user_state_idx
+
+CREATE INDEX activity_members_user_state_idx ON public.activity_members USING btree (user_id, state);
+
 -- Index: public.idx_activity_members_activity_user
 
 CREATE INDEX idx_activity_members_activity_user ON public.activity_members USING btree (activity_id, user_id);
@@ -65,4 +85,12 @@ CREATE INDEX idx_members_activity_state ON public.activity_members USING btree (
 -- Index: public.idx_room_events_activity_created
 
 CREATE INDEX idx_room_events_activity_created ON public.room_events USING btree (activity_id, created_at);
+
+-- Index: public.room_events_activity_created_id_idx
+
+CREATE INDEX room_events_activity_created_id_idx ON public.room_events USING btree (activity_id, created_at DESC, id DESC);
+
+-- Index: public.room_events_activity_created_idx
+
+CREATE INDEX room_events_activity_created_idx ON public.room_events USING btree (activity_id, created_at DESC);
 

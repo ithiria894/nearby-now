@@ -46,6 +46,7 @@ supabase/.cache/
 # -----------------------------
 .env
 .env.*
+!.env.enc
 !.env.example
 
 # -----------------------------
@@ -60,3 +61,10 @@ supabase/.cache/
 # TypeScript caches
 # -----------------------------
 *.tsbuildinfo
+
+CLAUDE.local.md
+thoughts/
+
+# Android signing (local credentials for EAS)
+credentials/
+credentials.json

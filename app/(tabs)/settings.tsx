@@ -1,5 +1,6 @@
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { backend } from "../../lib/backend";
 import {
   setLanguage,
@@ -7,9 +8,20 @@ import {
   type SupportedLang,
 } from "../../lib/i18n/i18n";
 import { useT } from "../../lib/i18n/useT";
-import { Screen } from "../../src/ui/common";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
+import { requireUserId } from "../../lib/domain/auth";
+import { useUIKit } from "../../src/ui/theme/useUIKit";
+import { space } from "../../src/ui/theme/uikit";
+import {
+  BButton,
+  BCard,
+  BChip,
+  BIconButton,
+  BInput,
+  BScreen,
+  BText,
+} from "../../src/ui/components/brutal";
 
 // :zap: CHANGE 1: Settings tab with Logout action
 export default function SettingsScreen() {
@@ -17,6 +29,33 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { mode, setMode } = useThemeSettings();
   const { t, i18n } = useT();
+  const c = useUIKit();
+  const [displayName, setDisplayName] = useState("");
+  const [nameLoading, setNameLoading] = useState(true);
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameSaved, setNameSaved] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const userId = await requireUserId();
+        const { displayName: current, error } =
+          await backend.profiles.getProfileDisplayName(userId);
+        if (!alive) return;
+        if (error) throw error;
+        setDisplayName(current ?? "");
+        setNameSaved(false);
+      } catch (e) {
+        handleError(t("settings.displayNameLabel"), e);
+      } finally {
+        if (alive) setNameLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [t]);
 
   async function onLogout() {
     try {
@@ -32,89 +71,183 @@ export default function SettingsScreen() {
     }
   }
 
+  async function onSaveDisplayName() {
+    if (nameSaving) return;
+    setNameSaving(true);
+    setNameSaved(false);
+    try {
+      const userId = await requireUserId();
+      const next = displayName.trim().slice(0, 24);
+      const { error } = await backend.profiles.updateProfileDisplayName(
+        userId,
+        next
+      );
+      if (error) throw error;
+      setDisplayName(next);
+      setNameSaved(true);
+    } catch (e) {
+      handleError(t("settings.displayNameLabel"), e);
+    } finally {
+      setNameSaving(false);
+    }
+  }
+
   return (
-    <Screen>
-      <Text style={{ fontSize: 18, fontWeight: "800" }}>
-        {t("settings.title")}
-      </Text>
-
-      <Text style={{ fontWeight: "800" }}>{t("settings.language")}</Text>
-      <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-        {SUPPORTED_LANGS.map((lng) => {
-          const selected = i18n.language === lng;
-          return (
-            <Pressable
-              key={lng}
-              onPress={async () => {
-                try {
-                  await setLanguage(lng as SupportedLang);
-                } catch (e) {
-                  handleError(t("settings.language"), e);
-                }
-              }}
-              style={{
-                padding: 10,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                borderRadius: 10,
-                opacity: selected ? 1 : 0.6,
-                backgroundColor: theme.colors.surface,
-              }}
-            >
-              <Text style={{ fontWeight: "800" }}>
-                {lng === "en"
-                  ? t("settings.language_en")
-                  : lng === "ja"
-                    ? t("settings.language_ja")
-                    : t("settings.language_zhHK")}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <Text style={{ fontWeight: "800" }}>{t("settings.theme")}</Text>
-      <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-        {(["system", "light", "dark"] as const).map((value) => {
-          const selected = mode === value;
-          const label =
-            value === "system"
-              ? t("settings.theme_system")
-              : value === "light"
-                ? t("settings.theme_light")
-                : t("settings.theme_dark");
-          return (
-            <Pressable
-              key={value}
-              onPress={() => setMode(value)}
-              style={{
-                padding: 10,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                borderRadius: 10,
-                opacity: selected ? 1 : 0.6,
-                backgroundColor: theme.colors.surface,
-              }}
-            >
-              <Text style={{ fontWeight: "800" }}>{label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <Pressable
-        onPress={onLogout}
+    <BScreen c={c} scroll>
+      <View
         style={{
-          padding: 12,
-          borderRadius: 10,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
+          flexDirection: "row",
           alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        <Text style={{ fontWeight: "800" }}>{t("settings.logout")}</Text>
-      </Pressable>
-    </Screen>
+        <BIconButton c={c} icon="chevron-left" onPress={() => router.back()} />
+        <View />
+      </View>
+
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: space.md }}
+      >
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: c.yellow,
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 2,
+            borderColor: c.border,
+          }}
+        >
+          <BIconButton c={c} icon="cog" color={c.ink} />
+        </View>
+        <BText c={c} v="h1" color={c.ink}>
+          {t("settings.title")}
+        </BText>
+      </View>
+
+      <BCard c={c}>
+        <BInput
+          c={c}
+          label={t("settings.displayNameLabel")}
+          placeholder={t("settings.displayNamePlaceholder")}
+          value={displayName}
+          onChangeText={(value) => {
+            setDisplayName(value);
+            if (nameSaved) setNameSaved(false);
+          }}
+        />
+        <BButton
+          c={c}
+          tone={nameSaved ? "secondary" : "primary"}
+          label={`${
+            nameSaving
+              ? t("common.loading")
+              : nameSaved
+                ? t("settings.displayNameSaved")
+                : t("settings.displayNameSave")
+          }${nameSaved ? " ✓" : ""}`}
+          onPress={onSaveDisplayName}
+        />
+      </BCard>
+
+      <BCard c={c}>
+        <BText c={c} v="label" color={c.subtext}>
+          {t("settings.language")}
+        </BText>
+        <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
+          {SUPPORTED_LANGS.map((lng) => {
+            const selected = i18n.language === lng;
+            return (
+              <Pressable
+                key={lng}
+                onPress={async () => {
+                  try {
+                    await setLanguage(lng as SupportedLang);
+                  } catch (e) {
+                    handleError(t("settings.language"), e);
+                  }
+                }}
+              >
+                <BChip
+                  c={c}
+                  selected={selected}
+                  label={
+                    lng === "en"
+                      ? t("settings.language_en")
+                      : lng === "ja"
+                        ? t("settings.language_ja")
+                        : lng === "zh-CN"
+                          ? t("settings.language_zhCN")
+                          : t("settings.language_zhHK")
+                  }
+                />
+              </Pressable>
+            );
+          })}
+        </View>
+      </BCard>
+
+      <BCard c={c}>
+        <BText c={c} v="label" color={c.subtext}>
+          {t("settings.theme")}
+        </BText>
+        <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
+          {(
+            [
+              "system",
+              "light",
+              "dark",
+              "sagePaper",
+              "forestGlass",
+              "compassTeal",
+              "compassTealDark",
+              "sunsetCoral",
+              "sunsetCoralDark",
+              "electricViolet",
+              "electricVioletDark",
+            ] as const
+          ).map((value) => {
+            const selected = mode === value;
+            const label =
+              value === "system"
+                ? t("settings.theme_system")
+                : value === "light"
+                  ? t("settings.theme_light")
+                  : value === "dark"
+                    ? t("settings.theme_dark")
+                    : value === "sagePaper"
+                      ? t("settings.theme_sage_paper")
+                      : value === "forestGlass"
+                        ? t("settings.theme_forest_glass")
+                        : value === "compassTeal"
+                          ? t("settings.theme_compass_teal")
+                          : value === "compassTealDark"
+                            ? t("settings.theme_compass_teal_dark")
+                            : value === "sunsetCoral"
+                              ? t("settings.theme_sunset_coral")
+                              : value === "sunsetCoralDark"
+                                ? t("settings.theme_sunset_coral_dark")
+                                : value === "electricViolet"
+                                  ? t("settings.theme_electric_violet")
+                                  : t("settings.theme_electric_violet_dark");
+            return (
+              <Pressable key={value} onPress={() => setMode(value)}>
+                <BChip c={c} selected={selected} label={label} />
+              </Pressable>
+            );
+          })}
+        </View>
+      </BCard>
+
+      <BButton
+        c={c}
+        tone="danger"
+        full
+        label={t("settings.logout")}
+        onPress={onLogout}
+      />
+    </BScreen>
   );
 }

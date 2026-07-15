@@ -1,24 +1,32 @@
 // app/login.tsx
 import { useState } from "react";
-import { Alert, Pressable, Text, TextInput } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { backend } from "../lib/backend";
 import { ensureProfile } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
-import { Screen, PrimaryButton } from "../src/ui/common";
+import { useUIKit } from "../src/ui/theme/useUIKit";
+import { hardShadow, radius, space } from "../src/ui/theme/uikit";
+import {
+  BButton,
+  BCard,
+  BInput,
+  BScreen,
+  BText,
+  HardShadow,
+} from "../src/ui/components/brutal";
 
-// :zap: CHANGE 1: Keep imports at top (ESM/Metro requirement). Log inside component instead.
 export default function LoginScreen() {
-  console.log("LOGIN SCREEN RENDER");
-
   const router = useRouter();
   const { t } = useT();
+  const c = useUIKit();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function onLogin() {
-    if (!email.trim() || !password) {
+    if (!email.trim() || !password.trim()) {
       Alert.alert(t("auth.login.missingTitle"), t("auth.login.missingBody"));
       return;
     }
@@ -31,8 +39,13 @@ export default function LoginScreen() {
       });
       if (error) throw error;
 
-      // :zap: CHANGE 2: Create profile row after login (optional)
-      await ensureProfile();
+      // Profile creation is best-effort — a transient failure must not strand
+      // an already-authenticated user on the Login screen.
+      try {
+        await ensureProfile();
+      } catch (pe) {
+        console.error("ensureProfile (login):", pe);
+      }
 
       router.replace("/");
     } catch (_e: any) {
@@ -44,42 +57,82 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen center>
-      <Text style={{ fontSize: 22, fontWeight: "800" }}>
-        {t("auth.login.title")}
-      </Text>
+    <BScreen c={c} scroll center>
+      <View style={{ alignItems: "center", gap: space.sm }}>
+        <HardShadow c={c} radius={radius.lg} offset={hardShadow.md}>
+          <View
+            style={{
+              width: 74,
+              height: 74,
+              borderRadius: radius.lg,
+              borderWidth: 2,
+              borderColor: c.border,
+              backgroundColor: c.yellow,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MaterialCommunityIcons
+              name="compass-rose"
+              size={40}
+              color={c.ink}
+            />
+          </View>
+        </HardShadow>
+        <BText
+          v="display"
+          c={c}
+          color={c.ink}
+          style={{ marginTop: space.sm, fontFamily: "ShortStack" }}
+        >
+          {t("app.name")}
+        </BText>
+        <BText
+          c={c}
+          color={c.subtext}
+          style={{ fontFamily: "CaveatBold", fontSize: 22 }}
+        >
+          {t("auth.login.submitIdle")}
+        </BText>
+      </View>
 
-      <TextInput
-        value={email}
-        onChangeText={setEmail}
-        placeholder={t("auth.login.emailPlaceholder")}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
-      />
-
-      <TextInput
-        value={password}
-        onChangeText={setPassword}
-        placeholder={t("auth.login.passwordPlaceholder")}
-        secureTextEntry
-        style={{ borderWidth: 1, borderRadius: 10, padding: 12 }}
-      />
-
-      <PrimaryButton
-        label={
-          submitting ? t("auth.login.submitBusy") : t("auth.login.submitIdle")
-        }
-        onPress={onLogin}
-        disabled={submitting}
-      />
+      <BCard c={c}>
+        <BInput
+          c={c}
+          label={t("auth.login.emailLabel")}
+          placeholder={t("auth.login.emailPlaceholder")}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <BInput
+          c={c}
+          label={t("auth.login.passwordLabel")}
+          placeholder={t("auth.login.passwordPlaceholder")}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <BButton
+          c={c}
+          tone="primary"
+          full
+          label={
+            submitting ? t("auth.login.submitBusy") : t("auth.login.submitIdle")
+          }
+          onPress={onLogin}
+        />
+      </BCard>
 
       <Pressable
         onPress={() => router.push("/register")}
-        style={{ padding: 10, alignItems: "center" }}
+        style={{ padding: space.sm, alignItems: "center" }}
       >
-        <Text style={{ fontWeight: "700" }}>{t("auth.login.goRegister")}</Text>
+        <BText v="bodyStrong" c={c} color={c.brand}>
+          {t("auth.login.goRegister")}
+        </BText>
       </Pressable>
-    </Screen>
+    </BScreen>
   );
 }

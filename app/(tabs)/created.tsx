@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useUIKit } from "../../src/ui/theme/useUIKit";
+import { layout, space } from "../../src/ui/theme/uikit";
+import {
+  BActivityRow,
+  BBadge,
+  BButton,
+  BChip,
+  BText,
+  PaperTexture,
+} from "../../src/ui/components/brutal";
 
-import ActivityCard, {
-  type ActivityCardActivity,
-} from "../../components/ActivityCard";
-import { requireUserId } from "../../lib/domain/auth";
+import type { ActivityCardActivity } from "../../lib/domain/activities";
+import { isAuthMissingError, requireUserId } from "../../lib/domain/auth";
 import {
   getCreatedPage,
   getMembershipForUser,
@@ -14,13 +23,15 @@ import {
 } from "../../lib/repo/activities_repo";
 import { isActiveActivity } from "../../lib/domain/activities";
 import { useT } from "../../lib/i18n/useT";
-import { Screen, SegmentedTabs, PrimaryButton } from "../../src/ui/common";
+import { formatCapacity, formatExpiryLabel } from "../../lib/i18n/i18n_format";
+import { activityIcon, activityTileColor } from "../../lib/ui/activityIcon";
 import { handleError } from "../../lib/ui/handleError";
 
 // :zap: CHANGE 1: Created = activities.creator_id = me
 export default function CreatedScreen() {
   const router = useRouter();
   const { t } = useT();
+  const c = useUIKit();
 
   const PAGE_SIZE = 30;
 
@@ -97,8 +108,11 @@ export default function CreatedScreen() {
       try {
         await loadInitial();
       } catch (e: any) {
+        if (isAuthMissingError(e)) {
+          router.replace("/login");
+          return;
+        }
         handleError(t("created.loadErrorTitle"), e);
-        router.replace("/login");
       } finally {
         setLoading(false);
       }
@@ -140,94 +154,162 @@ export default function CreatedScreen() {
   const header = useMemo(() => {
     const activeCount = activeItems.length;
     const inactiveCount = inactiveItems.length;
+    const subtitle =
+      tab === "active"
+        ? t("created.subtitle_active")
+        : t("created.subtitle_inactive");
 
     return (
-      <View style={{ padding: 16, gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800" }}>
-          {t("created.headerTitle")}
-        </Text>
+      <View
+        style={{ paddingTop: space.md, paddingBottom: space.lg, gap: space.md }}
+      >
+        <View style={{ gap: space.xs }}>
+          <BText c={c} v="h1">
+            {t("created.headerTitle")}
+          </BText>
+          <BText c={c} v="caption" color={c.subtext}>
+            {subtitle}
+          </BText>
+        </View>
 
-        <SegmentedTabs
-          value={tab}
-          onChange={setTab}
-          items={[
-            {
-              value: "active",
-              label: t("created.tab_active", { count: activeCount }),
-            },
-            {
-              value: "inactive",
-              label: t("created.tab_inactive", { count: inactiveCount }),
-            },
-          ]}
-        />
-
-        <Text style={{ opacity: 0.7 }}>
-          {tab === "active"
-            ? t("created.subtitle_active")
-            : t("created.subtitle_inactive")}
-        </Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
+          <Pressable onPress={() => setTab("active")}>
+            <BChip
+              c={c}
+              label={t("created.tab_active", { count: activeCount })}
+              selected={tab === "active"}
+            />
+          </Pressable>
+          <Pressable onPress={() => setTab("inactive")}>
+            <BChip
+              c={c}
+              label={t("created.tab_inactive", { count: inactiveCount })}
+              selected={tab === "inactive"}
+            />
+          </Pressable>
+        </View>
       </View>
     );
-  }, [tab, activeItems.length, inactiveItems.length, t]);
+  }, [tab, activeItems.length, inactiveItems.length, t, c]);
 
   if (loading) {
     return (
-      <Screen>
-        <Text>{t("common.loading")}</Text>
-      </Screen>
+      <View style={{ flex: 1, backgroundColor: c.bg }}>
+        <PaperTexture opacity={0.06} />
+        <SafeAreaView
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+          edges={["top"]}
+        >
+          <BText c={c} color={c.subtext}>
+            {t("common.loading")}
+          </BText>
+        </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <FlatList
-      data={dataToShow}
-      keyExtractor={(x) => x.id}
-      ListHeaderComponent={header}
-      contentContainerStyle={{ paddingBottom: 16 }}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      onEndReached={loadMore}
-      onEndReachedThreshold={0.6}
-      initialNumToRender={6}
-      windowSize={5}
-      maxToRenderPerBatch={8}
-      updateCellsBatchingPeriod={50}
-      removeClippedSubviews
-      renderItem={({ item }) => (
-        <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
-          <ActivityCard
-            activity={item}
-            currentUserId={userId}
-            membershipState={joinedSet.has(item.id) ? "joined" : "none"}
-            isJoining={false}
-            onPressCard={() => router.push(`/room/${item.id}`)}
-            onPressEdit={() => router.push(`/edit/${item.id}`)}
-          />
-        </View>
-      )}
-      ListEmptyComponent={
-        <View style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}>
-          <Text style={{ opacity: 0.8 }}>{t("created.empty")}</Text>
-          <PrimaryButton
-            label={t("created.empty_cta")}
-            onPress={() => router.push("/create")}
-          />
-        </View>
-      }
-      ListFooterComponent={
-        loadingMore ? (
-          <View style={{ paddingVertical: 12 }}>
-            <ActivityIndicator />
-          </View>
-        ) : !hasMore && items.length > 0 ? (
-          <View style={{ paddingVertical: 12 }}>
-            <Text style={{ textAlign: "center", opacity: 0.6 }}>
-              {t("common.noMore")}
-            </Text>
-          </View>
-        ) : null
-      }
-    />
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
+      <PaperTexture opacity={0.06} />
+      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+        <FlatList
+          data={dataToShow}
+          keyExtractor={(x) => x.id}
+          ListHeaderComponent={header}
+          style={{ flex: 1, backgroundColor: "transparent" }}
+          contentContainerStyle={{
+            width: "100%",
+            maxWidth: layout.maxContentWidth,
+            alignSelf: "center",
+            paddingHorizontal: space.lg,
+            paddingBottom: space.xxl,
+          }}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.6}
+          initialNumToRender={6}
+          windowSize={5}
+          maxToRenderPerBatch={8}
+          updateCellsBatchingPeriod={50}
+          removeClippedSubviews
+          renderItem={({ item }) => {
+            const placeName = (item.place_name ?? item.place_text ?? "").trim();
+            const expiryLabel = formatExpiryLabel(
+              item.expires_at,
+              Date.now(),
+              t
+            );
+            const capacityLabel = formatCapacity(item.capacity, t);
+            const meta = [placeName, expiryLabel, capacityLabel]
+              .filter(Boolean)
+              .join(" · ");
+            const active = isActiveActivity(item);
+            const badgeLabel = active
+              ? t("created.subtitle_active")
+              : t("created.subtitle_inactive");
+
+            return (
+              <View style={{ marginBottom: space.sm }}>
+                <BActivityRow
+                  c={c}
+                  icon={activityIcon(item.title_text)}
+                  iconBg={activityTileColor(item.id, [
+                    c.coral,
+                    c.mint,
+                    c.sky,
+                    c.yellow,
+                    c.grape,
+                    c.pink,
+                  ])}
+                  title={item.title_text}
+                  meta={meta}
+                  badges={
+                    <BBadge
+                      c={c}
+                      label={badgeLabel}
+                      fill={active ? c.mint : c.yellow}
+                    />
+                  }
+                  onPress={() => router.push(`/room/${item.id}`)}
+                />
+              </View>
+            );
+          }}
+          ListEmptyComponent={
+            <View
+              style={{
+                alignItems: "center",
+                gap: space.md,
+                paddingTop: space.xxl,
+              }}
+            >
+              <BText c={c} color={c.subtext}>
+                {t("created.empty")}
+              </BText>
+              <BButton
+                c={c}
+                tone="primary"
+                label={t("created.empty_cta")}
+                onPress={() => router.push("/create")}
+              />
+            </View>
+          }
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={{ paddingVertical: space.md, alignItems: "center" }}>
+                <ActivityIndicator />
+              </View>
+            ) : !hasMore && items.length > 0 ? (
+              <View style={{ paddingVertical: space.md, alignItems: "center" }}>
+                <BText c={c} color={c.subtext}>
+                  {t("common.noMore")}
+                </BText>
+              </View>
+            ) : null
+          }
+        />
+      </SafeAreaView>
+    </View>
   );
 }

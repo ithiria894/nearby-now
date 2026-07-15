@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, Text, View } from "react-native";
+import { Alert, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { backend } from "../../lib/backend";
 import { requireUserId } from "../../lib/domain/auth";
@@ -8,7 +8,8 @@ import InviteForm, {
   type InviteFormPayload,
 } from "../../components/InviteForm";
 import { useT } from "../../lib/i18n/useT";
-import { Screen } from "../../src/ui/common";
+import { useUIKit } from "../../src/ui/theme/useUIKit";
+import { BScreen, BText } from "../../src/ui/components/brutal";
 
 type ActivityRow = {
   id: string;
@@ -45,6 +46,7 @@ function formatPlace(
 export default function EditActivityScreen() {
   const router = useRouter();
   const { t } = useT();
+  const c = useUIKit();
   const { id } = useLocalSearchParams<{ id: string }>();
   const activityId = String(id);
 
@@ -233,20 +235,28 @@ export default function EditActivityScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: 16 }}>
-        <Text>{t("common.loading")}</Text>
-      </View>
+      <BScreen c={c} scroll>
+        <BText c={c} v="body">
+          {t("common.loading")}
+        </BText>
+      </BScreen>
     );
   }
 
   if (!activity) return null;
 
   return (
-    <Screen scroll>
-      <Text style={{ fontSize: 18, fontWeight: "800" }}>
+    <BScreen c={c} scroll>
+      <BText c={c} v="h1">
         {t("edit.titlePrefix")}{" "}
         {activity.title_text ?? t("edit.fallbackInviteTitle")}
-      </Text>
+      </BText>
+      <BText c={c} v="label" color={c.subtext}>
+        {t("edit.introTitle")}
+      </BText>
+      <BText c={c} v="body" color={c.subtext}>
+        {t("edit.introBody")}
+      </BText>
 
       <InviteForm
         mode="edit"
@@ -270,6 +280,6 @@ export default function EditActivityScreen() {
           end_time: activity.end_time ?? null,
         }}
       />
-    </Screen>
+    </BScreen>
   );
 }

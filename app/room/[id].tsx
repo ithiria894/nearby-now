@@ -7,13 +7,12 @@ import {
   Modal,
   Platform,
   Pressable,
-  Text,
   TextInput,
   View,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { backend } from "../../lib/backend";
-import { requireUserId } from "../../lib/domain/auth";
+import { isAuthMissingError, requireUserId } from "../../lib/domain/auth";
 import { joinWithSystemMessage } from "../../lib/domain/activities";
 import {
   fetchRoomEventById,
@@ -31,8 +30,21 @@ import {
   sectionLabelForIso,
 } from "../../lib/domain/room";
 import { subscribeToRoom } from "../../lib/realtime/room";
-import { useTheme } from "../../src/ui/theme/ThemeProvider";
-import type { ThemeTokens } from "../../src/ui/theme/tokens";
+import { useUIKit } from "../../src/ui/theme/useUIKit";
+import {
+  space,
+  radius,
+  typeScale,
+  type UIColors,
+} from "../../src/ui/theme/uikit";
+import {
+  BBadge,
+  BButton,
+  BCard,
+  BChip,
+  BText,
+  PaperTexture,
+} from "../../src/ui/components/brutal";
 
 type ActivityRow = {
   id: string;
@@ -61,108 +73,29 @@ type ChatItem =
 /* =======================
  * UI components
  * ======================= */
-function IconButton({
-  label,
-  onPress,
-  disabled,
-  destructive,
-  tokens,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  destructive?: boolean;
-  tokens: ThemeTokens["colors"];
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      hitSlop={10}
-      style={({ pressed }) => ({
-        paddingVertical: 8,
-        paddingHorizontal: 10,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: destructive ? tokens.dangerBorder : tokens.border,
-        backgroundColor: destructive ? tokens.dangerBg : tokens.surface,
-        opacity: disabled ? 0.5 : pressed ? 0.85 : 1,
-      })}
-    >
-      <Text
-        style={{
-          fontWeight: "900",
-          color: destructive ? tokens.dangerText : tokens.text,
-          fontSize: 12,
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function QuickChip({
-  label,
-  onPress,
-  disabled,
-  tokens,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  tokens: ThemeTokens["colors"];
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={({ pressed }) => ({
-        paddingVertical: 8,
-        paddingHorizontal: 12,
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: tokens.border,
-        backgroundColor: tokens.surface,
-        opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
-      })}
-    >
-      <Text style={{ fontWeight: "800", color: tokens.text, fontSize: 13 }}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 function SheetItem({
   label,
   onPress,
   destructive,
-  tokens,
+  c,
 }: {
   label: string;
   onPress: () => void;
   destructive?: boolean;
-  tokens: ThemeTokens["colors"];
+  c: UIColors;
 }) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingHorizontal: space.lg,
+        paddingVertical: space.md,
         opacity: pressed ? 0.7 : 1,
       })}
     >
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: "900",
-          color: destructive ? tokens.dangerText : tokens.text,
-        }}
-      >
+      <BText c={c} v="bodyStrong" color={destructive ? c.danger : c.text}>
         {label}
-      </Text>
+      </BText>
     </Pressable>
   );
 }
@@ -173,8 +106,7 @@ function SheetItem({
 export default function RoomScreen() {
   const router = useRouter();
   const { t, i18n } = useT();
-  const theme = useTheme();
-  const TOKENS = theme.colors;
+  const c = useUIKit();
   const { id } = useLocalSearchParams<{ id: string }>();
   const activityId = String(id);
 
@@ -317,9 +249,13 @@ export default function RoomScreen() {
         const uid = await requireUserId();
         setUserId(uid);
         await loadAll(uid);
-      } catch (_e: any) {
-        Alert.alert(t("room.authRequiredTitle"), t("room.authRequiredBody"));
-        router.replace("/login");
+      } catch (e: any) {
+        if (isAuthMissingError(e)) {
+          Alert.alert(t("room.authRequiredTitle"), t("room.authRequiredBody"));
+          router.replace("/login");
+          return;
+        }
+        Alert.alert(t("room.loadErrorTitle"), e?.message ?? "Unknown error");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -358,10 +294,6 @@ export default function RoomScreen() {
         fetchRoomEventById(id)
           .then((evt) => {
             if (!evt) return;
-            if (myMembershipState === "left" && leftAt) {
-              const ts = new Date(evt.created_at).getTime();
-              if (ts > leftAt.getTime()) return;
-            }
             appendEventIfMissing(evt);
           })
           .catch((e) => console.error(e));
@@ -437,15 +369,6 @@ export default function RoomScreen() {
     if (!userId) return;
 
     try {
-      if (!roomState.isReadOnly) {
-        await backend.roomEvents.insertRoomEvent({
-          activity_id: activityId,
-          user_id: userId,
-          type: "system",
-          content: JSON.stringify({ k: "room.system.left" }),
-        });
-      }
-
       const { error } = await backend.activities.updateActivityMemberState(
         activityId,
         userId,
@@ -453,6 +376,19 @@ export default function RoomScreen() {
       );
 
       if (error) throw error;
+
+      if (!roomState.isReadOnly) {
+        try {
+          await backend.roomEvents.insertRoomEvent({
+            activity_id: activityId,
+            user_id: userId,
+            type: "system",
+            content: JSON.stringify({ k: "room.system.left" }),
+          });
+        } catch (postErr) {
+          console.error(postErr);
+        }
+      }
 
       router.back();
     } catch (e: any) {
@@ -675,22 +611,20 @@ export default function RoomScreen() {
   function renderChatItem({ item }: { item: ChatItem }) {
     if (item.kind === "section") {
       return (
-        <View style={{ alignItems: "center", paddingVertical: 6 }}>
+        <View style={{ alignItems: "center", paddingVertical: space.xs + 2 }}>
           <View
             style={{
-              paddingVertical: 4,
-              paddingHorizontal: 10,
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: TOKENS.border,
-              backgroundColor: TOKENS.otherBg,
+              paddingVertical: space.xs,
+              paddingHorizontal: space.md,
+              borderRadius: radius.pill,
+              borderWidth: 2,
+              borderColor: c.border,
+              backgroundColor: c.surfaceAlt,
             }}
           >
-            <Text
-              style={{ fontSize: 12, fontWeight: "800", color: TOKENS.subtext }}
-            >
+            <BText c={c} v="label" color={c.subtext}>
               {item.label}
-            </Text>
+            </BText>
           </View>
         </View>
       );
@@ -701,27 +635,21 @@ export default function RoomScreen() {
     // :zap: CHANGE 3: System message style (grey centered small bubble)
     if (e.type === "system" || !e.user_id) {
       return (
-        <View style={{ alignItems: "center", paddingVertical: 6 }}>
+        <View style={{ alignItems: "center", paddingVertical: space.xs + 2 }}>
           <View
             style={{
-              paddingVertical: 6,
-              paddingHorizontal: 10,
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: TOKENS.systemBorder,
-              backgroundColor: TOKENS.systemBg,
+              paddingVertical: space.xs + 2,
+              paddingHorizontal: space.md,
+              borderRadius: radius.pill,
+              borderWidth: 2,
+              borderColor: c.border,
+              backgroundColor: c.surfaceAlt,
               maxWidth: "92%",
             }}
           >
-            <Text
-              style={{
-                color: TOKENS.systemText,
-                fontSize: 12,
-                fontWeight: "700",
-              }}
-            >
+            <BText c={c} v="caption" color={c.subtext}>
               {renderEventContent(t, i18n.language, e)}
-            </Text>
+            </BText>
           </View>
         </View>
       );
@@ -751,37 +679,35 @@ export default function RoomScreen() {
             gap: 6,
           }}
         >
-          <Text
+          <BText
+            c={c}
+            v="label"
+            color={c.subtext}
             numberOfLines={1}
-            style={{
-              fontSize: 12,
-              fontWeight: "800",
-              color: TOKENS.subtext,
-              maxWidth: 180,
-            }}
+            style={{ maxWidth: 180 }}
           >
             {name}
-          </Text>
-          <Text style={{ fontSize: 11, color: TOKENS.subtext }}>
+          </BText>
+          <BText c={c} v="caption" color={c.subtext}>
             {hhmm(e.created_at)}
-          </Text>
+          </BText>
         </View>
 
         <View
           style={{
-            paddingVertical: 10,
-            paddingHorizontal: 12,
-            borderRadius: 18,
-            borderTopRightRadius: isMine ? 6 : 18,
-            borderTopLeftRadius: isMine ? 18 : 6,
-            borderWidth: 1,
-            borderColor: isMine ? TOKENS.mineBorder : TOKENS.otherBorder,
-            backgroundColor: isMine ? TOKENS.mineBg : TOKENS.otherBg,
+            paddingVertical: space.sm + 2,
+            paddingHorizontal: space.md,
+            borderRadius: radius.lg,
+            borderTopRightRadius: isMine ? radius.sm : radius.lg,
+            borderTopLeftRadius: isMine ? radius.lg : radius.sm,
+            borderWidth: 2,
+            borderColor: c.border,
+            backgroundColor: isMine ? c.brand : c.surface,
           }}
         >
-          <Text style={{ color: TOKENS.text, fontWeight: "600", fontSize: 15 }}>
+          <BText c={c} v="body" color={isMine ? c.onBrand : c.text}>
             {content}
-          </Text>
+          </BText>
         </View>
       </Pressable>
     );
@@ -790,156 +716,96 @@ export default function RoomScreen() {
   // :zap: CHANGE 5: Header action placement — top-right controls; quick actions near input
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: TOKENS.bg }}
+      style={{ flex: 1, backgroundColor: c.bg }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={keyboardVerticalOffset}
     >
-      <View style={{ flex: 1, padding: 16, gap: 12 }}>
+      <PaperTexture opacity={0.06} />
+      <View style={{ flex: 1, padding: space.lg, gap: space.md }}>
         {/* Header */}
-        <View
-          style={{
-            borderWidth: 1,
-            borderColor: TOKENS.border,
-            borderRadius: 16,
-            padding: 12,
-            backgroundColor: TOKENS.surface,
-            gap: 10,
-          }}
-        >
+        <BCard c={c}>
           <View
-            style={{ flexDirection: "row", alignItems: "flex-start", gap: 10 }}
+            style={{
+              flexDirection: "row",
+              alignItems: "flex-start",
+              gap: space.md,
+            }}
           >
-            <View style={{ flex: 1, gap: 4, paddingRight: 6 }}>
-              <Text
-                style={{ fontSize: 18, fontWeight: "900", color: TOKENS.title }}
-              >
+            <View style={{ flex: 1, gap: space.xs, paddingRight: 6 }}>
+              <BText c={c} v="h2" color={c.ink}>
                 {activity?.title_text ?? t("room.fallbackRoomTitle")}
-              </Text>
+              </BText>
 
-              <Text
-                style={{ fontWeight: "700", color: TOKENS.text }}
-                numberOfLines={1}
-              >
+              <BText c={c} v="bodyStrong" numberOfLines={1}>
                 {placeName}
-              </Text>
+              </BText>
 
               {placeAddress ? (
-                <Text
-                  style={{ fontSize: 12, color: TOKENS.subtext }}
-                  numberOfLines={1}
-                >
+                <BText c={c} v="caption" color={c.subtext} numberOfLines={1}>
                   {placeAddress}
-                </Text>
+                </BText>
               ) : null}
 
               <View
                 style={{
                   flexDirection: "row",
                   flexWrap: "wrap",
-                  gap: 8,
-                  marginTop: 4,
+                  gap: space.sm,
+                  marginTop: space.xs,
                 }}
               >
-                <View
-                  style={{
-                    paddingVertical: 4,
-                    paddingHorizontal: 10,
-                    borderRadius: 999,
-                    borderWidth: 1,
-                    borderColor: TOKENS.border,
-                    backgroundColor: TOKENS.otherBg,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: "800",
-                      color: TOKENS.text,
-                    }}
-                  >
-                    {t("room.membersCount", { count: members.length })}
-                  </Text>
-                </View>
+                <BBadge
+                  c={c}
+                  label={t("room.membersCount", { count: members.length })}
+                  fill={c.surface}
+                />
 
                 {isCreator ? (
-                  <View
-                    style={{
-                      paddingVertical: 4,
-                      paddingHorizontal: 10,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: TOKENS.okBorder,
-                      backgroundColor: TOKENS.okBg,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "900",
-                        color: TOKENS.okText,
-                      }}
-                    >
-                      {t("room.createdBadge")}
-                    </Text>
-                  </View>
+                  <BBadge c={c} label={t("room.createdBadge")} fill={c.mint} />
                 ) : null}
 
                 {roomState.labelKey ? (
-                  <View
-                    style={{
-                      paddingVertical: 4,
-                      paddingHorizontal: 10,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: TOKENS.dangerBorder,
-                      backgroundColor: TOKENS.dangerBg,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: "900",
-                        color: TOKENS.dangerText,
-                      }}
-                    >
-                      {roomState.labelKey === "closed"
+                  <BBadge
+                    c={c}
+                    label={
+                      roomState.labelKey === "closed"
                         ? t("room.closedBadge")
-                        : t("room.expiredBadge")}
-                    </Text>
-                  </View>
+                        : t("room.expiredBadge")
+                    }
+                    fill={c.coral}
+                  />
                 ) : null}
               </View>
             </View>
 
             {/* Top-right controls */}
-            <View style={{ gap: 8, alignItems: "flex-end" }}>
+            <View style={{ gap: space.sm, alignItems: "flex-end" }}>
               {!joined ? (
-                <IconButton
+                <BButton
+                  c={c}
+                  tone="primary"
                   label={
                     myMembershipState === "left"
                       ? t("common.rejoin")
                       : t("common.join")
                   }
-                  onPress={join}
-                  disabled={roomState.isReadOnly}
-                  tokens={TOKENS}
+                  onPress={roomState.isReadOnly ? undefined : join}
                 />
               ) : (
-                <IconButton
+                <BButton
+                  c={c}
+                  tone="secondary"
                   label={t("common.leave")}
                   onPress={confirmLeave}
-                  destructive
-                  tokens={TOKENS}
                 />
               )}
 
               {isCreator ? (
-                <IconButton
+                <BButton
+                  c={c}
+                  tone="danger"
                   label={t("common.close")}
-                  onPress={closeInvite}
-                  disabled={roomState.isReadOnly}
-                  destructive
-                  tokens={TOKENS}
+                  onPress={roomState.isReadOnly ? undefined : closeInvite}
                 />
               ) : null}
             </View>
@@ -948,62 +814,66 @@ export default function RoomScreen() {
           {myMembershipState === "left" ? (
             <View
               style={{
-                padding: 10,
-                borderWidth: 1,
-                borderRadius: 12,
-                borderColor: TOKENS.border,
-                backgroundColor: TOKENS.otherBg,
-                gap: 4,
+                padding: space.md,
+                borderWidth: 2,
+                borderRadius: radius.md,
+                borderColor: c.border,
+                backgroundColor: c.surfaceAlt,
+                gap: space.xs,
               }}
             >
-              <Text style={{ fontWeight: "900", color: TOKENS.text }}>
+              <BText c={c} v="bodyStrong" color={c.text}>
                 {t("room.leftTitle")}
-              </Text>
-              <Text style={{ color: TOKENS.subtext }}>
+              </BText>
+              <BText c={c} v="caption" color={c.subtext}>
                 {t("room.leftBody")}
-              </Text>
+              </BText>
             </View>
           ) : null}
 
           {roomState.labelKey ? (
             <View
               style={{
-                padding: 10,
-                borderWidth: 1,
-                borderRadius: 12,
-                borderColor: TOKENS.dangerBorder,
-                backgroundColor: TOKENS.dangerBg,
-                gap: 4,
+                padding: space.md,
+                borderWidth: 2,
+                borderRadius: radius.md,
+                borderColor: c.border,
+                backgroundColor: c.coral,
+                gap: space.xs,
               }}
             >
-              <Text style={{ fontWeight: "900", color: TOKENS.dangerText }}>
+              <BText c={c} v="bodyStrong" color={c.onBright}>
                 {t("room.readonlyTitle")}
-              </Text>
-              <Text style={{ color: TOKENS.dangerText, opacity: 0.9 }}>
+              </BText>
+              <BText c={c} v="caption" color={c.onBright}>
                 {t("room.readonlyBody")}
-              </Text>
+              </BText>
             </View>
           ) : null}
-        </View>
+        </BCard>
 
         {/* Chat */}
         <View
           style={{
             flex: 1,
-            borderWidth: 1,
-            borderColor: TOKENS.border,
-            borderRadius: 16,
-            backgroundColor: TOKENS.surface,
-            paddingHorizontal: 12,
-            paddingTop: 8,
-            paddingBottom: 10,
+            borderWidth: 2,
+            borderColor: c.border,
+            borderRadius: radius.lg,
+            backgroundColor: c.surface,
+            paddingHorizontal: space.md,
+            paddingTop: space.sm,
+            paddingBottom: space.sm + 2,
           }}
         >
           {!canReadEvents ? (
-            <Text style={{ color: TOKENS.subtext }}>{t("room.joinToSee")}</Text>
+            <BText c={c} v="body" color={c.subtext}>
+              {t("room.joinToSee")}
+            </BText>
           ) : (
             <FlatList
-              ref={(r) => (listRef.current = r)}
+              ref={(r) => {
+                listRef.current = r;
+              }}
               data={chatItems}
               keyExtractor={(x) => x.id}
               renderItem={renderChatItem}
@@ -1014,9 +884,14 @@ export default function RoomScreen() {
               ListFooterComponent={
                 chatHasMore ? (
                   <View style={{ paddingVertical: 6 }}>
-                    <Text style={{ textAlign: "center", opacity: 0.5 }}>
+                    <BText
+                      c={c}
+                      v="caption"
+                      color={c.faint}
+                      style={{ textAlign: "center" }}
+                    >
                       {loadingOlder ? t("common.loading") : ""}
-                    </Text>
+                    </BText>
                   </View>
                 ) : null
               }
@@ -1031,31 +906,42 @@ export default function RoomScreen() {
         </View>
 
         {/* Quick actions (near input, like IG quick reactions) */}
-        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-          <QuickChip
-            label={t("room.quick.imHere")}
+        <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
+          <Pressable
             onPress={() => sendQuick("IM_HERE")}
             disabled={!canInteract}
-            tokens={TOKENS}
-          />
-          <QuickChip
-            label={t("room.quick.late10")}
+            style={{ opacity: canInteract ? 1 : 0.45 }}
+          >
+            <BChip c={c} label={t("room.quick.imHere")} />
+          </Pressable>
+          <Pressable
             onPress={() => sendQuick("LATE_10")}
             disabled={!canInteract}
-            tokens={TOKENS}
-          />
-          <QuickChip
-            label={t("room.quick.cancel")}
+            style={{ opacity: canInteract ? 1 : 0.45 }}
+          >
+            <BChip c={c} label={t("room.quick.late10")} />
+          </Pressable>
+          <Pressable
             onPress={() => sendQuick("CANCEL")}
             disabled={!canInteract}
-            tokens={TOKENS}
-          />
+            style={{ opacity: canInteract ? 1 : 0.45 }}
+          >
+            <BChip c={c} label={t("room.quick.cancel")} />
+          </Pressable>
         </View>
 
         {/* Input bar */}
-        <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-end" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: space.sm,
+            alignItems: "flex-end",
+          }}
+        >
           <TextInput
-            ref={(r) => (inputRef.current = r)}
+            ref={(r) => {
+              inputRef.current = r;
+            }}
             value={message}
             onChangeText={setMessage}
             placeholder={
@@ -1067,6 +953,7 @@ export default function RoomScreen() {
                     ? t("room.placeholder.readonly")
                     : t("room.placeholder.joinToChat")
             }
+            placeholderTextColor={c.faint}
             editable={canInteract}
             multiline
             onFocus={() => scrollToBottom(true)}
@@ -1074,34 +961,35 @@ export default function RoomScreen() {
               flex: 1,
               minHeight: 44,
               maxHeight: 130,
-              borderWidth: 1,
-              borderColor: TOKENS.border,
-              borderRadius: 18,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              color: TOKENS.text,
-              backgroundColor: TOKENS.surface,
+              borderWidth: 2,
+              borderColor: c.border,
+              borderRadius: radius.lg,
+              paddingHorizontal: space.md,
+              paddingVertical: space.sm + 2,
+              color: c.text,
+              backgroundColor: c.surface,
+              fontFamily: typeScale.body.font,
+              fontSize: typeScale.body.size,
               opacity: canInteract ? 1 : 0.6,
             }}
           />
 
-          <Pressable
-            onPress={() => sendChat(message)}
-            disabled={!canInteract}
-            style={({ pressed }) => ({
-              paddingVertical: 12,
-              paddingHorizontal: 14,
-              borderRadius: 18,
-              borderWidth: 1,
-              borderColor: TOKENS.border,
-              backgroundColor: TOKENS.surface,
-              opacity: !canInteract ? 0.5 : pressed ? 0.85 : 1,
-            })}
+          <View
+            style={{
+              opacity: !canInteract || !message.trim() ? 0.5 : 1,
+            }}
           >
-            <Text style={{ fontWeight: "900", color: TOKENS.text }}>
-              {t("common.send")}
-            </Text>
-          </Pressable>
+            <BButton
+              c={c}
+              tone="primary"
+              label={t("common.send")}
+              onPress={
+                !canInteract || !message.trim()
+                  ? undefined
+                  : () => sendChat(message)
+              }
+            />
+          </View>
         </View>
       </View>
 
@@ -1116,20 +1004,20 @@ export default function RoomScreen() {
           onPress={() => setMenuOpen(false)}
           style={{
             flex: 1,
-            backgroundColor: TOKENS.overlay,
+            backgroundColor: c.overlay,
             justifyContent: "flex-end",
           }}
         >
           <Pressable
             onPress={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: TOKENS.surface,
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              borderWidth: 1,
-              borderColor: TOKENS.border,
-              paddingTop: 10,
-              paddingBottom: 12,
+              backgroundColor: c.surface,
+              borderTopLeftRadius: radius.lg,
+              borderTopRightRadius: radius.lg,
+              borderTopWidth: 2,
+              borderColor: c.border,
+              paddingTop: space.sm,
+              paddingBottom: space.md,
             }}
           >
             <View
@@ -1137,20 +1025,26 @@ export default function RoomScreen() {
                 alignSelf: "center",
                 width: 42,
                 height: 4,
-                borderRadius: 999,
-                backgroundColor: TOKENS.border,
-                marginBottom: 10,
+                borderRadius: radius.pill,
+                backgroundColor: c.border,
+                marginBottom: space.sm,
               }}
             />
 
-            <View style={{ paddingHorizontal: 16, paddingBottom: 8, gap: 4 }}>
-              <Text style={{ fontWeight: "900", color: TOKENS.text }}>
+            <View
+              style={{
+                paddingHorizontal: space.lg,
+                paddingBottom: space.sm,
+                gap: space.xs,
+              }}
+            >
+              <BText c={c} v="bodyStrong" color={c.text}>
                 {t("room.menu.title")}
-              </Text>
+              </BText>
               {menuTarget ? (
-                <Text style={{ color: TOKENS.subtext }} numberOfLines={2}>
+                <BText c={c} v="caption" color={c.subtext} numberOfLines={2}>
                   {renderEventContent(t, i18n.language, menuTarget)}
-                </Text>
+                </BText>
               ) : null}
             </View>
 
@@ -1163,7 +1057,7 @@ export default function RoomScreen() {
                 setMenuOpen(false);
                 await copyToClipboard(text);
               }}
-              tokens={TOKENS}
+              c={c}
             />
             <SheetItem
               label={t("room.menu.report")}
@@ -1172,14 +1066,14 @@ export default function RoomScreen() {
                 setMenuOpen(false);
                 reportMessage(menuTarget);
               }}
-              tokens={TOKENS}
+              c={c}
             />
 
-            <View style={{ height: 8 }} />
+            <View style={{ height: space.sm }} />
             <SheetItem
               label={t("room.menu.cancel")}
               onPress={() => setMenuOpen(false)}
-              tokens={TOKENS}
+              c={c}
             />
           </Pressable>
         </Pressable>

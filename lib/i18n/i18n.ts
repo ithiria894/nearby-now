@@ -4,20 +4,30 @@ import { initReactI18next } from "react-i18next";
 
 import en from "../../locales/en.json";
 import zhHK from "../../locales/zh-HK.json";
+import zhCN from "../../locales/zh-CN.json";
 import ja from "../../locales/ja.json";
+import { APP_TITLE } from "../constants/app";
 import { getStoredLanguage, setStoredLanguage } from "./i18n_storage";
 
-export const SUPPORTED_LANGS = ["en", "zh-HK", "ja"] as const;
+export const SUPPORTED_LANGS = ["en", "zh-HK", "zh-CN", "ja"] as const;
 export type SupportedLang = (typeof SUPPORTED_LANGS)[number];
 
 function pickInitialLanguage(): SupportedLang {
   const locales = Localization.getLocales?.() ?? [];
   const tag = locales[0]?.languageTag ?? "en";
 
-  if (tag.toLowerCase().startsWith("zh")) {
+  const lower = tag.toLowerCase();
+  if (
+    lower.startsWith("zh-cn") ||
+    lower.startsWith("zh-sg") ||
+    lower.includes("hans")
+  ) {
+    return "zh-CN";
+  }
+  if (lower.startsWith("zh")) {
     return "zh-HK";
   }
-  if (tag.toLowerCase().startsWith("ja")) {
+  if (lower.startsWith("ja")) {
     return "ja";
   }
   return "en";
@@ -30,25 +40,51 @@ let initialized = false;
 export async function initI18n(): Promise<void> {
   if (initialized || i18n.isInitialized) return;
 
-  const saved = await getStoredLanguage();
-  const savedLang = (saved ?? "") as SupportedLang;
-  const lng = SUPPORTED_LANGS.includes(savedLang)
-    ? savedLang
-    : pickInitialLanguage();
-
-  await i18n.use(initReactI18next).init({
-    resources: {
-      en: { translation: en },
-      "zh-HK": { translation: zhHK },
-      ja: { translation: ja },
+  const withAppTitle = (bundle: Record<string, unknown>) => ({
+    ...bundle,
+    app: {
+      ...(bundle as { app?: Record<string, unknown> }).app,
+      name: APP_TITLE,
     },
-    lng,
-    fallbackLng: "en",
-    interpolation: {
-      escapeValue: false,
-    },
-    returnNull: false,
   });
+
+  const resources = {
+    en: { translation: withAppTitle(en) },
+    "zh-HK": { translation: withAppTitle(zhHK) },
+    "zh-CN": { translation: withAppTitle(zhCN) },
+    ja: { translation: withAppTitle(ja) },
+  };
+
+  try {
+    const saved = await getStoredLanguage();
+    const savedLang = (saved ?? "") as SupportedLang;
+    const lng = SUPPORTED_LANGS.includes(savedLang)
+      ? savedLang
+      : pickInitialLanguage();
+
+    await i18n.use(initReactI18next).init({
+      resources,
+      lng,
+      fallbackLng: "en",
+      interpolation: {
+        escapeValue: false,
+      },
+      returnNull: false,
+    });
+  } catch (e) {
+    // Never leave i18n uninitialized (would render raw keys). Fall back to a
+    // minimal English init so headers/labels always show real translations.
+    console.error("i18n init failed, loading English fallback:", e);
+    if (!i18n.isInitialized) {
+      await i18n.use(initReactI18next).init({
+        resources,
+        lng: "en",
+        fallbackLng: "en",
+        interpolation: { escapeValue: false },
+        returnNull: false,
+      });
+    }
+  }
 
   initialized = true;
 }
