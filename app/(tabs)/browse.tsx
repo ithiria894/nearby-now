@@ -46,7 +46,7 @@ import {
   formatGenderPref,
   formatLocalDateTime,
 } from "../../lib/i18n/i18n_format";
-import { useTheme } from "../../src/ui/theme/ThemeProvider";
+import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
 import {
   getIpLocation,
@@ -91,6 +91,7 @@ export default function BrowseScreen() {
   const router = useRouter();
   const { t } = useT();
   const theme = useTheme();
+  const { setMode } = useThemeSettings();
   const c = useUIKit();
   const insets = useSafeAreaInsets();
 
@@ -612,6 +613,11 @@ export default function BrowseScreen() {
             />
           </View>
         </Pressable>
+        <BIconButton
+          c={c}
+          icon={theme.isDark ? "weather-sunny" : "weather-night"}
+          onPress={() => setMode(theme.isDark ? "light" : "dark")}
+        />
         <BIconButton c={c} icon="magnify" onPress={openSearchSheet} />
       </View>
 
