@@ -54,6 +54,29 @@ export const backend = {
         unsubscribe: () => sub.subscription.unsubscribe(),
       };
     },
+    // Send a password-recovery email. redirectTo deep-links back into the app.
+    async resetPasswordForEmail(email: string, redirectTo?: string) {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo ? { redirectTo } : undefined
+      );
+      return { error };
+    },
+    // Set the new password (must be in a recovery session — see setSessionFromTokens).
+    async updatePassword(newPassword: string) {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      return { error };
+    },
+    // Establish a session from tokens parsed out of a recovery deep link.
+    async setSessionFromTokens(accessToken: string, refreshToken: string) {
+      const { data, error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      return { session: data?.session ?? null, error };
+    },
   },
   profiles: {
     async upsertProfile(userId: string) {

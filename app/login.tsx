@@ -127,6 +127,15 @@ export default function LoginScreen() {
       </BCard>
 
       <Pressable
+        onPress={() => router.push("/forgot-password")}
+        style={{ paddingVertical: space.xs, alignItems: "center" }}
+      >
+        <BText v="bodyStrong" c={c} color={c.subtext}>
+          {t("auth.login.forgotPassword")}
+        </BText>
+      </Pressable>
+
+      <Pressable
         onPress={() => router.push("/register")}
         style={{ padding: space.sm, alignItems: "center" }}
       >
