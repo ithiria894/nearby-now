@@ -89,7 +89,10 @@
     "navTitle": "作成",
     "title": "招待を作成",
     "submit": "今すぐ投稿",
-    "errorTitle": "作成に失敗"
+    "errorTitle": "作成に失敗",
+    "reuse": "過去の招待を再利用",
+    "reuseTitle": "どの招待を再利用？",
+    "reuseClose": "キャンセル"
   },
   "compose": {
     "navTitle": "クイック投稿",

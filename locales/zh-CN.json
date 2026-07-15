@@ -89,7 +89,10 @@
     "navTitle": "创建邀请",
     "title": "创建一个邀请",
     "submit": "立即发布",
-    "errorTitle": "创建失败"
+    "errorTitle": "创建失败",
+    "reuse": "复用之前的邀请",
+    "reuseTitle": "复用哪个邀请？",
+    "reuseClose": "取消"
   },
   "compose": {
     "navTitle": "快速发布",

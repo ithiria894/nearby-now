@@ -89,7 +89,10 @@
     "navTitle": "Create",
     "title": "Create an invite",
     "submit": "Post now",
-    "errorTitle": "Create failed"
+    "errorTitle": "Create failed",
+    "reuse": "Reuse a past invite",
+    "reuseTitle": "Reuse which invite?",
+    "reuseClose": "Cancel"
   },
   "compose": {
     "navTitle": "Quick Post",

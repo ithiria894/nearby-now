@@ -89,7 +89,10 @@
     "navTitle": "建立邀請",
     "title": "建立一個邀請",
     "submit": "立即發佈",
-    "errorTitle": "建立失敗"
+    "errorTitle": "建立失敗",
+    "reuse": "用返之前開過嘅",
+    "reuseTitle": "揀邊個舊邀請?",
+    "reuseClose": "取消"
   },
   "compose": {
     "navTitle": "快貼",
