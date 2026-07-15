@@ -6,7 +6,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
 import { layout, space } from "../../src/ui/theme/uikit";
 import {
-  BActivityRow,
   BAppBar,
   BButton,
   BText,
@@ -15,6 +14,7 @@ import {
 } from "../../src/ui/components/brutal";
 
 import { type MembershipState } from "../../components/ActivityCard";
+import { ConversationRow } from "../../components/ConversationRow";
 import type { ActivityCardActivity } from "../../lib/domain/activities";
 import { isAuthMissingError, requireUserId } from "../../lib/domain/auth";
 import {
@@ -22,11 +22,14 @@ import {
   getMembershipForUser,
   type ActivitiesPage,
 } from "../../lib/repo/activities_repo";
+import {
+  getRoomSummaries,
+  type RoomSummary,
+} from "../../lib/repo/room_summaries";
+import { getLastReadMap } from "../../lib/domain/reads";
 import { isActiveActivity } from "../../lib/domain/activities";
 import { subscribeToJoinedActivityChanges } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
-import { formatCapacity, formatExpiryLabel } from "../../lib/i18n/i18n_format";
-import { activityIcon, activityTileColor } from "../../lib/ui/activityIcon";
 import { handleError } from "../../lib/ui/handleError";
 
 export default function JoinedScreen() {
@@ -49,6 +52,7 @@ export default function JoinedScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [cursor, setCursor] = useState<ActivitiesPage["cursor"]>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [summaries, setSummaries] = useState<Record<string, RoomSummary>>({});
 
   const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -176,6 +180,27 @@ export default function JoinedScreen() {
     };
   }, [userId, membershipIds, scheduleReload]);
 
+  // Conversation summaries (last message + unread count) for the loaded rooms.
+  // Re-runs whenever the item set changes — including on focus after reading a
+  // room, which is when the unread watermark has just advanced.
+  useEffect(() => {
+    if (!userId || items.length === 0) return;
+    let alive = true;
+    (async () => {
+      const ids = items.map((a) => a.id);
+      const since = await getLastReadMap(userId);
+      const sums = await getRoomSummaries({
+        activityIds: ids,
+        meId: userId,
+        since,
+      });
+      if (alive) setSummaries(sums);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [userId, items]);
+
   // :zap: CHANGE 2: Split joined into Active / Inactive / Left lists.
   const { activeJoined, inactiveJoined, leftRooms } = useMemo(() => {
     const withState = items.map((a) => ({
@@ -273,34 +298,17 @@ export default function JoinedScreen() {
           maxToRenderPerBatch={8}
           updateCellsBatchingPeriod={50}
           removeClippedSubviews
-          renderItem={({ item: a }) => {
-            const placeName = (a.place_name ?? a.place_text ?? "").trim();
-            const expiryLabel = formatExpiryLabel(a.expires_at, Date.now(), t);
-            const capacityLabel = formatCapacity(a.capacity, t);
-            const meta = [placeName, expiryLabel, capacityLabel]
-              .filter(Boolean)
-              .join(" · ");
-
-            return (
-              <View style={{ marginBottom: space.sm }}>
-                <BActivityRow
-                  c={c}
-                  icon={activityIcon(a.title_text)}
-                  iconBg={activityTileColor(a.id, [
-                    c.coral,
-                    c.mint,
-                    c.sky,
-                    c.yellow,
-                    c.grape,
-                    c.pink,
-                  ])}
-                  title={a.title_text}
-                  meta={meta}
-                  onPress={() => router.push(`/room/${a.id}`)}
-                />
-              </View>
-            );
-          }}
+          renderItem={({ item: a }) => (
+            <View style={{ marginBottom: space.sm }}>
+              <ConversationRow
+                c={c}
+                activity={a}
+                summary={summaries[a.id]}
+                userId={userId}
+                onPress={() => router.push(`/room/${a.id}`)}
+              />
+            </View>
+          )}
           ListEmptyComponent={
             <View
               style={{

@@ -601,8 +601,10 @@ export function BActivityRow({
   iconBg,
   title,
   meta,
+  preview,
   badges,
   trailing,
+  unread,
   last,
   accent,
   onPress,
@@ -612,8 +614,10 @@ export function BActivityRow({
   iconBg: string;
   title: string;
   meta: React.ReactNode; // string, or inline nodes (e.g. an icon + count)
+  preview?: string; // conversation preview line, e.g. "Alex: see you there"
   badges?: React.ReactNode;
   trailing?: string; // small top-right text (e.g. distance, last-message time)
+  unread?: number; // unread count bubble at the right edge (hidden when 0)
   last?: boolean;
   accent?: string; // optional left accent bar to flag an important row
   onPress?: () => void;
@@ -676,6 +680,14 @@ export function BActivityRow({
               </Text>
             ) : null}
           </View>
+          {preview ? (
+            <Text
+              style={[txt(typeScale.caption, c.text), { fontWeight: "600" }]}
+              numberOfLines={1}
+            >
+              {preview}
+            </Text>
+          ) : null}
           <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
             {meta}
           </Text>
@@ -693,6 +705,23 @@ export function BActivityRow({
             </View>
           ) : null}
         </View>
+        {unread && unread > 0 ? (
+          <View
+            style={{
+              minWidth: 22,
+              height: 22,
+              borderRadius: 11,
+              paddingHorizontal: 6,
+              backgroundColor: c.brand,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: c.onBrand, fontSize: 11, fontWeight: "800" }}>
+              {unread > 99 ? "99+" : String(unread)}
+            </Text>
+          </View>
+        ) : null}
         <MaterialCommunityIcons name="chevron-right" size={24} color={c.ink} />
       </View>
     </Pressable>

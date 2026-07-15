@@ -29,6 +29,7 @@ import {
   sectionLabelForIso,
 } from "../../lib/domain/room";
 import { subscribeToRoom } from "../../lib/realtime/room";
+import { getLastRead, markRead } from "../../lib/domain/reads";
 import { alertAsync, confirmAsync } from "../../lib/ui/dialog";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
 import {
@@ -69,6 +70,7 @@ type MemberRow = {
 
 type ChatItem =
   | { kind: "section"; id: string; label: string }
+  | { kind: "unread"; id: string }
   | { kind: "event"; id: string; e: RoomEventRow };
 
 /* =======================
@@ -124,6 +126,10 @@ export default function RoomScreen() {
   const [chatCursor, setChatCursor] = useState<RoomEventCursor | null>(null);
   const [chatHasMore, setChatHasMore] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  // Read watermark captured when the room opens (before we mark it read), used
+  // to draw the "New messages" divider. Frozen for the session so the divider
+  // stays put even as incoming messages get marked read.
+  const [unreadSince, setUnreadSince] = useState<number | null>(null);
 
   // long-press menu state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -244,11 +250,27 @@ export default function RoomScreen() {
     });
   }, []);
 
+  // Advance the local read watermark to the newest loaded event. Runs on the
+  // initial load and whenever a new message arrives while the room is open, so
+  // the Lobby/Created unread badges clear once you've seen the messages.
+  useEffect(() => {
+    if (!userId || events.length === 0) return;
+    let newest = 0;
+    for (const e of events) {
+      const ms = new Date(e.created_at).getTime();
+      if (ms > newest) newest = ms;
+    }
+    if (newest > 0) void markRead(userId, activityId, newest);
+  }, [userId, activityId, events]);
+
   useEffect(() => {
     (async () => {
       try {
         const uid = await requireUserId();
         setUserId(uid);
+        // Snapshot how far this room had been read *before* we open it, so the
+        // "New messages" divider knows where to sit.
+        setUnreadSince(await getLastRead(uid, activityId));
         await loadAll(uid);
       } catch (e: any) {
         if (isAuthMissingError(e)) {
@@ -509,7 +531,32 @@ export default function RoomScreen() {
       return String(b.id).localeCompare(String(a.id));
     });
 
+    // Show the "New messages" divider only if there's a real message from
+    // someone else newer than where we last read up to.
+    const watermark = unreadSince ?? 0;
+    const hasUnread =
+      watermark > 0 &&
+      ordered.some(
+        (e) =>
+          (e.type === "chat" || e.type === "quick") &&
+          e.user_id !== userId &&
+          new Date(e.created_at).getTime() > watermark
+      );
+    let dividerDone = false;
+
     for (const e of ordered) {
+      // The list is inverted + newest-first, so pushing the divider right
+      // before the first already-read message lands it just above the block
+      // of unread messages.
+      if (
+        hasUnread &&
+        !dividerDone &&
+        new Date(e.created_at).getTime() <= watermark
+      ) {
+        items.push({ kind: "unread", id: "unread-divider" });
+        dividerDone = true;
+      }
+
       const label = sectionLabelForIso(t, i18n.language, e.created_at);
       if (label !== currentLabel && currentLabel) {
         // For inverted list: place section AFTER its group's messages
@@ -531,8 +578,13 @@ export default function RoomScreen() {
       });
     }
 
+    // All loaded messages are unread (e.g. older ones paged out): divider on top.
+    if (hasUnread && !dividerDone) {
+      items.push({ kind: "unread", id: "unread-divider" });
+    }
+
     return items;
-  }, [events, i18n.language, t]);
+  }, [events, i18n.language, t, unreadSince, userId]);
 
   // :zap: CHANGE 2: Long-press handler for message
   function openMessageMenu(e: RoomEventRow) {
@@ -574,6 +626,25 @@ export default function RoomScreen() {
   }
 
   function renderChatItem({ item }: { item: ChatItem }) {
+    if (item.kind === "unread") {
+      return (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: space.sm,
+            paddingVertical: space.xs + 2,
+          }}
+        >
+          <View style={{ flex: 1, height: 2, backgroundColor: c.brand }} />
+          <BText c={c} v="label" color={c.brand}>
+            {t("room.newMessages")}
+          </BText>
+          <View style={{ flex: 1, height: 2, backgroundColor: c.brand }} />
+        </View>
+      );
+    }
+
     if (item.kind === "section") {
       return (
         <View style={{ alignItems: "center", paddingVertical: space.xs + 2 }}>
