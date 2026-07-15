@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "372489195261",
+    "project_id": "nearbynow-e9460",
+    "storage_bucket": "nearbynow-e9460.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:372489195261:android:32e60d3d9d0d7ac1a9f894",
+        "android_client_info": {
+          "package_name": "com.ithiria137.nearbynow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQBNCkwkZ4QfrZ762SemeML_7xzksNItw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
