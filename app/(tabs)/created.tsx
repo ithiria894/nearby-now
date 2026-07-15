@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
+import { ActivityIndicator, FlatList, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,10 +7,10 @@ import { useUIKit } from "../../src/ui/theme/useUIKit";
 import { layout, space } from "../../src/ui/theme/uikit";
 import {
   BActivityRow,
-  BBadge,
+  BAppBar,
   BButton,
-  BChip,
   BText,
+  BToggle,
   PaperTexture,
 } from "../../src/ui/components/brutal";
 
@@ -151,47 +151,6 @@ export default function CreatedScreen() {
 
   const dataToShow = tab === "active" ? activeItems : inactiveItems;
 
-  const header = useMemo(() => {
-    const activeCount = activeItems.length;
-    const inactiveCount = inactiveItems.length;
-    const subtitle =
-      tab === "active"
-        ? t("created.subtitle_active")
-        : t("created.subtitle_inactive");
-
-    return (
-      <View
-        style={{ paddingTop: space.md, paddingBottom: space.lg, gap: space.md }}
-      >
-        <View style={{ gap: space.xs }}>
-          <BText c={c} v="h1">
-            {t("created.headerTitle")}
-          </BText>
-          <BText c={c} v="caption" color={c.subtext}>
-            {subtitle}
-          </BText>
-        </View>
-
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-          <Pressable onPress={() => setTab("active")}>
-            <BChip
-              c={c}
-              label={t("created.tab_active", { count: activeCount })}
-              selected={tab === "active"}
-            />
-          </Pressable>
-          <Pressable onPress={() => setTab("inactive")}>
-            <BChip
-              c={c}
-              label={t("created.tab_inactive", { count: inactiveCount })}
-              selected={tab === "inactive"}
-            />
-          </Pressable>
-        </View>
-      </View>
-    );
-  }, [tab, activeItems.length, inactiveItems.length, t, c]);
-
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -211,17 +170,40 @@ export default function CreatedScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <PaperTexture opacity={0.06} />
-      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      <BAppBar
+        c={c}
+        title={t("created.headerTitle")}
+        right={
+          <BToggle<"active" | "inactive">
+            c={c}
+            value={tab}
+            onChange={setTab}
+            options={[
+              {
+                value: "active",
+                label: t("created.tab_active", { count: activeItems.length }),
+              },
+              {
+                value: "inactive",
+                label: t("created.tab_inactive", {
+                  count: inactiveItems.length,
+                }),
+              },
+            ]}
+          />
+        }
+      />
+      <SafeAreaView style={{ flex: 1 }} edges={["left", "right"]}>
         <FlatList
           data={dataToShow}
           keyExtractor={(x) => x.id}
-          ListHeaderComponent={header}
           style={{ flex: 1, backgroundColor: "transparent" }}
           contentContainerStyle={{
             width: "100%",
             maxWidth: layout.maxContentWidth,
             alignSelf: "center",
             paddingHorizontal: space.lg,
+            paddingTop: space.md,
             paddingBottom: space.xxl,
           }}
           refreshing={refreshing}
@@ -244,10 +226,6 @@ export default function CreatedScreen() {
             const meta = [placeName, expiryLabel, capacityLabel]
               .filter(Boolean)
               .join(" · ");
-            const active = isActiveActivity(item);
-            const badgeLabel = active
-              ? t("created.subtitle_active")
-              : t("created.subtitle_inactive");
 
             return (
               <View style={{ marginBottom: space.sm }}>
@@ -264,13 +242,6 @@ export default function CreatedScreen() {
                   ])}
                   title={item.title_text}
                   meta={meta}
-                  badges={
-                    <BBadge
-                      c={c}
-                      label={badgeLabel}
-                      fill={active ? c.mint : c.yellow}
-                    />
-                  }
                   onPress={() => router.push(`/room/${item.id}`)}
                 />
               </View>

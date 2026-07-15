@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, View } from "react-native";
+import { ActivityIndicator, FlatList, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,10 +7,10 @@ import { useUIKit } from "../../src/ui/theme/useUIKit";
 import { layout, space } from "../../src/ui/theme/uikit";
 import {
   BActivityRow,
-  BBadge,
+  BAppBar,
   BButton,
-  BChip,
   BText,
+  BToggle,
   PaperTexture,
 } from "../../src/ui/components/brutal";
 
@@ -205,55 +205,6 @@ export default function JoinedScreen() {
     return leftRooms;
   }, [tab, activeJoined, inactiveJoined, leftRooms]);
 
-  // :zap: CHANGE 4: Header tabs UI (Active / Inactive / Left).
-  const header = useMemo(() => {
-    const subtitle =
-      tab === "active"
-        ? t("joined.subtitle_active")
-        : tab === "inactive"
-          ? t("joined.subtitle_inactive")
-          : t("joined.subtitle_left");
-
-    return (
-      <View
-        style={{ paddingTop: space.md, paddingBottom: space.lg, gap: space.md }}
-      >
-        <View style={{ gap: space.xs }}>
-          <BText c={c} v="h1">
-            {t("joined.headerTitle")}
-          </BText>
-          <BText c={c} v="caption" color={c.subtext}>
-            {subtitle}
-          </BText>
-        </View>
-
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-          <Pressable onPress={() => setTab("active")}>
-            <BChip
-              c={c}
-              label={t("joined.tab_active", { count: activeJoined.length })}
-              selected={tab === "active"}
-            />
-          </Pressable>
-          <Pressable onPress={() => setTab("inactive")}>
-            <BChip
-              c={c}
-              label={t("joined.tab_inactive", { count: inactiveJoined.length })}
-              selected={tab === "inactive"}
-            />
-          </Pressable>
-          <Pressable onPress={() => setTab("left")}>
-            <BChip
-              c={c}
-              label={t("joined.tab_left", { count: leftRooms.length })}
-              selected={tab === "left"}
-            />
-          </Pressable>
-        </View>
-      </View>
-    );
-  }, [tab, activeJoined.length, inactiveJoined.length, leftRooms.length, t, c]);
-
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -273,17 +224,44 @@ export default function JoinedScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <PaperTexture opacity={0.06} />
-      <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+      <BAppBar
+        c={c}
+        title={t("joined.headerTitle")}
+        right={
+          <BToggle<"active" | "inactive" | "left">
+            c={c}
+            value={tab}
+            onChange={setTab}
+            options={[
+              {
+                value: "active",
+                label: t("joined.tab_active", { count: activeJoined.length }),
+              },
+              {
+                value: "inactive",
+                label: t("joined.tab_inactive", {
+                  count: inactiveJoined.length,
+                }),
+              },
+              {
+                value: "left",
+                label: t("joined.tab_left", { count: leftRooms.length }),
+              },
+            ]}
+          />
+        }
+      />
+      <SafeAreaView style={{ flex: 1 }} edges={["left", "right"]}>
         <FlatList
           data={dataToShow}
           keyExtractor={(a) => a.id}
-          ListHeaderComponent={header}
           style={{ flex: 1, backgroundColor: "transparent" }}
           contentContainerStyle={{
             width: "100%",
             maxWidth: layout.maxContentWidth,
             alignSelf: "center",
             paddingHorizontal: space.lg,
+            paddingTop: space.md,
             paddingBottom: space.xxl,
           }}
           refreshing={refreshing}
@@ -296,26 +274,12 @@ export default function JoinedScreen() {
           updateCellsBatchingPeriod={50}
           removeClippedSubviews
           renderItem={({ item: a }) => {
-            const membershipState: MembershipState =
-              tab === "left" ? "left" : "joined";
             const placeName = (a.place_name ?? a.place_text ?? "").trim();
             const expiryLabel = formatExpiryLabel(a.expires_at, Date.now(), t);
             const capacityLabel = formatCapacity(a.capacity, t);
             const meta = [placeName, expiryLabel, capacityLabel]
               .filter(Boolean)
               .join(" · ");
-            const stateFill =
-              membershipState === "left"
-                ? c.surface
-                : isActiveActivity(a)
-                  ? c.mint
-                  : c.yellow;
-            const stateLabel =
-              membershipState === "left"
-                ? t("joined.tab_left", { count: leftRooms.length })
-                : isActiveActivity(a)
-                  ? t("joined.subtitle_active")
-                  : t("joined.subtitle_inactive");
 
             return (
               <View style={{ marginBottom: space.sm }}>
@@ -332,7 +296,6 @@ export default function JoinedScreen() {
                   ])}
                   title={a.title_text}
                   meta={meta}
-                  badges={<BBadge c={c} label={stateLabel} fill={stateFill} />}
                   onPress={() => router.push(`/room/${a.id}`)}
                 />
               </View>
