@@ -43,6 +43,9 @@ export function ConversationRow({
   const now = Date.now();
 
   const lm = summary?.lastMessage ?? null;
+  // Dim previews that aren't real chat — system events ("… joined the lobby")
+  // and the empty-room placeholder read as secondary, not as a message.
+  const previewMuted = !lm || lm.event.type === "system";
   let preview: string;
   if (!lm) {
     preview = t("activityCard.no_messages");
@@ -85,6 +88,7 @@ export function ConversationRow({
       title={activity.title_text}
       trailing={trailing}
       preview={preview}
+      previewMuted={previewMuted}
       meta={meta}
       unread={summary?.unreadCount ?? 0}
       onPress={onPress}

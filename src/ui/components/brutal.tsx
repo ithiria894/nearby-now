@@ -602,6 +602,7 @@ export function BActivityRow({
   title,
   meta,
   preview,
+  previewMuted,
   badges,
   trailing,
   unread,
@@ -615,6 +616,7 @@ export function BActivityRow({
   title: string;
   meta: React.ReactNode; // string, or inline nodes (e.g. an icon + count)
   preview?: string; // conversation preview line, e.g. "Alex: see you there"
+  previewMuted?: boolean; // dim the preview (system events / "no messages")
   badges?: React.ReactNode;
   trailing?: string; // small top-right text (e.g. distance, last-message time)
   unread?: number; // unread count bubble at the right edge (hidden when 0)
@@ -682,7 +684,11 @@ export function BActivityRow({
           </View>
           {preview ? (
             <Text
-              style={[txt(typeScale.caption, c.text), { fontWeight: "600" }]}
+              style={
+                previewMuted
+                  ? txt(typeScale.caption, c.faint)
+                  : [txt(typeScale.caption, c.text), { fontWeight: "600" }]
+              }
               numberOfLines={1}
             >
               {preview}
