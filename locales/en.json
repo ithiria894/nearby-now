@@ -73,14 +73,54 @@
     "subtitle": "Write one short line. You can edit details later in the room.",
     "area_label": "This post will go to",
     "placeholder": "Type a short invite…",
-    "template_label": "Quick templates",
-    "template_hint": "Tap a template to fill the box, then tweak or add details.",
-    "template_1": "Anyone up for a board game tonight?",
-    "template_2": "Down for a drink and a quick chat?",
-    "template_3": "I’m thinking about a ski day — anyone want to join?",
-    "template_4": "Looking for a chill walk nearby.",
-    "template_5": "Karaoke mood — anyone interested?",
-    "template_6": "Spontaneous dinner — need a couple people.",
+    "title_label": "What's the plan?",
+    "post": "Post",
+    "topic_label": "Need a starting point?",
+    "topic_hint": "Tap a topic to draft a line — tap again for a different wording.",
+    "topic_boardgame": "Boardgame",
+    "topic_drink": "Drink",
+    "topic_ski": "Ski",
+    "topic_walk": "Walk",
+    "topic_karaoke": "Karaoke",
+    "topic_dinner": "Dinner",
+    "gen": {
+      "boardgame": [
+        "Anyone up for board games tonight?",
+        "Board game night — who's in?",
+        "Looking for a couple more for boardgames.",
+        "Down for some board games later?"
+      ],
+      "drink": [
+        "Down for a drink and a chat?",
+        "Grabbing a drink soon — join me?",
+        "Anyone up for a quick drink tonight?",
+        "Casual drinks later, who's in?"
+      ],
+      "ski": [
+        "Thinking about a ski day — anyone want to join?",
+        "Planning to hit the slopes, come along?",
+        "Ski trip soon — looking for people.",
+        "Anyone free for a ski day?"
+      ],
+      "walk": [
+        "Looking for a chill walk nearby.",
+        "Anyone up for a relaxed walk?",
+        "Going for a walk soon — join me?",
+        "Easy walk around here, who's in?"
+      ],
+      "karaoke": [
+        "Karaoke mood — anyone interested?",
+        "Who's up for karaoke tonight?",
+        "Looking for people for karaoke.",
+        "Feeling like singing — karaoke, anyone?"
+      ],
+      "dinner": [
+        "Spontaneous dinner — need a couple people.",
+        "Grabbing dinner soon, want to join?",
+        "Anyone hungry? Dinner tonight?",
+        "Looking for company for dinner."
+      ]
+    },
     "success_title": "Posted to the lobby",
     "success_line_1": "Nice! Your post is live nearby.",
     "success_line_2": "All set — people around you can see it now.",

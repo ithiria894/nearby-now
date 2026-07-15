@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { alertAsync } from "../lib/ui/dialog";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -39,6 +40,17 @@ import { searchPlacesNominatim, type PlaceCandidate } from "../lib/api/places";
 
 const RECENT_AREAS_KEY = "browse.recentAreas.v1";
 
+// Short topic chips. Tapping one drafts a randomized sentence from its pool
+// (compose.gen.<key>) so every post reads a little differently.
+const TOPICS = [
+  { key: "boardgame", labelKey: "compose.topic_boardgame" },
+  { key: "drink", labelKey: "compose.topic_drink" },
+  { key: "ski", labelKey: "compose.topic_ski" },
+  { key: "walk", labelKey: "compose.topic_walk" },
+  { key: "karaoke", labelKey: "compose.topic_karaoke" },
+  { key: "dinner", labelKey: "compose.topic_dinner" },
+] as const;
+
 export default function ComposeScreen() {
   const router = useRouter();
   const { t } = useT();
@@ -62,15 +74,6 @@ export default function ComposeScreen() {
   const [areaSource, setAreaSource] = useState<
     "device" | "ip" | "manual" | null
   >(null);
-  const templates = [
-    t("compose.template_1"),
-    t("compose.template_2"),
-    t("compose.template_3"),
-    t("compose.template_4"),
-    t("compose.template_5"),
-    t("compose.template_6"),
-  ];
-
   const successLines = useMemo(
     () => [
       t("compose.success_line_1"),
@@ -186,6 +189,36 @@ export default function ComposeScreen() {
     }
   };
 
+  const openAreaSheet = () => areaSheetRef.current?.present();
+
+  function draftFromTopic(topicKey: string) {
+    const raw = t(`compose.gen.${topicKey}`, {
+      returnObjects: true,
+    }) as unknown;
+    const list = Array.isArray(raw) ? (raw as string[]) : [];
+    if (list.length === 0) return;
+    // Prefer a wording different from what's already there, so re-tapping a
+    // topic rewrites the text with a fresh variation each time.
+    const pool = list.filter((v) => v !== text);
+    const choices = pool.length ? pool : list;
+    setText(choices[Math.floor(Math.random() * choices.length)]);
+  }
+
+  // Default the post's area to the user's location as soon as the screen opens.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setAreaLoading(true);
+      const ip = await getIpLocation();
+      if (alive && ip) selectArea(ip, "ip");
+      if (alive) setAreaLoading(false);
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function onSubmit() {
     if (!text.trim()) return;
     setSubmitting(true);
@@ -245,6 +278,12 @@ export default function ComposeScreen() {
     }
   }
 
+  const areaShort = areaLoading
+    ? t("browse.area_detecting")
+    : currentArea
+      ? currentArea.label.split(",")[0].trim()
+      : t("browse.area_unknown");
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -262,32 +301,46 @@ export default function ComposeScreen() {
                 ? router.back()
                 : router.replace("/(tabs)/browse")
             }
-            title={t("compose.title")}
-            subtitle={t("compose.subtitle")}
+            title={t("compose.navTitle")}
+            meta={
+              <Pressable
+                onPress={openAreaSheet}
+                accessibilityRole="button"
+                accessibilityLabel={t("browse.area_sheet_title")}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: space.xs,
+                  paddingVertical: 4,
+                  paddingHorizontal: space.sm,
+                  borderRadius: radius.pill,
+                  borderWidth: 2,
+                  borderColor: c.border,
+                  backgroundColor: c.surfaceAlt,
+                  maxWidth: 220,
+                }}
+              >
+                <Ionicons name="location-sharp" size={13} color={c.brand} />
+                <BText c={c} v="label" color={c.text} numberOfLines={1}>
+                  {areaShort}
+                </BText>
+                <Ionicons name="chevron-down" size={13} color={c.subtext} />
+              </Pressable>
+            }
+            right={
+              <BButton
+                c={c}
+                tone="primary"
+                label={t("compose.post")}
+                onPress={onSubmit}
+              />
+            }
           />
         }
       >
         <BCard c={c}>
           <BText c={c} v="label" color={c.subtext}>
-            {t("compose.template_label")}
-          </BText>
-          <BText c={c} v="caption" color={c.subtext}>
-            {t("compose.template_hint")}
-          </BText>
-          <View
-            style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
-          >
-            {templates.map((tpl) => (
-              <Pressable key={tpl} onPress={() => setText(tpl)}>
-                <BChip c={c} label={tpl} />
-              </Pressable>
-            ))}
-          </View>
-        </BCard>
-
-        <BCard c={c}>
-          <BText c={c} v="label" color={c.subtext}>
-            {t("compose.placeholder")}
+            {t("compose.title_label")}
           </BText>
           <TextInput
             value={text}
@@ -295,9 +348,10 @@ export default function ComposeScreen() {
             placeholder={t("compose.placeholder")}
             placeholderTextColor={c.faint}
             multiline
+            autoFocus
             textAlignVertical="top"
             style={{
-              minHeight: 120,
+              minHeight: 140,
               borderWidth: 2,
               borderColor: c.border,
               borderRadius: radius.lg,
@@ -307,41 +361,22 @@ export default function ComposeScreen() {
               color: c.text,
             }}
           />
-        </BCard>
-
-        <BCard c={c}>
-          <BText c={c} v="label" color={c.subtext}>
-            {t("compose.area_label")}
+          <BText c={c} v="caption" color={c.subtext}>
+            {t("compose.topic_hint")}
           </BText>
-          <Pressable
-            onPress={async () => {
-              await loadSuggestedArea();
-              areaSheetRef.current?.present();
-            }}
+          <View
+            style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
           >
-            <BChip
-              c={c}
-              label={
-                areaLoading
-                  ? t("browse.area_detecting")
-                  : currentArea?.approx
-                    ? `${currentArea?.label ?? t("browse.area_unknown")} ${t(
-                        "browse.area_approx"
-                      )}`
-                    : (currentArea?.label ?? t("browse.area_unknown"))
-              }
-              selected={!!currentArea}
-            />
-          </Pressable>
+            {TOPICS.map((topic) => (
+              <Pressable
+                key={topic.key}
+                onPress={() => draftFromTopic(topic.key)}
+              >
+                <BChip c={c} label={t(topic.labelKey)} />
+              </Pressable>
+            ))}
+          </View>
         </BCard>
-
-        <BButton
-          c={c}
-          tone="primary"
-          full
-          label={submitting ? t("common.loading") : t("compose.submit")}
-          onPress={onSubmit}
-        />
 
         <BottomSheetModal
           ref={successSheetRef}
