@@ -7,6 +7,7 @@ import { initI18n } from "../lib/i18n/i18n";
 import { useT } from "../lib/i18n/useT";
 import { ThemeProvider } from "../src/ui/theme/ThemeProvider";
 import { useAuthGuard } from "../lib/hooks/useAuthGuard";
+import { useRecoveryLink } from "../lib/hooks/useRecoveryLink";
 import { Pressable, Text } from "react-native";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -62,6 +63,7 @@ export default function RootLayout() {
   const { t } = useT();
   const [i18nReady, setI18nReady] = useState(false);
   useAuthGuard();
+  useRecoveryLink();
 
   // :zap: CHANGE 3: Load fonts once at root
   const [fontsLoaded, fontError] = useFonts({

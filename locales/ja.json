@@ -38,7 +38,8 @@
       "submitIdle": "サインイン",
       "submitBusy": "サインイン中...",
       "errorTitle": "ログインに失敗",
-      "goRegister": "アカウント作成"
+      "goRegister": "アカウント作成",
+      "forgotPassword": "パスワードをお忘れですか？"
     },
     "register": {
       "title": "アカウント作成",
@@ -59,6 +60,29 @@
       "backToLogin": "ログインに戻る",
       "maybeExistsTitle": "登録済みかも",
       "maybeExistsBody": "このメールは既に登録されている可能性があります。ログインをお試しください。"
+    },
+    "forgot": {
+      "title": "パスワード再設定",
+      "subtitle": "メールを入力すると再設定リンクを送信します。",
+      "send": "リンクを送信",
+      "missingTitle": "メールが必要です",
+      "missingBody": "メールアドレスを入力してください。",
+      "errorTitle": "送信できません",
+      "sentBody": "{{email}} のアカウントがあれば再設定リンクを送信しました。受信箱をご確認ください。",
+      "backToLogin": "ログインに戻る"
+    },
+    "reset": {
+      "title": "新しいパスワード",
+      "newPassword": "新しいパスワード",
+      "confirmPassword": "パスワード確認",
+      "save": "パスワードを保存",
+      "weakTitle": "パスワードが短すぎます",
+      "weakBody": "6文字以上にしてください。",
+      "mismatchTitle": "パスワードが一致しません",
+      "mismatchBody": "同じパスワードを再入力してください。",
+      "doneTitle": "パスワードを更新しました",
+      "doneBody": "新しいパスワードでログインしてください。",
+      "errorTitle": "更新できません"
     }
   },
   "create": {

@@ -38,7 +38,8 @@
       "submitIdle": "登录",
       "submitBusy": "登录中…",
       "errorTitle": "登录失败",
-      "goRegister": "创建账号"
+      "goRegister": "创建账号",
+      "forgotPassword": "忘记密码？"
     },
     "register": {
       "title": "创建账号",
@@ -59,6 +60,29 @@
       "backToLogin": "返回登录",
       "maybeExistsTitle": "可能已注册",
       "maybeExistsBody": "这个邮箱可能已有账户，请尝试直接登录。"
+    },
+    "forgot": {
+      "title": "重置密码",
+      "subtitle": "输入邮箱，我们会发送重置链接。",
+      "send": "发送重置链接",
+      "missingTitle": "需要邮箱",
+      "missingBody": "请输入邮箱地址。",
+      "errorTitle": "发送失败",
+      "sentBody": "如果 {{email}} 有账户，重置链接已发送，请查收。",
+      "backToLogin": "返回登录"
+    },
+    "reset": {
+      "title": "新密码",
+      "newPassword": "新密码",
+      "confirmPassword": "确认密码",
+      "save": "保存新密码",
+      "weakTitle": "密码太短",
+      "weakBody": "至少 6 个字符。",
+      "mismatchTitle": "两次密码不一致",
+      "mismatchBody": "请再次输入相同密码。",
+      "doneTitle": "密码已更新",
+      "doneBody": "用新密码登录吧。",
+      "errorTitle": "更新失败"
     }
   },
   "create": {
