@@ -1,10 +1,10 @@
 import { fetchRoomEventsPage } from "./room_repo";
+import { backend } from "../backend";
 import type { RoomEventRow } from "../domain/room_events";
 
-// How many recent events we scan per room to build a preview + unread count.
-// There's no server-side unread count yet (see .docs/UNREAD_MIGRATION.md), so we
-// pull the tail of each room's history and count client-side. Kept modest so a
-// lobby with many rooms doesn't fan out into huge fetches.
+// How many recent events we scan per room to build the last-message preview.
+// Unread COUNTS now come from the server (unread_counts RPC, migration
+// 20260715120000); this fetch is only for the preview text shown in the list.
 const SUMMARY_FETCH_LIMIT = 40;
 
 export type RoomLastMessage = {
@@ -17,28 +17,42 @@ export type RoomLastMessage = {
 export type RoomSummary = {
   lastMessage: RoomLastMessage | null;
   unreadCount: number;
-  /** True when unread hit the scan cap and the real number may be higher. */
+  /** Kept for API compat; the server count is exact so this is always false. */
   unreadCapped: boolean;
 };
 
-function isRealMessage(e: RoomEventRow): boolean {
-  return e.type === "chat" || e.type === "quick";
-}
-
 /**
  * Batch-build a conversation summary (last message + unread count) for each
- * room. Unread = real messages newer than the caller's per-room read watermark
- * (`since`) that weren't authored by the caller. System events (joins, edits)
- * don't count as unread but can still be the "last message" shown as a preview.
+ * room. Unread now comes from the server unread_counts RPC — real messages
+ * (chat/quick) newer than the caller's watermark, not authored by the caller,
+ * with joined_at as the never-read baseline. The last-message preview is still
+ * fetched per room. `meId` / `since` are accepted for API compatibility but no
+ * longer needed (the server owns the watermark + own-message filter).
  */
 export async function getRoomSummaries(params: {
   activityIds: string[];
   meId: string;
-  since: Record<string, number>; // activityId -> last-read epoch ms
+  since: Record<string, number>;
 }): Promise<Record<string, RoomSummary>> {
-  const { activityIds, meId, since } = params;
+  const { activityIds } = params;
   const out: Record<string, RoomSummary> = {};
+  if (activityIds.length === 0) return out;
 
+  // Unread counts: one server round-trip for all rooms.
+  const unreadByRoom: Record<string, number> = {};
+  try {
+    const { data, error } =
+      await backend.roomReads.getUnreadCounts(activityIds);
+    if (!error) {
+      for (const r of data ?? []) {
+        unreadByRoom[r.activity_id] = r.unread_count ?? 0;
+      }
+    }
+  } catch {
+    // Unread is best-effort; leave counts at 0 if the call fails.
+  }
+
+  // Last-message preview: still per room.
   await Promise.all(
     activityIds.map(async (activityId) => {
       try {
@@ -48,21 +62,6 @@ export async function getRoomSummaries(params: {
         });
         const rows = page.rows; // ascending: oldest -> newest
         const last = rows.length ? rows[rows.length - 1] : null;
-        const readAt = since[activityId] ?? 0;
-
-        // Only surface unread once a room has actually been opened (readAt > 0).
-        // Otherwise a first launch would flag every room's whole history as
-        // unread, which the chat's "New messages" divider deliberately doesn't
-        // do. The real backend can use a smarter baseline (e.g. joined_at).
-        let unread = 0;
-        if (readAt > 0) {
-          for (const e of rows) {
-            if (!isRealMessage(e)) continue;
-            if (e.user_id === meId) continue;
-            if (new Date(e.created_at).getTime() > readAt) unread++;
-          }
-        }
-
         out[activityId] = {
           lastMessage: last
             ? {
@@ -72,14 +71,14 @@ export async function getRoomSummaries(params: {
                 at: new Date(last.created_at).getTime(),
               }
             : null,
-          unreadCount: unread,
-          unreadCapped: unread >= SUMMARY_FETCH_LIMIT,
+          unreadCount: unreadByRoom[activityId] ?? 0,
+          unreadCapped: false,
         };
       } catch {
         // A single room failing shouldn't blank the whole list.
         out[activityId] = {
           lastMessage: null,
-          unreadCount: 0,
+          unreadCount: unreadByRoom[activityId] ?? 0,
           unreadCapped: false,
         };
       }

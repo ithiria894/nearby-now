@@ -55,6 +55,7 @@
       "successTitle": "成功",
       "successBody": "账号已创建，请登录。",
       "errorTitle": "注册失败",
+      "genderLabel": "我是（可选）",
       "backToLogin": "返回登录",
       "maybeExistsTitle": "可能已注册",
       "maybeExistsBody": "这个邮箱可能已有账户，请尝试直接登录。"
@@ -112,6 +113,7 @@
     "displayNameSaved": "已保存",
     "logout": "退出登录",
     "logoutErrorTitle": "退出登录失败",
+    "genderLabel": "性别",
     "language": "语言",
     "theme": "主题",
     "theme_system": "跟随系统",
@@ -447,7 +449,8 @@
   "gender": {
     "any": "不限",
     "female": "女",
-    "male": "男"
+    "male": "男",
+    "other": "其他"
   },
   "capacity": {
     "unlimited": "不限",

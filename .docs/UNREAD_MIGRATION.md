@@ -1,5 +1,15 @@
 # Unread messages — backend migration handoff
 
+> ✅ **IMPLEMENTED (2026-07-15).** Migration `20260715120000_unread_read_tracking.sql`
+> added `activity_members.last_read_at` + `mark_room_read()` + `unread_counts()`
+> (both SECURITY DEFINER, `SET search_path=public`, authenticated-only grants) —
+> applied to cloud + behaviourally verified (unread 6 → mark_room_read → 0).
+> **The §4 app-side swap is DONE too:** `lib/domain/reads.ts` and
+> `lib/repo/room_summaries.ts` now call the server RPCs via the `backend.roomReads`
+> facade (AsyncStorage fake removed). Public API unchanged, so joined/created/room
+> consumers were not touched. Watermark now syncs across devices + uses `joined_at`
+> baseline. Nothing left to do on the backend side.
+
 The app now shows **unread counts** (Lobby/Created list badges) and a **"New
 messages" divider** in each room. Until the backend supports read-tracking, the
 "how far have I read" watermark lives **locally on-device** (AsyncStorage), so it
