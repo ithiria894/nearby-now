@@ -27,6 +27,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { ActivityCardActivity } from "../../lib/domain/activities";
 import BrowseMap from "../../components/BrowseMap";
+import { AreaSheet, type AreaSheetHandle } from "../../components/AreaSheet";
 import {
   searchPlacesNominatim,
   type PlaceCandidate,
@@ -51,7 +52,7 @@ import {
   type DeviceLocation,
 } from "../../lib/ui/location";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
-import { layout, space, radius } from "../../src/ui/theme/uikit";
+import { layout, space, radius, borders } from "../../src/ui/theme/uikit";
 import {
   PaperTexture,
   BComposer,
@@ -113,8 +114,8 @@ export default function BrowseScreen() {
   const [searchText, setSearchText] = useState("");
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
   const searchSnapPoints = useMemo(() => ["35%", "70%"], []);
-  const areaSheetRef = useRef<BottomSheetModal>(null);
-  const areaSnapPoints = useMemo(() => ["55%"], []);
+  const areaSheetRef = useRef<AreaSheetHandle>(null);
+  const areaSnapPoints = useMemo(() => ["70%"], []);
   const [hintIndex, setHintIndex] = useState(0);
   const [currentArea, setCurrentArea] = useState<AreaLocation | null>(null);
   const [areaLoading, setAreaLoading] = useState(true);
@@ -273,17 +274,6 @@ export default function BrowseScreen() {
     setAreaLoading(false);
     return false;
   }, [t]);
-
-  const refreshArea = useCallback(async () => {
-    setAreaLoading(true);
-    if (currentArea?.approx) {
-      const ipArea = await getIpLocation();
-      if (ipArea) setCurrentArea(ipArea);
-      setAreaLoading(false);
-      return;
-    }
-    await setAreaFromDevice();
-  }, [currentArea?.approx, setAreaFromDevice]);
 
   const selectArea = useCallback((area: AreaLocation) => {
     setCurrentArea(area);
@@ -496,11 +486,6 @@ export default function BrowseScreen() {
   }
 
   const areaLabel = currentArea?.label ?? t("browse.area_unknown");
-  const areaPillLabel = areaLoading
-    ? t("browse.area_detecting")
-    : currentArea?.approx
-      ? `${areaLabel} ${t("browse.area_approx")}`
-      : areaLabel;
   // Compact label for the header — city only (the sheet shows the full label).
   const areaShort = areaLoading
     ? t("browse.area_detecting")
@@ -858,182 +843,39 @@ export default function BrowseScreen() {
         </BottomSheetView>
       </BottomSheetModal>
 
-      <BottomSheetModal
+      <AreaSheet
         ref={areaSheetRef}
+        c={c}
+        bottomInset={insets.bottom}
         snapPoints={areaSnapPoints}
-        enableDynamicSizing={false}
-        enablePanDownToClose
         backdropComponent={renderSearchBackdrop}
-        keyboardBehavior="interactive"
-        keyboardBlurBehavior="restore"
-        backgroundStyle={{
-          backgroundColor: theme.colors.surface,
-          borderTopLeftRadius: 18,
-          borderTopRightRadius: 18,
-        }}
-        handleIndicatorStyle={{
-          backgroundColor: theme.colors.border,
-        }}
-      >
-        <BottomSheetView
-          style={{
-            padding: 16,
-            paddingBottom: 16 + insets.bottom,
-            gap: 12,
-          }}
-        >
-          <View style={{ gap: 6 }}>
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "800",
-                color: theme.colors.title,
-              }}
-            >
-              {t("browse.area_sheet_title")}
-            </Text>
-            <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
-              {t("browse.area_sheet_subtitle")}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
-              {t("browse.area_current")}
-            </Text>
-            <Pressable onPress={refreshArea} hitSlop={8}>
-              <Text
-                style={{
-                  fontSize: 12.5,
-                  fontWeight: "800",
-                  color: theme.colors.text,
-                }}
-              >
-                {t("browse.area_refresh")}
-              </Text>
-            </Pressable>
-          </View>
-
-          <View
-            style={{
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              backgroundColor: theme.isDark
-                ? theme.colors.surfaceAlt
-                : theme.colors.inputBg,
-            }}
-          >
-            <Text style={{ fontSize: 13, color: theme.colors.text }}>
-              {areaPillLabel}
-            </Text>
-          </View>
-
-          <Pressable
-            onPress={async () => {
-              await setAreaFromDevice();
-              areaSheetRef.current?.dismiss();
-            }}
-            style={({ pressed }) => ({
-              paddingHorizontal: 12,
-              paddingVertical: 12,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              backgroundColor: pressed
-                ? theme.colors.otherBg
-                : theme.colors.surface,
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-            })}
-          >
-            <Ionicons name="navigate" size={16} color={theme.colors.text} />
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "800",
-                color: theme.colors.text,
-              }}
-            >
-              {t("browse.area_use_current")}
-            </Text>
-          </Pressable>
-
-          <View style={{ gap: 8 }}>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: "800",
-                color: theme.colors.text,
-              }}
-            >
-              {t("browse.area_choose_manual")}
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: theme.isDark
-                  ? theme.colors.surfaceAlt
-                  : theme.colors.inputBg,
-              }}
-            >
-              <Ionicons name="search" size={16} color={theme.colors.subtext} />
-              <SheetInput
-                value={areaQuery}
-                onChangeText={setAreaQuery}
-                placeholder={t("browse.area_search_placeholder")}
-                placeholderTextColor={theme.colors.subtext}
-                returnKeyType="search"
-                style={{
-                  flex: 1,
-                  fontSize: 14,
-                  color: theme.colors.text,
-                }}
-              />
-              <Pressable
-                onPress={() => setAreaQuery("")}
-                hitSlop={6}
-                style={{ padding: 2 }}
-              >
-                <Ionicons
-                  name={areaQuery ? "close-circle" : "chevron-down"}
-                  size={18}
-                  color={theme.colors.subtext}
-                />
-              </Pressable>
-            </View>
-          </View>
-
-          <View style={{ gap: 8 }}>
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: "800",
-                color: theme.colors.text,
-              }}
-            >
+        subtitle={t("browse.area_sheet_subtitle")}
+        currentLabel={currentArea ? areaLabel : null}
+        currentApprox={currentArea?.approx}
+        detecting={areaLoading}
+        query={areaQuery}
+        onQueryChange={setAreaQuery}
+        results={areaResults}
+        searching={areaSearching}
+        recentAreas={recentAreas}
+        onLocate={setAreaFromDevice}
+        onPickPlace={(place) =>
+          selectArea({
+            lat: place.lat,
+            lng: place.lng,
+            label: place.name,
+            approx: false,
+          })
+        }
+        onPickRecent={(area) => selectArea(area)}
+        radiusSlot={
+          <View style={{ gap: space.sm }}>
+            <BText c={c} v="label" color={c.subtext}>
               {t("browse.area_radius_title")}
-            </Text>
-            <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
-              {t("browse.area_radius_value", { km: radiusKm })}
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            </BText>
+            <View
+              style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}
+            >
               {[5, 10, 20, 30, 50].map((km) => {
                 const active = km === radiusKm;
                 return (
@@ -1041,132 +883,33 @@ export default function BrowseScreen() {
                     key={`radius-${km}`}
                     onPress={() => setRadiusKm(km)}
                     style={({ pressed }) => ({
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: theme.colors.border,
+                      paddingHorizontal: space.md,
+                      paddingVertical: space.sm,
+                      borderRadius: radius.pill,
+                      borderWidth: borders.thick,
+                      borderColor: active ? c.brand : c.border,
                       backgroundColor: active
-                        ? theme.colors.otherBg
+                        ? c.brand
                         : pressed
-                          ? theme.colors.otherBg
-                          : theme.colors.surface,
+                          ? c.surfaceAlt
+                          : c.surface,
                     })}
                   >
-                    <Text
-                      style={{
-                        fontSize: 12.5,
-                        fontWeight: active ? "800" : "700",
-                        color: theme.colors.text,
-                      }}
+                    <BText
+                      c={c}
+                      v="caption"
+                      color={active ? c.onBrand : c.text}
+                      style={{ fontWeight: "700" }}
                     >
-                      {km} km
-                    </Text>
+                      {`${km} km`}
+                    </BText>
                   </Pressable>
                 );
               })}
             </View>
           </View>
-
-          {areaQuery.trim().length > 0 ? (
-            <View style={{ gap: 8 }}>
-              {areaSearching ? (
-                <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
-                  {t("browse.area_searching")}
-                </Text>
-              ) : areaResults.length === 0 ? (
-                <Text style={{ fontSize: 12.5, color: theme.colors.subtext }}>
-                  {t("browse.area_no_results")}
-                </Text>
-              ) : (
-                areaResults.map((place) => (
-                  <Pressable
-                    key={place.placeId}
-                    onPress={() => {
-                      selectArea({
-                        lat: place.lat,
-                        lng: place.lng,
-                        label: place.name,
-                        approx: false,
-                      });
-                      setAreaQuery("");
-                      areaSheetRef.current?.dismiss();
-                    }}
-                    style={({ pressed }) => ({
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: theme.colors.border,
-                      backgroundColor: pressed
-                        ? theme.colors.otherBg
-                        : theme.colors.surface,
-                    })}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        fontWeight: "800",
-                        color: theme.colors.text,
-                      }}
-                    >
-                      {place.name}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-                      {place.address}
-                    </Text>
-                  </Pressable>
-                ))
-              )}
-            </View>
-          ) : (
-            <>
-              {recentAreas.length > 0 ? (
-                <View style={{ gap: 8 }}>
-                  <Text
-                    style={{
-                      fontSize: 12.5,
-                      fontWeight: "800",
-                      color: theme.colors.text,
-                    }}
-                  >
-                    {t("browse.area_recent")}
-                  </Text>
-                  {recentAreas.map((area) => (
-                    <Pressable
-                      key={`${area.label}-${area.lat}-${area.lng}`}
-                      onPress={() => {
-                        selectArea(area);
-                        areaSheetRef.current?.dismiss();
-                      }}
-                      style={({ pressed }) => ({
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                        borderRadius: 12,
-                        borderWidth: 1,
-                        borderColor: theme.colors.border,
-                        backgroundColor: pressed
-                          ? theme.colors.otherBg
-                          : theme.colors.surface,
-                      })}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: "800",
-                          color: theme.colors.text,
-                        }}
-                      >
-                        {area.label}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
-            </>
-          )}
-        </BottomSheetView>
-      </BottomSheetModal>
+        }
+      />
     </>
   );
 }

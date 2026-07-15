@@ -23,7 +23,8 @@
     "ok": "OK",
     "unknown": "Unknown",
     "never": "Never",
-    "noMore": "No more"
+    "noMore": "No more",
+    "clear": "Clear"
   },
   "auth": {
     "login": {
@@ -171,9 +172,11 @@
     "area_approx": "(approx.)",
     "area_sheet_title": "Choose your area",
     "area_sheet_subtitle": "Feed results are based on your current area.",
+    "area_sheet_subtitle_post": "Where should this invite show up?",
     "area_current": "Current area",
     "area_refresh": "Refresh",
     "area_use_current": "Use my current location",
+    "area_use_current_short": "Use my location",
     "area_choose_manual": "Choose area manually",
     "area_search_placeholder": "Search a city or neighborhood",
     "area_searching": "Searching…",

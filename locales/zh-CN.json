@@ -23,7 +23,8 @@
     "ok": "确定",
     "unknown": "未知",
     "never": "从不",
-    "noMore": "没有更多"
+    "noMore": "没有更多",
+    "clear": "清除"
   },
   "auth": {
     "login": {
@@ -171,9 +172,11 @@
     "area_approx": "（大致）",
     "area_sheet_title": "选择你的地区",
     "area_sheet_subtitle": "动态内容基于你选择的地区。",
+    "area_sheet_subtitle_post": "这个邀请想在哪个地区显示？",
     "area_current": "目前地区",
     "area_refresh": "刷新",
     "area_use_current": "使用我的当前位置",
+    "area_use_current_short": "用我的位置",
     "area_choose_manual": "手动选择地区",
     "area_search_placeholder": "搜索城市或附近地区",
     "area_searching": "搜索中…",
