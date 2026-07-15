@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Keyboard,
   Platform,
@@ -36,18 +35,12 @@ import { isAuthMissingError, requireUserId } from "../../lib/domain/auth";
 import {
   getBrowsePage,
   getMembershipForUser,
-  joinActivity,
   type ActivitiesPage,
 } from "../../lib/repo/activities_repo";
 import { isJoinableActivity } from "../../lib/domain/activities";
 import { subscribeToBrowseActivities } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
-import {
-  formatCapacity,
-  formatExpiryLabel,
-  formatGenderPref,
-  formatLocalDateTime,
-} from "../../lib/i18n/i18n_format";
+import { formatCapacity, formatExpiryLabel } from "../../lib/i18n/i18n_format";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
 import {
@@ -116,7 +109,6 @@ export default function BrowseScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [cursor, setCursor] = useState<ActivitiesPage["cursor"]>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [joiningId, setJoiningId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [searchText, setSearchText] = useState("");
   const bottomSheetModalRef = useRef<BottomSheetModal>(null);
@@ -478,58 +470,10 @@ export default function BrowseScreen() {
     }
   }, [loadInitial]);
 
-  async function onPressCard(a: ActivityCardActivity) {
-    if (!userId) return;
-    if (joinedSet.has(a.id)) {
-      router.push(`/room/${a.id}`);
-      return;
-    }
-
-    const title = a.title_text;
-    const placeName =
-      (a.place_name ?? a.place_text ?? "").trim() || t("browse.place_none");
-    const placeAddress = (a.place_address ?? "").trim();
-    const expiresLabel = formatLocalDateTime(a.expires_at, t);
-    const capacityLabel = formatCapacity(a.capacity, t);
-    const genderPrefLabel = formatGenderPref(a.gender_pref, t);
-
-    const confirmJoin = async () => {
-      setJoiningId(a.id);
-      try {
-        await joinActivity(a.id, userId);
-        setJoinedSet((prev) => new Set([...prev, a.id]));
-        setItems((prev) => prev.filter((x) => x.id !== a.id));
-        router.push(`/room/${a.id}`);
-      } catch (e: any) {
-        handleError(t("browse.joinErrorTitle"), e);
-      } finally {
-        setJoiningId(null);
-      }
-    };
-
-    if (viewMode === "map") {
-      const details = [
-        t("browse.details.goal", { title }),
-        t("browse.details.place", { placeName }),
-        placeAddress ? t("browse.details.address", { placeAddress }) : null,
-        t("browse.details.genderPref", { genderPref: genderPrefLabel }),
-        t("browse.details.capacity", { capacityLabel }),
-        t("browse.details.expires", { expiresLabel }),
-      ]
-        .filter(Boolean)
-        .join("\n");
-
-      Alert.alert(t("browse.mapJoinConfirmTitle"), details, [
-        { text: t("common.cancel"), style: "cancel" },
-        { text: t("common.join"), style: "default", onPress: confirmJoin },
-      ]);
-      return;
-    }
-
-    Alert.alert(t("browse.joinConfirmTitle", { title }), "", [
-      { text: t("common.cancel"), style: "cancel" },
-      { text: t("common.join"), style: "default", onPress: confirmJoin },
-    ]);
+  // Tapping an activity opens its room so you can look before joining — the
+  // room screen carries the Join button. (No more join-confirm Alert here.)
+  function onPressCard(a: ActivityCardActivity) {
+    router.push(`/room/${a.id}`);
   }
 
   if (loading) {
