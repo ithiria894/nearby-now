@@ -23,7 +23,8 @@
     "ok": "好",
     "unknown": "未知",
     "never": "永不",
-    "noMore": "冇更多"
+    "noMore": "冇更多",
+    "clear": "清除"
   },
   "auth": {
     "login": {
@@ -171,9 +172,11 @@
     "area_approx": "（大概）",
     "area_sheet_title": "選擇你嘅地區",
     "area_sheet_subtitle": "Feed 內容會根據你嘅地區顯示。",
+    "area_sheet_subtitle_post": "呢個邀請想喺邊個地區出現？",
     "area_current": "目前地區",
     "area_refresh": "重新整理",
     "area_use_current": "使用我而家嘅位置",
+    "area_use_current_short": "用我位置",
     "area_choose_manual": "手動選擇地區",
     "area_search_placeholder": "搜尋城市或附近地區",
     "area_searching": "搜尋緊…",
@@ -222,6 +225,7 @@
     "time_d": "{{count}} 日",
     "section_today": "今日",
     "section_yesterday": "昨日",
+    "newMessages": "新訊息",
     "membersCount": "成員 {{count}}",
     "createdBadge": "建立者",
     "closedBadge": "已關閉",
@@ -329,6 +333,7 @@
     "hint_gender_male": "只限男仔",
     "hint_distance": "離你大概 {{km}}km。",
     "hint_distance_short": "約 {{km}}km",
+    "no_messages": "未有訊息",
     "lobbyHint": "按入去入房傾",
     "cta_join": "入房",
     "cta_open": "打開房間",

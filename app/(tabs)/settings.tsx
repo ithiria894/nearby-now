@@ -1,5 +1,6 @@
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
+import { alertAsync } from "../../lib/ui/dialog";
 import { useEffect, useState } from "react";
 import { backend } from "../../lib/backend";
 import {
@@ -64,10 +65,7 @@ export default function SettingsScreen() {
       router.replace("/login");
     } catch (e: any) {
       console.error(e);
-      Alert.alert(
-        t("settings.logoutErrorTitle"),
-        e?.message ?? "Unknown error"
-      );
+      alertAsync(t("settings.logoutErrorTitle"), e?.message ?? "Unknown error");
     }
   }
 

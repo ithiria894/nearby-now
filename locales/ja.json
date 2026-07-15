@@ -23,7 +23,8 @@
     "ok": "OK",
     "unknown": "不明",
     "never": "なし",
-    "noMore": "これ以上ありません"
+    "noMore": "これ以上ありません",
+    "clear": "クリア"
   },
   "auth": {
     "login": {
@@ -171,9 +172,11 @@
     "area_approx": "（目安）",
     "area_sheet_title": "エリアを選ぶ",
     "area_sheet_subtitle": "フィードは現在のエリアを基準に表示されます。",
+    "area_sheet_subtitle_post": "この募集をどのエリアで表示しますか？",
     "area_current": "現在のエリア",
     "area_refresh": "更新",
     "area_use_current": "現在地を使う",
+    "area_use_current_short": "現在地を使う",
     "area_choose_manual": "手動で選ぶ",
     "area_search_placeholder": "都市や近所を検索",
     "area_searching": "検索中…",
@@ -222,6 +225,7 @@
     "time_d": "{{count}}日",
     "section_today": "今日",
     "section_yesterday": "昨日",
+    "newMessages": "新しいメッセージ",
     "membersCount": "メンバー {{count}}",
     "createdBadge": "作成者",
     "closedBadge": "クローズ",
@@ -329,6 +333,7 @@
     "hint_gender_male": "男性のみ",
     "hint_distance": "約{{km}}km。",
     "hint_distance_short": "約{{km}}km",
+    "no_messages": "メッセージはまだありません",
     "lobbyHint": "タップしてロビーで会話",
     "cta_join": "ロビーに入る",
     "cta_open": "ロビーを開く",

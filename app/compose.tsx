@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   TextInput,
   View,
 } from "react-native";
+import { alertAsync } from "../lib/ui/dialog";
 import { useRouter } from "expo-router";
 import {
   BottomSheetBackdrop,
@@ -14,12 +14,15 @@ import {
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AreaSheet, type AreaSheetHandle } from "../components/AreaSheet";
 import { backend } from "../lib/backend";
 import { requireUserId } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
 import { useUIKit } from "../src/ui/theme/useUIKit";
 import { space, radius } from "../src/ui/theme/uikit";
 import {
+  BAppBar,
   BButton,
   BCard,
   BChip,
@@ -40,15 +43,16 @@ export default function ComposeScreen() {
   const router = useRouter();
   const { t } = useT();
   const c = useUIKit();
+  const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const createdActivityIdRef = useRef<string | null>(null);
   const [successLine, setSuccessLine] = useState<string>("");
   const successSheetRef = useRef<BottomSheetModal>(null);
-  const areaSheetRef = useRef<BottomSheetModal>(null);
+  const areaSheetRef = useRef<AreaSheetHandle>(null);
   const successSnapPoints = useMemo(() => ["45%"], []);
-  const areaSnapPoints = useMemo(() => ["55%"], []);
+  const areaSnapPoints = useMemo(() => ["65%"], []);
   const [currentArea, setCurrentArea] = useState<AreaLocation | null>(null);
   const [areaLoading, setAreaLoading] = useState(false);
   const [areaQuery, setAreaQuery] = useState("");
@@ -235,7 +239,7 @@ export default function ComposeScreen() {
       successSheetRef.current?.present();
     } catch (e: any) {
       console.error(e);
-      Alert.alert(t("compose.errorTitle"), e?.message ?? "Unknown error");
+      alertAsync(t("compose.errorTitle"), e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }
@@ -247,16 +251,22 @@ export default function ComposeScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 12 : 0}
     >
-      <BScreen c={c} scroll>
-        <View style={{ gap: space.xs }}>
-          <BText c={c} v="h1">
-            {t("compose.title")}
-          </BText>
-          <BText c={c} v="body" color={c.subtext}>
-            {t("compose.subtitle")}
-          </BText>
-        </View>
-
+      <BScreen
+        c={c}
+        scroll
+        appBar={
+          <BAppBar
+            c={c}
+            onBack={() =>
+              router.canGoBack()
+                ? router.back()
+                : router.replace("/(tabs)/browse")
+            }
+            title={t("compose.title")}
+            subtitle={t("compose.subtitle")}
+          />
+        }
+      >
         <BCard c={c}>
           <BText c={c} v="label" color={c.subtext}>
             {t("compose.template_label")}
@@ -395,127 +405,35 @@ export default function ComposeScreen() {
           </BottomSheetView>
         </BottomSheetModal>
 
-        <BottomSheetModal
+        <AreaSheet
           ref={areaSheetRef}
+          c={c}
+          bottomInset={insets.bottom}
           snapPoints={areaSnapPoints}
-          enablePanDownToClose
           backdropComponent={renderBackdrop}
-          backgroundStyle={{
-            backgroundColor: c.surface,
-            borderTopLeftRadius: radius.lg,
-            borderTopRightRadius: radius.lg,
-          }}
-          handleIndicatorStyle={{
-            backgroundColor: c.border,
-          }}
-        >
-          <BottomSheetView style={{ padding: space.lg, gap: space.md }}>
-            <View style={{ gap: space.xs }}>
-              <BText c={c} v="h2" color={c.ink}>
-                {t("browse.area_sheet_title")}
-              </BText>
-              <BText c={c} v="caption" color={c.subtext}>
-                {t("browse.area_sheet_subtitle")}
-              </BText>
-            </View>
-
-            <BButton
-              c={c}
-              tone="secondary"
-              full
-              label={t("browse.area_use_current")}
-              onPress={async () => {
-                await setAreaFromDevice();
-                areaSheetRef.current?.dismiss();
-              }}
-            />
-
-            <View style={{ gap: space.sm }}>
-              <BText c={c} v="label" color={c.subtext}>
-                {t("browse.area_choose_manual")}
-              </BText>
-              <TextInput
-                value={areaQuery}
-                onChangeText={setAreaQuery}
-                placeholder={t("browse.area_search_placeholder")}
-                placeholderTextColor={c.faint}
-                style={{
-                  borderWidth: 2,
-                  borderColor: c.border,
-                  borderRadius: radius.md,
-                  backgroundColor: c.surface,
-                  paddingHorizontal: space.md,
-                  paddingVertical: space.md,
-                  fontSize: 14,
-                  color: c.text,
-                }}
-              />
-            </View>
-
-            {areaQuery.trim().length > 0 ? (
-              <View style={{ gap: space.sm }}>
-                {areaSearching ? (
-                  <BText c={c} v="caption" color={c.subtext}>
-                    {t("browse.area_searching")}
-                  </BText>
-                ) : areaResults.length === 0 ? (
-                  <BText c={c} v="caption" color={c.subtext}>
-                    {t("browse.area_no_results")}
-                  </BText>
-                ) : (
-                  areaResults.map((place) => (
-                    <Pressable
-                      key={place.placeId}
-                      onPress={() => {
-                        selectArea(
-                          {
-                            lat: place.lat,
-                            lng: place.lng,
-                            label: place.name,
-                            approx: false,
-                          },
-                          "manual"
-                        );
-                        setAreaQuery("");
-                        areaSheetRef.current?.dismiss();
-                      }}
-                    >
-                      <BCard c={c}>
-                        <BText c={c} v="title" color={c.ink}>
-                          {place.name}
-                        </BText>
-                        <BText c={c} v="caption" color={c.subtext}>
-                          {place.address}
-                        </BText>
-                      </BCard>
-                    </Pressable>
-                  ))
-                )}
-              </View>
-            ) : recentAreas.length > 0 ? (
-              <View style={{ gap: space.sm }}>
-                <BText c={c} v="label" color={c.subtext}>
-                  {t("browse.area_recent")}
-                </BText>
-                {recentAreas.map((area) => (
-                  <Pressable
-                    key={`${area.label}-${area.lat}-${area.lng}`}
-                    onPress={() => {
-                      selectArea(area, area.source ?? "manual");
-                      areaSheetRef.current?.dismiss();
-                    }}
-                  >
-                    <BCard c={c}>
-                      <BText c={c} v="title" color={c.ink}>
-                        {area.label}
-                      </BText>
-                    </BCard>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-          </BottomSheetView>
-        </BottomSheetModal>
+          subtitle={t("browse.area_sheet_subtitle_post")}
+          currentLabel={currentArea ? currentArea.label : null}
+          currentApprox={currentArea?.approx}
+          detecting={areaLoading}
+          query={areaQuery}
+          onQueryChange={setAreaQuery}
+          results={areaResults}
+          searching={areaSearching}
+          recentAreas={recentAreas}
+          onLocate={setAreaFromDevice}
+          onPickPlace={(place) =>
+            selectArea(
+              {
+                lat: place.lat,
+                lng: place.lng,
+                label: place.name,
+                approx: false,
+              },
+              "manual"
+            )
+          }
+          onPickRecent={(area) => selectArea(area, area.source ?? "manual")}
+        />
       </BScreen>
     </KeyboardAvoidingView>
   );

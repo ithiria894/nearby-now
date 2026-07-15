@@ -1,12 +1,12 @@
 import { useRef, useState } from "react";
-import { Alert } from "react-native";
 import { useRouter } from "expo-router";
+import { alertAsync } from "../lib/ui/dialog";
 import { backend } from "../lib/backend";
 import { requireUserId } from "../lib/domain/auth";
 import InviteForm, { type InviteFormPayload } from "../components/InviteForm";
 import { useT } from "../lib/i18n/useT";
 import { useUIKit } from "../src/ui/theme/useUIKit";
-import { BScreen, BText } from "../src/ui/components/brutal";
+import { BAppBar, BScreen } from "../src/ui/components/brutal";
 
 export default function CreateScreen() {
   const router = useRouter();
@@ -69,18 +69,28 @@ export default function CreateScreen() {
       router.replace("/(tabs)/created");
     } catch (_e: any) {
       console.error(_e);
-      Alert.alert(t("create.errorTitle"), _e?.message ?? "Unknown error");
+      alertAsync(t("create.errorTitle"), _e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }
   }
 
   return (
-    <BScreen c={c} scroll>
-      <BText c={c} v="h1">
-        {t("create.title")}
-      </BText>
-
+    <BScreen
+      c={c}
+      scroll
+      appBar={
+        <BAppBar
+          c={c}
+          onBack={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace("/(tabs)/browse")
+          }
+          title={t("create.title")}
+        />
+      }
+    >
       <InviteForm
         mode="create"
         submitting={submitting}
