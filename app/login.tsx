@@ -1,7 +1,8 @@
 // app/login.tsx
 import { useState } from "react";
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
+import { alertAsync } from "../lib/ui/dialog";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { backend } from "../lib/backend";
 import { ensureProfile } from "../lib/domain/auth";
@@ -27,7 +28,7 @@ export default function LoginScreen() {
 
   async function onLogin() {
     if (!email.trim() || !password.trim()) {
-      Alert.alert(t("auth.login.missingTitle"), t("auth.login.missingBody"));
+      alertAsync(t("auth.login.missingTitle"), t("auth.login.missingBody"));
       return;
     }
 
@@ -50,7 +51,7 @@ export default function LoginScreen() {
       router.replace("/");
     } catch (_e: any) {
       console.error(_e);
-      Alert.alert(t("auth.login.errorTitle"), _e?.message ?? "Unknown error");
+      alertAsync(t("auth.login.errorTitle"), _e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }

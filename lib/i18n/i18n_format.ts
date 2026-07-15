@@ -56,6 +56,38 @@ export function formatExpiryLabel(
   return t("time.in_hours_minutes", { h, m });
 }
 
+/**
+ * Compact timestamp for conversation lists: HH:MM today, "Yesterday", a short
+ * weekday within the last week, else "Mon D".
+ */
+export function formatMessageTimestamp(
+  iso: string | null | undefined,
+  nowMs: number,
+  t: Translator,
+  lang: string
+): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const ts = d.getTime();
+  if (!Number.isFinite(ts)) return "";
+
+  const startOfDay = (x: Date) =>
+    new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const dayDiff = Math.round(
+    (startOfDay(new Date(nowMs)) - startOfDay(d)) / 86400000
+  );
+
+  if (dayDiff <= 0) {
+    const h = String(d.getHours()).padStart(2, "0");
+    const m = String(d.getMinutes()).padStart(2, "0");
+    return `${h}:${m}`;
+  }
+  if (dayDiff === 1) return t("room.section_yesterday");
+  if (dayDiff < 7) return d.toLocaleString(lang, { weekday: "short" });
+  const month = d.toLocaleString(lang, { month: "short" });
+  return `${month} ${d.getDate()}`;
+}
+
 export function formatLocalDateTime(
   iso: string | null | undefined,
   t: Translator,

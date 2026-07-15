@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
+import { alertAsync } from "../lib/ui/dialog";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { backend } from "../lib/backend";
 import { ensureProfile } from "../lib/domain/auth";
@@ -10,6 +11,7 @@ import { hardShadow, radius, space } from "../src/ui/theme/uikit";
 import {
   BButton,
   BCard,
+  BChip,
   BInput,
   BScreen,
   BText,
@@ -22,18 +24,19 @@ export default function RegisterScreen() {
   const c = useUIKit();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [gender, setGender] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function onRegister() {
     if (!email.trim() || !password.trim()) {
-      Alert.alert(
+      alertAsync(
         t("auth.register.missingTitle"),
         t("auth.register.missingBody")
       );
       return;
     }
     if (password.length < 6) {
-      Alert.alert(t("auth.register.weakTitle"), t("auth.register.weakBody"));
+      alertAsync(t("auth.register.weakTitle"), t("auth.register.weakBody"));
       return;
     }
 
@@ -52,12 +55,15 @@ export default function RegisterScreen() {
       if (session?.user) {
         try {
           await ensureProfile();
+          if (gender) {
+            await backend.profiles.updateProfileGender(session.user.id, gender);
+          }
         } catch (pe) {
           console.error("ensureProfile (register):", pe);
         }
         router.replace("/(tabs)/browse");
       } else {
-        Alert.alert(
+        alertAsync(
           t("auth.register.maybeExistsTitle"),
           t("auth.register.maybeExistsBody")
         );
@@ -65,10 +71,7 @@ export default function RegisterScreen() {
       }
     } catch (_e: any) {
       console.error(_e);
-      Alert.alert(
-        t("auth.register.errorTitle"),
-        _e?.message ?? "Unknown error"
-      );
+      alertAsync(t("auth.register.errorTitle"), _e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }
@@ -132,6 +135,23 @@ export default function RegisterScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
+        <View style={{ gap: 6 }}>
+          <BText c={c} v="label" color={c.subtext}>
+            {t("auth.register.genderLabel")}
+          </BText>
+          <View
+            style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
+          >
+            {(["female", "male", "other"] as const).map((g) => (
+              <Pressable
+                key={g}
+                onPress={() => setGender(gender === g ? null : g)}
+              >
+                <BChip c={c} selected={gender === g} label={t(`gender.${g}`)} />
+              </Pressable>
+            ))}
+          </View>
+        </View>
         <BButton
           c={c}
           tone="primary"

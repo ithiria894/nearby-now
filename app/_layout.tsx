@@ -135,7 +135,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <ThemeProvider>
-          <Stack>
+          {/* Every screen renders its own soft-brutalist <BAppBar/> instead of
+              the plain native header. */}
+          <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen
               name="login"
               options={{ title: t("rootNav.login"), headerShown: false }}

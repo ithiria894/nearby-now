@@ -1,4 +1,4 @@
-import { Alert } from "react-native";
+import { alertAsync } from "./dialog";
 
 export function handleError(
   title: string,
@@ -10,5 +10,5 @@ export function handleError(
     error && typeof error === "object" && "message" in error
       ? String((error as any).message)
       : fallbackMessage;
-  Alert.alert(title, message);
+  alertAsync(title, message);
 }

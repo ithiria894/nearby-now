@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
@@ -30,6 +29,8 @@ import {
   sectionLabelForIso,
 } from "../../lib/domain/room";
 import { subscribeToRoom } from "../../lib/realtime/room";
+import { getLastRead, markRead } from "../../lib/domain/reads";
+import { alertAsync, confirmAsync } from "../../lib/ui/dialog";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
 import {
   space,
@@ -38,6 +39,7 @@ import {
   type UIColors,
 } from "../../src/ui/theme/uikit";
 import {
+  BAppBar,
   BBadge,
   BButton,
   BCard,
@@ -68,6 +70,7 @@ type MemberRow = {
 
 type ChatItem =
   | { kind: "section"; id: string; label: string }
+  | { kind: "unread"; id: string }
   | { kind: "event"; id: string; e: RoomEventRow };
 
 /* =======================
@@ -123,6 +126,10 @@ export default function RoomScreen() {
   const [chatCursor, setChatCursor] = useState<RoomEventCursor | null>(null);
   const [chatHasMore, setChatHasMore] = useState(true);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  // Read watermark captured when the room opens (before we mark it read), used
+  // to draw the "New messages" divider. Frozen for the session so the divider
+  // stays put even as incoming messages get marked read.
+  const [unreadSince, setUnreadSince] = useState<number | null>(null);
 
   // long-press menu state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -243,19 +250,35 @@ export default function RoomScreen() {
     });
   }, []);
 
+  // Advance the local read watermark to the newest loaded event. Runs on the
+  // initial load and whenever a new message arrives while the room is open, so
+  // the Lobby/Created unread badges clear once you've seen the messages.
+  useEffect(() => {
+    if (!userId || events.length === 0) return;
+    let newest = 0;
+    for (const e of events) {
+      const ms = new Date(e.created_at).getTime();
+      if (ms > newest) newest = ms;
+    }
+    if (newest > 0) void markRead(userId, activityId, newest);
+  }, [userId, activityId, events]);
+
   useEffect(() => {
     (async () => {
       try {
         const uid = await requireUserId();
         setUserId(uid);
+        // Snapshot how far this room had been read *before* we open it, so the
+        // "New messages" divider knows where to sit.
+        setUnreadSince(await getLastRead(uid, activityId));
         await loadAll(uid);
       } catch (e: any) {
         if (isAuthMissingError(e)) {
-          Alert.alert(t("room.authRequiredTitle"), t("room.authRequiredBody"));
+          alertAsync(t("room.authRequiredTitle"), t("room.authRequiredBody"));
           router.replace("/login");
           return;
         }
-        Alert.alert(t("room.loadErrorTitle"), e?.message ?? "Unknown error");
+        alertAsync(t("room.loadErrorTitle"), e?.message ?? "Unknown error");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -334,35 +357,22 @@ export default function RoomScreen() {
   const canReadEvents =
     myMembershipState === "joined" || myMembershipState === "left";
 
+  // Join directly on tap — the user already previewed the room, joining is
+  // reversible (Leave), and a confirm Alert is a no-op on react-native-web.
   async function join() {
-    if (!userId) return;
-    if (roomState.isReadOnly) {
-      Alert.alert(
-        t("room.joinNotAvailableTitle"),
-        t("room.joinNotAvailableBody")
+    if (!userId || roomState.isReadOnly) return;
+    try {
+      await joinWithSystemMessage(activityId, userId);
+      await loadAll(userId);
+      scrollToBottom(false);
+      inputRef.current?.focus?.();
+    } catch (e: any) {
+      console.error("[join]", e);
+      alertAsync(
+        t("room.joinFailedTitle"),
+        friendlyDbError(t, e?.message ?? "Unknown error")
       );
-      return;
     }
-
-    Alert.alert(t("room.joinConfirmTitle"), t("room.joinConfirmBody"), [
-      { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("common.join"),
-        onPress: async () => {
-          try {
-            await joinWithSystemMessage(activityId, userId);
-            await loadAll(userId);
-            scrollToBottom(false);
-            inputRef.current?.focus?.();
-          } catch (e: any) {
-            Alert.alert(
-              t("room.joinFailedTitle"),
-              friendlyDbError(t, e?.message ?? "Unknown error")
-            );
-          }
-        },
-      },
-    ]);
   }
 
   async function doLeave() {
@@ -393,63 +403,40 @@ export default function RoomScreen() {
       router.back();
     } catch (e: any) {
       console.error(e);
-      Alert.alert(t("room.leaveFailedTitle"), e?.message ?? "Unknown error");
+      alertAsync(t("room.leaveFailedTitle"), e?.message ?? "Unknown error");
     }
   }
 
-  function confirmLeave() {
-    if (Platform.OS === "web") {
-      const ok = globalThis.confirm?.(
-        `${t("room.leaveConfirmTitle")}\n\n${t("room.leaveConfirmBody")}`
-      );
-      if (ok) doLeave();
-      return;
-    }
-
-    Alert.alert(t("room.leaveConfirmTitle"), t("room.leaveConfirmBody"), [
-      { text: t("common.cancel"), style: "cancel" },
+  async function confirmLeave() {
+    const ok = await confirmAsync(
+      t("room.leaveConfirmTitle"),
+      t("room.leaveConfirmBody"),
       {
-        text: t("common.leave"),
-        style: "destructive",
-        onPress: () => doLeave(),
-      },
-    ]);
+        confirmText: t("common.leave"),
+        cancelText: t("common.cancel"),
+        destructive: true,
+      }
+    );
+    if (ok) doLeave();
   }
 
   async function closeInvite() {
     if (!userId || !activity) return;
     if (!isCreator) {
-      Alert.alert(
-        t("room.closeNotAllowedTitle"),
-        t("room.closeNotAllowedBody")
-      );
+      alertAsync(t("room.closeNotAllowedTitle"), t("room.closeNotAllowedBody"));
       return;
     }
     if (roomState.isReadOnly) return;
 
-    const ok =
-      Platform.OS === "web"
-        ? globalThis.confirm?.(
-            `${t("room.closeConfirmTitle")}\n\n${t("room.closeConfirmBody")}`
-          )
-        : await new Promise<boolean>((resolve) => {
-            Alert.alert(
-              t("room.closeConfirmTitle"),
-              t("room.closeConfirmBody"),
-              [
-                {
-                  text: t("common.cancel"),
-                  style: "cancel",
-                  onPress: () => resolve(false),
-                },
-                {
-                  text: t("common.close"),
-                  style: "destructive",
-                  onPress: () => resolve(true),
-                },
-              ]
-            );
-          });
+    const ok = await confirmAsync(
+      t("room.closeConfirmTitle"),
+      t("room.closeConfirmBody"),
+      {
+        confirmText: t("common.close"),
+        cancelText: t("common.cancel"),
+        destructive: true,
+      }
+    );
 
     if (!ok) return;
 
@@ -475,14 +462,14 @@ export default function RoomScreen() {
       await loadAll(userId);
     } catch (e: any) {
       console.error(e);
-      Alert.alert(t("room.closeFailedTitle"), e?.message ?? "Unknown error");
+      alertAsync(t("room.closeFailedTitle"), e?.message ?? "Unknown error");
     }
   }
 
   async function sendChat(text: string) {
     if (!userId) return;
     if (!canInteract) {
-      Alert.alert(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
+      alertAsync(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
       return;
     }
 
@@ -497,7 +484,7 @@ export default function RoomScreen() {
     });
 
     if (error)
-      Alert.alert(t("room.sendFailedTitle"), friendlyDbError(t, error.message));
+      alertAsync(t("room.sendFailedTitle"), friendlyDbError(t, error.message));
     else {
       setMessage("");
       await loadAll(userId);
@@ -508,7 +495,7 @@ export default function RoomScreen() {
   async function sendQuick(code: string) {
     if (!userId) return;
     if (!canInteract) {
-      Alert.alert(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
+      alertAsync(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
       return;
     }
 
@@ -520,16 +507,16 @@ export default function RoomScreen() {
     });
 
     if (error)
-      Alert.alert(t("room.failedTitle"), friendlyDbError(t, error.message));
+      alertAsync(t("room.failedTitle"), friendlyDbError(t, error.message));
     else {
       await loadAll(userId);
       scrollToBottom(true);
     }
   }
 
-  const placeName =
-    (activity?.place_name ?? activity?.place_text ?? "").trim() ||
-    t("activityCard.place_none");
+  const placeRaw = (activity?.place_name ?? activity?.place_text ?? "").trim();
+  const hasPlace = placeRaw.length > 0;
+  const placeName = placeRaw || t("activityCard.place_none");
   const placeAddress = (activity?.place_address ?? "").trim();
 
   // :zap: CHANGE 1: Build "sectioned list items" (Today/Yesterday/Date)
@@ -544,7 +531,32 @@ export default function RoomScreen() {
       return String(b.id).localeCompare(String(a.id));
     });
 
+    // Show the "New messages" divider only if there's a real message from
+    // someone else newer than where we last read up to.
+    const watermark = unreadSince ?? 0;
+    const hasUnread =
+      watermark > 0 &&
+      ordered.some(
+        (e) =>
+          (e.type === "chat" || e.type === "quick") &&
+          e.user_id !== userId &&
+          new Date(e.created_at).getTime() > watermark
+      );
+    let dividerDone = false;
+
     for (const e of ordered) {
+      // The list is inverted + newest-first, so pushing the divider right
+      // before the first already-read message lands it just above the block
+      // of unread messages.
+      if (
+        hasUnread &&
+        !dividerDone &&
+        new Date(e.created_at).getTime() <= watermark
+      ) {
+        items.push({ kind: "unread", id: "unread-divider" });
+        dividerDone = true;
+      }
+
       const label = sectionLabelForIso(t, i18n.language, e.created_at);
       if (label !== currentLabel && currentLabel) {
         // For inverted list: place section AFTER its group's messages
@@ -566,8 +578,13 @@ export default function RoomScreen() {
       });
     }
 
+    // All loaded messages are unread (e.g. older ones paged out): divider on top.
+    if (hasUnread && !dividerDone) {
+      items.push({ kind: "unread", id: "unread-divider" });
+    }
+
     return items;
-  }, [events, i18n.language, t]);
+  }, [events, i18n.language, t, unreadSince, userId]);
 
   // :zap: CHANGE 2: Long-press handler for message
   function openMessageMenu(e: RoomEventRow) {
@@ -580,12 +597,12 @@ export default function RoomScreen() {
     if (Platform.OS === "web") {
       try {
         await navigator.clipboard.writeText(text);
-        Alert.alert(
+        alertAsync(
           t("room.clipboard.copiedTitle"),
           t("room.clipboard.copiedBody")
         );
       } catch {
-        Alert.alert(
+        alertAsync(
           t("room.clipboard.copyFailedTitle"),
           t("room.clipboard.copyFailedBody")
         );
@@ -595,20 +612,39 @@ export default function RoomScreen() {
 
     // Native placeholder (so you can test UX now without adding deps)
     // If you want real native copy, tell me and I’ll add expo-clipboard cleanly.
-    Alert.alert(
+    alertAsync(
       t("room.clipboard.nativePlaceholderTitle"),
       t("room.clipboard.nativePlaceholderBody")
     );
   }
 
   function reportMessage(_e: RoomEventRow) {
-    Alert.alert(
+    alertAsync(
       t("room.clipboard.reportPlaceholderTitle"),
       t("room.clipboard.reportPlaceholderBody")
     );
   }
 
   function renderChatItem({ item }: { item: ChatItem }) {
+    if (item.kind === "unread") {
+      return (
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: space.sm,
+            paddingVertical: space.xs + 2,
+          }}
+        >
+          <View style={{ flex: 1, height: 2, backgroundColor: c.brand }} />
+          <BText c={c} v="label" color={c.brand}>
+            {t("room.newMessages")}
+          </BText>
+          <View style={{ flex: 1, height: 2, backgroundColor: c.brand }} />
+        </View>
+      );
+    }
+
     if (item.kind === "section") {
       return (
         <View style={{ alignItems: "center", paddingVertical: space.xs + 2 }}>
@@ -721,136 +757,112 @@ export default function RoomScreen() {
       keyboardVerticalOffset={keyboardVerticalOffset}
     >
       <PaperTexture opacity={0.06} />
-      <View style={{ flex: 1, padding: space.lg, gap: space.md }}>
-        {/* Header */}
-        <BCard c={c}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              gap: space.md,
-            }}
-          >
-            <View style={{ flex: 1, gap: space.xs, paddingRight: 6 }}>
-              <BText c={c} v="h2" color={c.ink}>
-                {activity?.title_text ?? t("room.fallbackRoomTitle")}
-              </BText>
-
-              <BText c={c} v="bodyStrong" numberOfLines={1}>
+      <BAppBar
+        c={c}
+        onBack={() =>
+          router.canGoBack() ? router.back() : router.replace("/(tabs)/browse")
+        }
+        title={activity?.title_text ?? t("room.fallbackRoomTitle")}
+        meta={
+          <>
+            {hasPlace ? (
+              <BText c={c} v="caption" color={c.subtext} numberOfLines={1}>
                 {placeName}
               </BText>
-
-              {placeAddress ? (
-                <BText c={c} v="caption" color={c.subtext} numberOfLines={1}>
-                  {placeAddress}
-                </BText>
-              ) : null}
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: space.sm,
-                  marginTop: space.xs,
-                }}
-              >
-                <BBadge
-                  c={c}
-                  label={t("room.membersCount", { count: members.length })}
-                  fill={c.surface}
-                />
-
-                {isCreator ? (
-                  <BBadge c={c} label={t("room.createdBadge")} fill={c.mint} />
-                ) : null}
-
-                {roomState.labelKey ? (
-                  <BBadge
-                    c={c}
-                    label={
-                      roomState.labelKey === "closed"
-                        ? t("room.closedBadge")
-                        : t("room.expiredBadge")
-                    }
-                    fill={c.coral}
-                  />
-                ) : null}
-              </View>
-            </View>
-
-            {/* Top-right controls */}
-            <View style={{ gap: space.sm, alignItems: "flex-end" }}>
-              {!joined ? (
-                <BButton
-                  c={c}
-                  tone="primary"
-                  label={
-                    myMembershipState === "left"
-                      ? t("common.rejoin")
-                      : t("common.join")
-                  }
-                  onPress={roomState.isReadOnly ? undefined : join}
-                />
-              ) : (
-                <BButton
-                  c={c}
-                  tone="secondary"
-                  label={t("common.leave")}
-                  onPress={confirmLeave}
-                />
-              )}
-
-              {isCreator ? (
-                <BButton
-                  c={c}
-                  tone="danger"
-                  label={t("common.close")}
-                  onPress={roomState.isReadOnly ? undefined : closeInvite}
-                />
-              ) : null}
-            </View>
+            ) : null}
+            <BBadge
+              c={c}
+              label={t("room.membersCount", { count: members.length })}
+              fill={c.surface}
+            />
+            {isCreator ? (
+              <BBadge c={c} label={t("room.createdBadge")} fill={c.mint} />
+            ) : null}
+            {roomState.labelKey ? (
+              <BBadge
+                c={c}
+                label={
+                  roomState.labelKey === "closed"
+                    ? t("room.closedBadge")
+                    : t("room.expiredBadge")
+                }
+                fill={c.coral}
+              />
+            ) : null}
+          </>
+        }
+        right={
+          <>
+            {!joined ? (
+              <BButton
+                c={c}
+                tone="primary"
+                label={
+                  myMembershipState === "left"
+                    ? t("common.rejoin")
+                    : t("common.join")
+                }
+                onPress={roomState.isReadOnly ? undefined : join}
+              />
+            ) : (
+              <BButton
+                c={c}
+                tone="secondary"
+                label={t("common.leave")}
+                onPress={confirmLeave}
+              />
+            )}
+            {isCreator ? (
+              <BButton
+                c={c}
+                tone="danger"
+                label={t("common.close")}
+                onPress={roomState.isReadOnly ? undefined : closeInvite}
+              />
+            ) : null}
+          </>
+        }
+      />
+      <View style={{ flex: 1, padding: space.lg, gap: space.md }}>
+        {myMembershipState === "left" ? (
+          <View
+            style={{
+              padding: space.md,
+              borderWidth: 2,
+              borderRadius: radius.md,
+              borderColor: c.border,
+              backgroundColor: c.surfaceAlt,
+              gap: space.xs,
+            }}
+          >
+            <BText c={c} v="bodyStrong" color={c.text}>
+              {t("room.leftTitle")}
+            </BText>
+            <BText c={c} v="caption" color={c.subtext}>
+              {t("room.leftBody")}
+            </BText>
           </View>
+        ) : null}
 
-          {myMembershipState === "left" ? (
-            <View
-              style={{
-                padding: space.md,
-                borderWidth: 2,
-                borderRadius: radius.md,
-                borderColor: c.border,
-                backgroundColor: c.surfaceAlt,
-                gap: space.xs,
-              }}
-            >
-              <BText c={c} v="bodyStrong" color={c.text}>
-                {t("room.leftTitle")}
-              </BText>
-              <BText c={c} v="caption" color={c.subtext}>
-                {t("room.leftBody")}
-              </BText>
-            </View>
-          ) : null}
-
-          {roomState.labelKey ? (
-            <View
-              style={{
-                padding: space.md,
-                borderWidth: 2,
-                borderRadius: radius.md,
-                borderColor: c.border,
-                backgroundColor: c.coral,
-                gap: space.xs,
-              }}
-            >
-              <BText c={c} v="bodyStrong" color={c.onBright}>
-                {t("room.readonlyTitle")}
-              </BText>
-              <BText c={c} v="caption" color={c.onBright}>
-                {t("room.readonlyBody")}
-              </BText>
-            </View>
-          ) : null}
-        </BCard>
+        {roomState.labelKey ? (
+          <View
+            style={{
+              padding: space.md,
+              borderWidth: 2,
+              borderRadius: radius.md,
+              borderColor: c.border,
+              backgroundColor: c.coral,
+              gap: space.xs,
+            }}
+          >
+            <BText c={c} v="bodyStrong" color={c.onBright}>
+              {t("room.readonlyTitle")}
+            </BText>
+            <BText c={c} v="caption" color={c.onBright}>
+              {t("room.readonlyBody")}
+            </BText>
+          </View>
+        ) : null}
 
         {/* Chat */}
         <View

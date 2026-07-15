@@ -26,6 +26,7 @@ import {
 } from "../src/ui/theme/uikit";
 import {
   BActivityRow,
+  BAppBar,
   BBadge,
   BButton,
   BCard,
@@ -1066,6 +1067,69 @@ export default function UIDocs() {
                 "Don't loop the skeleton forever on error",
               ]}
             />
+          </Section>
+
+          {/* App Bar */}
+          <Section
+            c={c}
+            title="App Bar"
+            note="The top bar for every non-tab screen: paper surface + 2px bottom border (mirrors the tab bar). Carries the back button, title, an optional meta row (place · members · status), and right-side actions — so screens never fall back to the plain native header."
+          >
+            <View style={{ gap: space.lg }}>
+              <View
+                style={{
+                  borderWidth: controls.borderWidth,
+                  borderColor: c.border,
+                  borderRadius: radius.md,
+                  overflow: "hidden",
+                }}
+              >
+                <BAppBar c={c} onBack={() => {}} title="Create an invite" />
+              </View>
+              <View
+                style={{
+                  borderWidth: controls.borderWidth,
+                  borderColor: c.border,
+                  borderRadius: radius.md,
+                  overflow: "hidden",
+                }}
+              >
+                <BAppBar
+                  c={c}
+                  onBack={() => {}}
+                  title="Karaoke tonight?"
+                  meta={
+                    <>
+                      <BText c={c} v="caption" color={c.subtext}>
+                        Central
+                      </BText>
+                      <BBadge c={c} label="2 members" fill={c.surface} />
+                    </>
+                  }
+                  right={
+                    <BButton
+                      c={c}
+                      tone="secondary"
+                      label="Leave"
+                      onPress={() => {}}
+                    />
+                  }
+                />
+              </View>
+              <Rules
+                c={c}
+                dos={[
+                  "One title; put place · members · status in the meta row",
+                  "Right-side actions sit in a row (never stacked)",
+                  "Back = plain chevron, no border",
+                ]}
+                donts={[
+                  "Don't use the plain native header",
+                  "Don't stack action buttons vertically",
+                  'Don\'t show empty fallbacks like "No place"',
+                ]}
+              />
+            </View>
           </Section>
 
           {/* Navigation */}

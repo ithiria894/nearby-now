@@ -1,5 +1,6 @@
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
+import { alertAsync } from "../../lib/ui/dialog";
 import { useEffect, useState } from "react";
 import { backend } from "../../lib/backend";
 import {
@@ -34,6 +35,8 @@ export default function SettingsScreen() {
   const [nameLoading, setNameLoading] = useState(true);
   const [nameSaving, setNameSaving] = useState(false);
   const [nameSaved, setNameSaved] = useState(false);
+  const [gender, setGender] = useState<string | null>(null);
+  const [genderSaving, setGenderSaving] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -46,6 +49,8 @@ export default function SettingsScreen() {
         if (error) throw error;
         setDisplayName(current ?? "");
         setNameSaved(false);
+        const { gender: g } = await backend.profiles.getProfileGender(userId);
+        if (alive) setGender(g);
       } catch (e) {
         handleError(t("settings.displayNameLabel"), e);
       } finally {
@@ -64,10 +69,26 @@ export default function SettingsScreen() {
       router.replace("/login");
     } catch (e: any) {
       console.error(e);
-      Alert.alert(
-        t("settings.logoutErrorTitle"),
-        e?.message ?? "Unknown error"
+      alertAsync(t("settings.logoutErrorTitle"), e?.message ?? "Unknown error");
+    }
+  }
+
+  async function onSelectGender(next: string) {
+    if (genderSaving) return;
+    const value = gender === next ? null : next; // tap the active chip to unset
+    setGender(value);
+    setGenderSaving(true);
+    try {
+      const userId = await requireUserId();
+      const { error } = await backend.profiles.updateProfileGender(
+        userId,
+        value
       );
+      if (error) throw error;
+    } catch (e) {
+      handleError(t("settings.genderLabel"), e);
+    } finally {
+      setGenderSaving(false);
     }
   }
 
@@ -150,6 +171,23 @@ export default function SettingsScreen() {
           }${nameSaved ? " ✓" : ""}`}
           onPress={onSaveDisplayName}
         />
+      </BCard>
+
+      <BCard c={c}>
+        <BText c={c} v="label" color={c.subtext}>
+          {t("settings.genderLabel")}
+        </BText>
+        <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
+          {(["female", "male", "other"] as const).map((g) => (
+            <Pressable
+              key={g}
+              onPress={() => onSelectGender(g)}
+              disabled={genderSaving}
+            >
+              <BChip c={c} selected={gender === g} label={t(`gender.${g}`)} />
+            </Pressable>
+          ))}
+        </View>
       </BCard>
 
       <BCard c={c}>
