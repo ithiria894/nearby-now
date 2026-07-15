@@ -1,15 +1,17 @@
 import { useRef, useState } from "react";
-import { Alert, Text } from "react-native";
+import { Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { backend } from "../lib/backend";
 import { requireUserId } from "../lib/domain/auth";
 import InviteForm, { type InviteFormPayload } from "../components/InviteForm";
 import { useT } from "../lib/i18n/useT";
-import { Screen } from "../src/ui/common";
+import { useUIKit } from "../src/ui/theme/useUIKit";
+import { BScreen, BText } from "../src/ui/components/brutal";
 
 export default function CreateScreen() {
   const router = useRouter();
   const { t } = useT();
+  const c = useUIKit();
   const [submitting, setSubmitting] = useState(false);
   const createdActivityIdRef = useRef<string | null>(null);
 
@@ -74,10 +76,10 @@ export default function CreateScreen() {
   }
 
   return (
-    <Screen scroll>
-      <Text style={{ fontSize: 18, fontWeight: "700" }}>
+    <BScreen c={c} scroll>
+      <BText c={c} v="h1">
         {t("create.title")}
-      </Text>
+      </BText>
 
       <InviteForm
         mode="create"
@@ -85,6 +87,6 @@ export default function CreateScreen() {
         submitLabel={t("create.submit")}
         onSubmit={onCreate}
       />
-    </Screen>
+    </BScreen>
   );
 }

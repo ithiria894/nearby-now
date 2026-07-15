@@ -1,113 +1,103 @@
-import { Tabs, useRouter } from "expo-router";
-import { Pressable, Text } from "react-native";
+import { Tabs } from "expo-router";
+import { View } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useT } from "../../lib/i18n/useT";
-import { useTheme } from "../../src/ui/theme/ThemeProvider";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useT } from "../../lib/i18n/useT";
+import { useUIKit } from "../../src/ui/theme/useUIKit";
+import { fonts, radius, type UIColors } from "../../src/ui/theme/uikit";
 
-// :zap: CHANGE 1: Shared header button for navigating to Create screen
-function HeaderCreateButton() {
-  const router = useRouter();
-
+// Active tab = a color-only brand pill behind the icon (no border/shadow).
+function TabIcon({
+  lib,
+  name,
+  focused,
+  c,
+}: {
+  lib: "ion" | "mci";
+  name: string;
+  focused: boolean;
+  c: UIColors;
+}) {
+  const Cmp = lib === "mci" ? MaterialCommunityIcons : Ionicons;
   return (
-    <Pressable
-      onPress={() => router.push("/create")}
-      hitSlop={8}
-      style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+    <View
+      style={{
+        width: 52,
+        height: 30,
+        borderRadius: radius.pill,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: focused ? c.brand : "transparent",
+      }}
     >
-      <Text style={{ fontSize: 20, fontWeight: "900" }}>＋</Text>
-    </Pressable>
+      <Cmp
+        name={name as any}
+        size={22}
+        color={focused ? c.onBrand : c.subtext}
+      />
+    </View>
   );
 }
 
 export default function TabsLayout() {
   const { t } = useT();
-  const theme = useTheme();
+  const c = useUIKit();
   const insets = useSafeAreaInsets();
-  const tabBg = theme.isDark ? theme.colors.surface : theme.colors.bg;
-  const tabBorder = theme.isDark ? theme.colors.border : theme.colors.tabBorder;
-  const activeTint = theme.colors.tabBarTextActive;
-  const inactiveTint = theme.colors.tabBarTextInactive;
-  const TAB_HEIGHT = 64;
-  const TAB_BOTTOM = 8 + insets.bottom;
 
   return (
     <Tabs
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: activeTint,
-        tabBarInactiveTintColor: inactiveTint,
+        tabBarActiveTintColor: c.brand,
+        tabBarInactiveTintColor: c.subtext,
         tabBarStyle: {
-          backgroundColor: tabBg,
-          borderTopColor: tabBorder,
+          backgroundColor: c.surface,
+          borderTopColor: c.border,
+          borderTopWidth: 2,
+          height: 64 + insets.bottom,
+          paddingBottom: insets.bottom + 4,
+          paddingTop: 6,
         },
-        tabBarItemStyle: {
-          paddingVertical: 6,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontFamily: "PatrickHand",
-        },
-        tabBarIcon: ({ color, size, focused }) => {
-          const iconSize = size ?? 22;
-          const iconColor = focused ? activeTint : inactiveTint;
-          if (route.name === "browse") {
-            return <Ionicons name="heart" size={iconSize} color={iconColor} />;
-          }
-          if (route.name === "joined") {
-            return <Ionicons name="people" size={iconSize} color={iconColor} />;
-          }
-          if (route.name === "created") {
-            return (
-              <MaterialCommunityIcons
-                name="pencil-box-outline"
-                size={iconSize}
-                color={iconColor}
-              />
-            );
-          }
-          if (route.name === "notifications") {
-            return (
-              <Ionicons
-                name="notifications"
-                size={iconSize}
-                color={iconColor}
-              />
-            );
-          }
-          return <Ionicons name="settings" size={iconSize} color={iconColor} />;
-        },
-      })}
+        tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.bodyStrong },
+      }}
     >
-      {/* :zap: CHANGE 2: Show Create button only on these tabs */}
       <Tabs.Screen
         name="browse"
         options={{
           title: t("tabs.browse"),
-          headerRight: () => <HeaderCreateButton />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon lib="ion" name="heart" focused={focused} c={c} />
+          ),
         }}
       />
       <Tabs.Screen
         name="joined"
         options={{
           title: t("tabs.joined"),
-          headerRight: () => <HeaderCreateButton />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon lib="ion" name="people" focused={focused} c={c} />
+          ),
         }}
       />
       <Tabs.Screen
         name="created"
         options={{
           title: t("tabs.created"),
-          headerRight: () => <HeaderCreateButton />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon lib="mci" name="pencil-box" focused={focused} c={c} />
+          ),
         }}
       />
-
-      {/* :zap: CHANGE 3: Notifications replaces Settings tab */}
       <Tabs.Screen
         name="notifications"
-        options={{ title: t("tabs.notifications"), headerRight: () => null }}
+        options={{
+          title: t("tabs.notifications"),
+          tabBarIcon: ({ focused }) => (
+            <TabIcon lib="ion" name="notifications" focused={focused} c={c} />
+          ),
+        }}
       />
-      {/* Keep settings route but hide from tab bar */}
+      {/* Settings stays reachable by route but hidden from the tab bar. */}
       <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );

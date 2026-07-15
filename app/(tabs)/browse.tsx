@@ -5,6 +5,7 @@ import {
   FlatList,
   Keyboard,
   Pressable,
+  ScrollView,
   Text,
   View,
 } from "react-native";
@@ -23,7 +24,6 @@ import {
 } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import ActivityCard from "../../components/ActivityCard";
 import type { ActivityCardActivity } from "../../lib/domain/activities";
 import BrowseMap from "../../components/BrowseMap";
 import {
@@ -42,10 +42,10 @@ import { subscribeToBrowseActivities } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
 import {
   formatCapacity,
+  formatExpiryLabel,
   formatGenderPref,
   formatLocalDateTime,
 } from "../../lib/i18n/i18n_format";
-import { Screen, PrimaryButton } from "../../src/ui/common";
 import { useTheme } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
 import {
@@ -55,6 +55,23 @@ import {
   type AreaLocation,
   type DeviceLocation,
 } from "../../lib/ui/location";
+import { useUIKit } from "../../src/ui/theme/useUIKit";
+import { layout, space, radius } from "../../src/ui/theme/uikit";
+import {
+  PaperTexture,
+  BComposer,
+  BActivityRow,
+  BBadge,
+  BButton,
+  BText,
+  BChip,
+  BToggle,
+  BIconButton,
+} from "../../src/ui/components/brutal";
+import {
+  activityCategory,
+  type ActivityCategory,
+} from "../../lib/ui/activityIcon";
 
 function distanceKm(a: DeviceLocation, b: DeviceLocation) {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -74,6 +91,7 @@ export default function BrowseScreen() {
   const router = useRouter();
   const { t } = useT();
   const theme = useTheme();
+  const c = useUIKit();
   const insets = useSafeAreaInsets();
 
   const PAGE_SIZE = 30;
@@ -345,6 +363,26 @@ export default function BrowseScreen() {
       .filter(Boolean) as ActivityCardActivity[];
   }, [currentArea, items, radiusKm]);
 
+  // Tag system: derive a category per activity and let the user filter by it.
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const presentCats = useMemo(() => {
+    const seen = new Map<string, ActivityCategory>();
+    for (const x of filteredItems) {
+      const cat = activityCategory(x.title_text);
+      if (!seen.has(cat.key)) seen.set(cat.key, cat);
+    }
+    return Array.from(seen.values());
+  }, [filteredItems]);
+  const shownItems = useMemo(
+    () =>
+      tagFilter
+        ? filteredItems.filter(
+            (x) => activityCategory(x.title_text).key === tagFilter
+          )
+        : filteredItems,
+    [filteredItems, tagFilter]
+  );
+
   useEffect(() => {
     (async () => {
       try {
@@ -486,9 +524,20 @@ export default function BrowseScreen() {
 
   if (loading) {
     return (
-      <Screen>
-        <Text>{t("common.loading")}</Text>
-      </Screen>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: c.bg,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <PaperTexture opacity={0.06} />
+        <ActivityIndicator color={c.brand} />
+        <BText c={c} color={c.subtext} style={{ marginTop: space.md }}>
+          {t("common.loading")}
+        </BText>
+      </View>
     );
   }
 
@@ -498,258 +547,133 @@ export default function BrowseScreen() {
     : currentArea?.approx
       ? `${areaLabel} ${t("browse.area_approx")}`
       : areaLabel;
+  // Compact label for the header — city only (the sheet shows the full label).
+  const areaShort = areaLoading
+    ? t("browse.area_detecting")
+    : areaLabel.split(",")[0].trim();
+
+  const tagFilterBar =
+    presentCats.length > 1 ? (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          gap: space.sm,
+          paddingVertical: 2,
+          alignItems: "center",
+        }}
+      >
+        <Pressable onPress={() => setTagFilter(null)}>
+          <BChip c={c} label="All" selected={tagFilter === null} />
+        </Pressable>
+        {presentCats.map((cat) => (
+          <Pressable key={cat.key} onPress={() => setTagFilter(cat.key)}>
+            <BChip c={c} label={cat.label} selected={tagFilter === cat.key} />
+          </Pressable>
+        ))}
+      </ScrollView>
+    ) : (
+      <View style={{ flex: 1 }} />
+    );
+
+  const ListHeader = (
+    <View style={{ gap: space.md, paddingTop: space.md }}>
+      {/* Brand + location + search — location lives up top so it never clips */}
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
+      >
+        <BText c={c} v="display" style={{ fontFamily: "ShortStack" }}>
+          {t("app.name")}
+        </BText>
+        <View style={{ flex: 1 }} />
+        <Pressable onPress={openAreaSheet} hitSlop={8}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 3,
+              maxWidth: 150,
+            }}
+          >
+            <MaterialCommunityIcons
+              name="map-marker"
+              size={16}
+              color={c.brand}
+            />
+            <BText c={c} v="bodyStrong" color={c.text} numberOfLines={1}>
+              {areaShort}
+            </BText>
+            <MaterialCommunityIcons
+              name="chevron-down"
+              size={15}
+              color={c.subtext}
+            />
+          </View>
+        </Pressable>
+        <BIconButton c={c} icon="magnify" onPress={openSearchSheet} />
+      </View>
+
+      {/* Composer card */}
+      <BComposer
+        c={c}
+        heading={t("browse.composer_title")}
+        placeholders={composerHints}
+        onPress={() => router.push("/compose")}
+      />
+
+      {/* View toggle + category filter share one row */}
+      <View
+        style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
+      >
+        <BToggle<"list" | "map">
+          c={c}
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            {
+              value: "list",
+              label: t("browse.mapButton_list"),
+              icon: "format-list-bulleted",
+            },
+            { value: "map", label: t("browse.mapButton_map"), icon: "map" },
+          ]}
+        />
+        {tagFilterBar}
+      </View>
+    </View>
+  );
 
   return (
     <>
-      <View style={{ flex: 1, backgroundColor: paperBg }}>
-        <SafeAreaView edges={["top"]} style={{ backgroundColor: paperBg }}>
-          {/* Section 1: Logo + App name + Search button */}
-          <View
-            style={{
-              paddingHorizontal: 18,
-              paddingTop: 12,
-              paddingBottom: 10,
-              gap: 10,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 10,
-              }}
-            >
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-              >
-                <View
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
-                    backgroundColor: theme.colors.brandSoft,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    borderWidth: 1,
-                    borderColor: theme.colors.brandBorder,
-                  }}
-                >
-                  <MaterialCommunityIcons
-                    name="compass-rose"
-                    size={24}
-                    color={brandIconColor}
-                  />
-                </View>
-                <Text
-                  style={{
-                    fontFamily: "ShortStack",
-                    fontSize: 26,
-                    fontStyle: "normal",
-                    color: theme.colors.ink,
-                  }}
-                >
-                  {t("app.name")}
-                </Text>
-              </View>
-
-              <Pressable
-                onPress={openSearchSheet}
-                hitSlop={8}
-                style={({ pressed }) => ({
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  borderWidth: 1,
-                  borderColor: theme.colors.brandBorder,
-                  backgroundColor: pressed
-                    ? theme.colors.brandSurfacePressed
-                    : theme.colors.brandSurfaceAlt,
-                  alignItems: "center",
-                  justifyContent: "center",
-                })}
-              >
-                <Ionicons name="search" size={18} color={brandIconColor} />
-              </Pressable>
-            </View>
-          </View>
-
-          <Pressable
-            onPress={() => router.push("/compose")}
-            style={({ pressed }) => ({
-              marginHorizontal: 18,
-              marginBottom: 12,
-              borderRadius: 18,
-              borderWidth: 1,
-              borderColor: theme.colors.composerBorder,
-              backgroundColor: pressed
-                ? theme.colors.brandSurfaceAlt
-                : theme.colors.composerBg,
-              padding: 12,
-              gap: 10,
-              shadowColor: theme.colors.shadow,
-              shadowOpacity: pressed ? 0.06 : 0.08,
-              shadowRadius: 10,
-              shadowOffset: { width: 0, height: 4 },
-            })}
-          >
-            <Text
-              style={{
-                fontSize: 14,
-                fontWeight: "800",
-                color: theme.colors.title,
-              }}
-            >
-              {t("browse.composer_title")}
-            </Text>
-
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: theme.colors.brandSoft,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 1,
-                  borderColor: theme.colors.brandBorder,
-                }}
-              >
-                <MaterialCommunityIcons
-                  name="compass-rose"
-                  size={20}
-                  color={brandIconColor}
-                />
-              </View>
-
-              <View
-                style={{
-                  flex: 1,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.isDark
-                    ? theme.colors.surfaceAlt
-                    : theme.colors.surface,
-                  borderRadius: 999,
-                  paddingHorizontal: 14,
-                  paddingVertical: 10,
-                }}
-              >
-                <Text style={{ fontSize: 13, color: theme.colors.subtext }}>
-                  {composerHints[hintIndex]}
-                </Text>
-              </View>
-            </View>
-
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-            >
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
-              >
-                <Ionicons
-                  name="chatbubble-ellipses"
-                  size={14}
-                  color={brandIconColor}
-                />
-                <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-                  {t("compose.navTitle")}
-                </Text>
-              </View>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
-              >
-                <Ionicons
-                  name="people"
-                  size={14}
-                  color={theme.colors.subtext}
-                />
-                <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-                  {t("common.join")}
-                </Text>
-              </View>
-            </View>
-          </Pressable>
-
-          {/* Section 2: What's happening + Map button */}
-          <View
-            style={{
-              paddingHorizontal: 18,
-              paddingBottom: 10,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 10,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: "Kalam",
-                  fontSize: 20,
-                  color: theme.colors.inkSubtle,
-                }}
-              >
-                {t("browse.whatsHappening")}
-              </Text>
-              <Pressable
-                onPress={openAreaSheet}
-                style={({ pressed }) => ({
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: theme.colors.brandBorder,
-                  backgroundColor: pressed
-                    ? theme.colors.brandSurfacePressed
-                    : theme.colors.brandSurface,
-                  maxWidth: "60%",
-                })}
-              >
-                <Ionicons name="location" size={14} color={brandIconColor} />
-                <Text
-                  numberOfLines={1}
-                  style={{ fontSize: 12.5, color: theme.colors.text }}
-                >
-                  {areaPillLabel}
-                </Text>
-                <Ionicons
-                  name="chevron-down"
-                  size={14}
-                  color={theme.colors.subtext}
-                />
-              </Pressable>
-            </View>
-          </View>
-        </SafeAreaView>
-
-        {/* Section 3: Cards / Map (scrollable area only) */}
-        <View style={{ flex: 1 }}>
+      <View style={{ flex: 1, backgroundColor: c.bg }}>
+        <PaperTexture opacity={0.06} />
+        <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
           {viewMode === "map" ? (
             <View style={{ flex: 1, paddingBottom: tabBarSpace }}>
-              <BrowseMap
-                items={filteredItems}
-                onPressCard={onPressCard}
-                onRequestList={() => setViewMode("list")}
-              />
+              {ListHeader}
+              <View style={{ flex: 1 }}>
+                <BrowseMap
+                  items={shownItems}
+                  onPressCard={onPressCard}
+                  onRequestList={() => setViewMode("list")}
+                />
+              </View>
             </View>
           ) : (
             <FlatList
-              data={filteredItems}
+              data={shownItems}
               keyExtractor={(x) => x.id}
+              style={{ flex: 1, backgroundColor: "transparent" }}
               contentContainerStyle={{
-                paddingBottom: tabBarSpace,
-                paddingTop: 4,
+                width: "100%",
+                maxWidth: layout.maxContentWidth,
+                alignSelf: "center",
+                paddingHorizontal: space.lg,
+                paddingBottom: space.xxl,
               }}
+              ListHeaderComponent={ListHeader}
               refreshing={refreshing}
               onRefresh={onRefresh}
               keyboardDismissMode="on-drag"
@@ -762,41 +686,72 @@ export default function BrowseScreen() {
               maxToRenderPerBatch={8}
               updateCellsBatchingPeriod={50}
               removeClippedSubviews
-              renderItem={({ item }) => (
-                <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
-                  <ActivityCard
-                    activity={item}
-                    currentUserId={userId}
-                    membershipState="none"
-                    isJoining={joiningId === item.id}
-                    onPressCard={() => onPressCard(item)}
-                    onPressEdit={
-                      item.creator_id === userId
-                        ? () => router.push(`/edit/${item.id}`)
-                        : undefined
-                    }
-                  />
-                </View>
-              )}
+              renderItem={({ item }) => {
+                // Crucial info only: how far + when it closes. The place is
+                // redundant with the area header, and a raw datetime is noise.
+                const distanceLabel =
+                  item.distance_km != null
+                    ? t("activityCard.hint_distance_short", {
+                        km: item.distance_km.toFixed(1),
+                      })
+                    : "";
+                const closesLabel = t("activityCard.hint_expiry_short", {
+                  when: formatExpiryLabel(item.expires_at, Date.now(), t),
+                });
+                const meta = [distanceLabel, closesLabel]
+                  .filter(Boolean)
+                  .join(" · ");
+                const capacityLabel =
+                  typeof item.capacity === "number" && item.capacity >= 1
+                    ? formatCapacity(item.capacity, t)
+                    : null;
+                const cat = activityCategory(item.title_text);
+                return (
+                  <View style={{ marginBottom: space.sm }}>
+                    <BActivityRow
+                      c={c}
+                      icon={cat.icon}
+                      iconBg={c[cat.tint]}
+                      title={item.title_text}
+                      meta={meta}
+                      badges={
+                        <>
+                          <BBadge c={c} label={cat.label} fill={c[cat.tint]} />
+                          {capacityLabel ? (
+                            <BBadge
+                              c={c}
+                              label={capacityLabel}
+                              fill={c.surface}
+                            />
+                          ) : null}
+                        </>
+                      }
+                      onPress={() => onPressCard(item)}
+                    />
+                  </View>
+                );
+              }}
               ListEmptyComponent={
                 areaLoading || !currentArea ? (
-                  <View
-                    style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}
-                  >
-                    <Text style={{ opacity: 0.8 }}>
+                  <View style={{ paddingTop: space.xxl, gap: space.md }}>
+                    <BText c={c} color={c.subtext}>
                       {t("browse.area_detecting")}
-                    </Text>
-                    <PrimaryButton
+                    </BText>
+                    <BButton
+                      c={c}
+                      tone="primary"
                       label={t("browse.area_choose")}
                       onPress={openAreaSheet}
                     />
                   </View>
                 ) : (
-                  <View
-                    style={{ paddingHorizontal: 16, paddingTop: 24, gap: 10 }}
-                  >
-                    <Text style={{ opacity: 0.8 }}>{t("browse.empty")}</Text>
-                    <PrimaryButton
+                  <View style={{ paddingTop: space.xxl, gap: space.md }}>
+                    <BText c={c} color={c.subtext}>
+                      {t("browse.empty")}
+                    </BText>
+                    <BButton
+                      c={c}
+                      tone="primary"
                       label={t("browse.empty_cta")}
                       onPress={() => router.push("/compose")}
                     />
@@ -805,25 +760,24 @@ export default function BrowseScreen() {
               }
               ListFooterComponent={
                 loadingMore ? (
-                  <View style={{ paddingVertical: 12 }}>
-                    <ActivityIndicator />
+                  <View style={{ paddingVertical: space.md }}>
+                    <ActivityIndicator color={c.brand} />
                   </View>
-                ) : !hasMore && filteredItems.length > 0 ? (
-                  <View style={{ paddingVertical: 12 }}>
-                    <Text
-                      style={{
-                        textAlign: "center",
-                        color: theme.colors.subtitleText,
-                      }}
+                ) : !hasMore && shownItems.length > 0 ? (
+                  <View style={{ paddingVertical: space.md }}>
+                    <BText
+                      c={c}
+                      color={c.subtext}
+                      style={{ textAlign: "center" }}
                     >
                       {t("common.noMore")}
-                    </Text>
+                    </BText>
                   </View>
                 ) : null
               }
             />
           )}
-        </View>
+        </SafeAreaView>
 
         <Pressable
           onPress={() => {
@@ -838,24 +792,23 @@ export default function BrowseScreen() {
             bottom: TAB_BOTTOM + 10,
             width: 88,
             height: 40,
-            borderRadius: 999,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            backgroundColor: theme.colors.surface,
-            opacity: pressed ? 0.72 : 0.88,
+            borderRadius: radius.pill,
+            borderWidth: 2,
+            borderColor: c.border,
+            backgroundColor: c.surface,
+            opacity: pressed ? 0.8 : 1,
             alignItems: "center",
             justifyContent: "center",
-            shadowColor: theme.colors.shadow,
-            shadowOpacity: 0.18,
-            shadowRadius: 10,
-            shadowOffset: { width: 0, height: 6 },
-            elevation: 8,
           })}
         >
           {viewMode === "map" ? (
-            <Ionicons name="list" size={22} color={theme.colors.text} />
+            <MaterialCommunityIcons
+              name="format-list-bulleted"
+              size={22}
+              color={c.ink}
+            />
           ) : (
-            <Ionicons name="map" size={22} color={theme.colors.text} />
+            <MaterialCommunityIcons name="map" size={22} color={c.ink} />
           )}
         </Pressable>
       </View>

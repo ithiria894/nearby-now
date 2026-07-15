@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { searchPlacesNominatim, type PlaceCandidate } from "../lib/api/places";
 import { useT } from "../lib/i18n/useT";
 import { formatExpiryLabel } from "../lib/i18n/i18n_format";
-import { useTheme } from "../src/ui/theme/ThemeProvider";
+import { useUIKit } from "../src/ui/theme/useUIKit";
+import { space } from "../src/ui/theme/uikit";
+import {
+  BButton,
+  BCard,
+  BChip,
+  BInput,
+  BText,
+} from "../src/ui/components/brutal";
 
 type GenderPref = "any" | "female" | "male";
 
@@ -129,7 +137,7 @@ export default function InviteForm(props: Props) {
     mode = "create",
   } = props;
 
-  const theme = useTheme();
+  const c = useUIKit();
   const { t } = useT();
   const initialPlace = buildInitialPlace(initialValues, t);
   const effectiveSubmitLabel =
@@ -420,449 +428,243 @@ export default function InviteForm(props: Props) {
   ]);
 
   return (
-    <View style={{ gap: 14 }}>
-      <View
-        style={{
-          padding: 12,
-          borderRadius: 14,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
-          gap: 8,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "800",
-            color: theme.colors.subtext,
-          }}
-        >
+    <View style={{ gap: space.md }}>
+      <BCard c={c}>
+        <BText c={c} v="label" color={c.subtext}>
           {summaryItems.length === 0
             ? t("inviteForm.summary_empty")
             : t("inviteForm.summary_filled")}
-        </Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+        </BText>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
           {summaryItems.length === 0 ? (
-            <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
+            <BText c={c} v="caption" color={c.subtext}>
               {t("inviteForm.summary_hint")}
-            </Text>
+            </BText>
           ) : (
             summaryItems.map((it) => (
-              <View
-                key={it.key}
-                style={{
-                  paddingVertical: 4,
-                  paddingHorizontal: 8,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  backgroundColor: theme.colors.surface,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: "700",
-                    color: theme.colors.text,
-                  }}
-                >
-                  {it.label}
-                </Text>
-              </View>
+              <BChip key={it.key} c={c} label={it.label} />
             ))
           )}
         </View>
-      </View>
+      </BCard>
 
-      <Text style={{ fontWeight: "800" }}>{t("inviteForm.titleLabel")}</Text>
-      <TextInput
+      <BInput
+        c={c}
+        label={t("inviteForm.titleLabel")}
+        placeholder={t("inviteForm.titlePlaceholder")}
         value={title}
         onChangeText={setTitle}
-        maxLength={200}
-        placeholder={t("inviteForm.titlePlaceholder")}
-        style={{
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          borderRadius: 10,
-          padding: 12,
-          backgroundColor: theme.colors.surface,
-        }}
+        error={titleError ?? undefined}
       />
-      {titleError ? (
-        <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
-          {titleError}
-        </Text>
-      ) : null}
 
-      <View
-        style={{
-          gap: 8,
-          borderRadius: 14,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
-          padding: 12,
-        }}
-      >
-        <Text style={{ fontWeight: "800" }}>{t("inviteForm.placeLabel")}</Text>
-        <Text style={{ fontSize: 12, opacity: 0.75 }}>
+      <BCard c={c}>
+        <BText c={c} v="label" color={c.subtext}>
+          {t("inviteForm.placeLabel")}
+        </BText>
+        <BText c={c} v="caption" color={c.subtext}>
           {t("inviteForm.placeBlurb")}
-        </Text>
-        <TextInput
+        </BText>
+        <BInput
+          c={c}
+          label={t("inviteForm.placeLabel")}
+          placeholder={t("inviteForm.placePlaceholder")}
           value={placeQuery}
           onChangeText={onChangePlaceQuery}
-          placeholder={t("inviteForm.placePlaceholder")}
-          style={{
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            borderRadius: 10,
-            padding: 12,
-            backgroundColor: theme.colors.surface,
-          }}
+          hint={t("inviteForm.placeHint")}
         />
-        <Text style={{ fontSize: 12, opacity: 0.7 }}>
-          {t("inviteForm.placeHint")}
-        </Text>
 
-        <Pressable
+        <BButton
+          c={c}
+          tone="secondary"
+          label={t("inviteForm.place_skip")}
           onPress={onClearSelection}
-          style={{
-            alignSelf: "flex-start",
-            paddingVertical: 6,
-            paddingHorizontal: 10,
-            borderRadius: 8,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            backgroundColor: theme.colors.surface,
-          }}
-        >
-          <Text style={{ fontWeight: "600" }}>
-            {t("inviteForm.place_skip")}
-          </Text>
-        </Pressable>
+        />
 
         {selectedPlace ? (
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              borderRadius: 10,
-              padding: 10,
-              gap: 4,
-              backgroundColor: theme.colors.surface,
-            }}
-          >
-            <Text style={{ fontSize: 15, fontWeight: "700" }}>
+          <BCard c={c}>
+            <BText c={c} v="title" color={c.ink}>
               {selectedPlace.name}
-            </Text>
-            <Text style={{ opacity: 0.7 }}>{selectedPlace.address}</Text>
-            <Pressable
+            </BText>
+            <BText c={c} v="body" color={c.subtext}>
+              {selectedPlace.address}
+            </BText>
+            <BButton
+              c={c}
+              tone="secondary"
+              label={t("inviteForm.clearSelection")}
               onPress={onClearSelection}
-              style={{
-                marginTop: 6,
-                paddingVertical: 6,
-                paddingHorizontal: 10,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                alignSelf: "flex-start",
-                backgroundColor: theme.colors.surface,
-              }}
-            >
-              <Text style={{ fontWeight: "600" }}>
-                {t("inviteForm.clearSelection")}
-              </Text>
-            </Pressable>
-          </View>
+            />
+          </BCard>
         ) : null}
 
         {searching ? (
-          <Text style={{ opacity: 0.7 }}>{t("inviteForm.searching")}</Text>
+          <BText c={c} v="body" color={c.subtext}>
+            {t("inviteForm.searching")}
+          </BText>
         ) : null}
 
         {!selectedPlace && candidates.length > 0 ? (
-          <View
-            style={{
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              borderRadius: 10,
-              backgroundColor: theme.colors.surface,
-            }}
-          >
-            {candidates.map((c) => (
+          <BCard c={c}>
+            {candidates.map((cand) => (
               <Pressable
-                key={c.placeId}
-                onPress={() => onSelectCandidate(c)}
-                style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  borderBottomWidth: 1,
-                  borderBottomColor: theme.colors.border,
-                }}
+                key={cand.placeId}
+                onPress={() => onSelectCandidate(cand)}
               >
-                <Text style={{ fontSize: 15, fontWeight: "700" }}>
-                  {c.name}
-                </Text>
-                <Text style={{ fontSize: 12, opacity: 0.7 }}>{c.address}</Text>
+                <View style={{ gap: 2 }}>
+                  <BText c={c} v="title" color={c.ink}>
+                    {cand.name}
+                  </BText>
+                  <BText c={c} v="caption" color={c.subtext}>
+                    {cand.address}
+                  </BText>
+                </View>
               </Pressable>
             ))}
-          </View>
+          </BCard>
         ) : null}
 
         {!selectedPlace &&
         !searching &&
         placeQuery.trim().length >= 3 &&
         candidates.length === 0 ? (
-          <Text style={{ opacity: 0.7 }}>{t("inviteForm.noResults")}</Text>
+          <BText c={c} v="body" color={c.subtext}>
+            {t("inviteForm.noResults")}
+          </BText>
         ) : null}
-      </View>
+      </BCard>
 
-      <View
-        style={{
-          gap: 8,
-          borderRadius: 14,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
-          padding: 12,
-        }}
-      >
-        <Text style={{ fontWeight: "800" }}>
+      <BCard c={c}>
+        <BText c={c} v="label" color={c.subtext}>
           {t("inviteForm.customPlaceLabel")}
-        </Text>
-        <TextInput
+        </BText>
+        <BInput
+          c={c}
+          label={t("inviteForm.customPlaceLabel")}
+          placeholder={t("inviteForm.customPlacePlaceholder")}
           value={manualPlace}
           onChangeText={setManualPlace}
-          placeholder={t("inviteForm.customPlacePlaceholder")}
-          style={{
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            borderRadius: 10,
-            padding: 12,
-            backgroundColor: theme.colors.surface,
-          }}
+          hint={t("inviteForm.customPlaceHint")}
         />
-        <Text style={{ fontSize: 12, opacity: 0.7 }}>
-          {t("inviteForm.customPlaceHint")}
-        </Text>
-      </View>
+      </BCard>
 
-      <View
-        style={{
-          gap: 8,
-          borderRadius: 14,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
-          padding: 12,
-        }}
-      >
-        <Text style={{ fontWeight: "800" }}>{t("inviteForm.timeLabel")}</Text>
-        <Text style={{ fontSize: 12, opacity: 0.75 }}>
+      <BCard c={c}>
+        <BText c={c} v="label" color={c.subtext}>
+          {t("inviteForm.timeLabel")}
+        </BText>
+        <BText c={c} v="caption" color={c.subtext}>
           {t("inviteForm.timeBlurb")}
-        </Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        </BText>
+        <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
           {quickTimes.map((q) => (
             <Pressable
               key={q.key}
               onPress={() =>
                 setStartTime(formatDateTimeLocalFromDate(q.getDate()))
               }
-              style={{
-                paddingVertical: 8,
-                paddingHorizontal: 12,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: theme.colors.border,
-                backgroundColor: theme.colors.surface,
-              }}
             >
-              <Text style={{ fontWeight: "600" }}>{q.label}</Text>
+              <BChip c={c} label={q.label} />
             </Pressable>
           ))}
         </View>
-        <TextInput
+        <BInput
+          c={c}
+          label={t("inviteForm.timeLabel")}
+          placeholder={t("inviteForm.startTimePlaceholder")}
           value={startTime}
           onChangeText={setStartTime}
-          placeholder={t("inviteForm.startTimePlaceholder")}
-          style={{
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            borderRadius: 10,
-            padding: 12,
-            backgroundColor: theme.colors.surface,
-          }}
+          error={startTimeError ?? startPastDisplayError ?? undefined}
         />
-        {startTimeError ? (
-          <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
-            {startTimeError}
-          </Text>
-        ) : null}
-        {startPastDisplayError ? (
-          <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
-            {startPastDisplayError}
-          </Text>
-        ) : null}
-        <TextInput
+        <BInput
+          c={c}
+          label={t("inviteForm.timeLabel")}
+          placeholder={t("inviteForm.endTimePlaceholder")}
           value={endTime}
           onChangeText={setEndTime}
-          placeholder={t("inviteForm.endTimePlaceholder")}
-          style={{
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            borderRadius: 10,
-            padding: 12,
-            backgroundColor: theme.colors.surface,
-          }}
+          error={endTimeError ?? timeRangeDisplayError ?? undefined}
         />
-        {endTimeError ? (
-          <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
-            {endTimeError}
-          </Text>
-        ) : null}
-        {timeRangeDisplayError ? (
-          <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
-            {timeRangeDisplayError}
-          </Text>
-        ) : null}
-      </View>
+      </BCard>
 
-      <Pressable
-        onPress={() => setShowAdvanced((prev) => !prev)}
-        style={{
-          alignSelf: "flex-start",
-          paddingVertical: 6,
-          paddingHorizontal: 10,
-          borderRadius: 999,
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
-        }}
-      >
-        <Text style={{ fontWeight: "700" }}>
-          {showAdvanced ? t("inviteForm.more_hide") : t("inviteForm.more_show")}
-        </Text>
+      <Pressable onPress={() => setShowAdvanced((prev) => !prev)}>
+        <BChip
+          c={c}
+          label={
+            showAdvanced ? t("inviteForm.more_hide") : t("inviteForm.more_show")
+          }
+        />
       </Pressable>
 
       {showAdvanced ? (
         <>
-          <View
-            style={{
-              gap: 8,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              backgroundColor: theme.colors.surface,
-              padding: 12,
-            }}
-          >
-            <Text style={{ fontWeight: "800" }}>
+          <BCard c={c}>
+            <BText c={c} v="label" color={c.subtext}>
               {t("inviteForm.capacityLabel")}
-            </Text>
-            <Text style={{ fontSize: 12, opacity: 0.75 }}>
+            </BText>
+            <BText c={c} v="caption" color={c.subtext}>
               {t("inviteForm.capacityBlurb")}
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            </BText>
+            <View
+              style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
+            >
               {capacityPresets.map((p) => (
-                <Pressable
-                  key={p.key}
-                  onPress={() => setCapacity(p.value)}
-                  style={{
-                    paddingVertical: 8,
-                    paddingHorizontal: 12,
-                    borderRadius: 999,
-                    borderWidth: 1,
-                    borderColor: theme.colors.border,
-                    backgroundColor: theme.colors.surface,
-                    opacity: capacity === p.value ? 1 : 0.7,
-                  }}
-                >
-                  <Text style={{ fontWeight: "600" }}>{p.label}</Text>
+                <Pressable key={p.key} onPress={() => setCapacity(p.value)}>
+                  <BChip
+                    c={c}
+                    label={p.label}
+                    selected={capacity === p.value}
+                  />
                 </Pressable>
               ))}
             </View>
-            <Text style={{ fontSize: 12, opacity: 0.7 }}>
+            <BText c={c} v="caption" color={c.subtext}>
               {t("inviteForm.capacityHint")}
-            </Text>
+            </BText>
             {capacityError ? (
-              <Text style={{ color: theme.colors.dangerText, fontSize: 12 }}>
+              <BText c={c} v="caption" color={c.danger}>
                 {capacityError}
-              </Text>
+              </BText>
             ) : null}
-          </View>
+          </BCard>
 
-          <View
-            style={{
-              gap: 8,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              backgroundColor: theme.colors.surface,
-              padding: 12,
-            }}
-          >
-            <Text style={{ fontWeight: "800" }}>
+          <BCard c={c}>
+            <BText c={c} v="label" color={c.subtext}>
               {t("inviteForm.genderLabel")}
-            </Text>
-            <Text style={{ fontSize: 12, opacity: 0.75 }}>
+            </BText>
+            <BText c={c} v="caption" color={c.subtext}>
               {t("inviteForm.genderBlurb")}
-            </Text>
-            <View style={{ flexDirection: "row", gap: 8 }}>
+            </BText>
+            <View
+              style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
+            >
               {(["any", "female", "male"] as const).map((v) => (
-                <Pressable
-                  key={v}
-                  onPress={() => setGenderPref(v)}
-                  style={{
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: theme.colors.border,
-                    opacity: genderPref === v ? 1 : 0.6,
-                    backgroundColor: theme.colors.surface,
-                  }}
-                >
-                  <Text style={{ fontWeight: "600" }}>
-                    {t(`inviteForm.gender_${v}`)}
-                  </Text>
+                <Pressable key={v} onPress={() => setGenderPref(v)}>
+                  <BChip
+                    c={c}
+                    label={t(`inviteForm.gender_${v}`)}
+                    selected={genderPref === v}
+                  />
                 </Pressable>
               ))}
             </View>
-          </View>
+          </BCard>
 
-          <View
-            style={{
-              gap: 8,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              backgroundColor: theme.colors.surface,
-              padding: 12,
-            }}
-          >
-            <Text style={{ fontWeight: "800" }}>
+          <BCard c={c}>
+            <BText c={c} v="label" color={c.subtext}>
               {t("inviteForm.expiryTitle")}
-            </Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            </BText>
+            <View
+              style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
+            >
               <Pressable
                 onPress={() => {
                   setExpiryMode("default");
                   setExpiryMinutes(null);
                 }}
-                style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  opacity: expiryMode === "default" ? 1 : 0.6,
-                  backgroundColor: theme.colors.surface,
-                }}
               >
-                <Text style={{ fontWeight: "600" }}>
-                  {t("inviteForm.expiry_default")}
-                </Text>
+                <BChip
+                  c={c}
+                  label={t("inviteForm.expiry_default")}
+                  selected={expiryMode === "default"}
+                />
               </Pressable>
 
               {EXPIRY_PRESETS.map((p) => (
@@ -872,20 +674,14 @@ export default function InviteForm(props: Props) {
                     setExpiryMode("preset");
                     setExpiryMinutes(p.minutes);
                   }}
-                  style={{
-                    paddingVertical: 10,
-                    paddingHorizontal: 12,
-                    borderRadius: 10,
-                    borderWidth: 1,
-                    borderColor: theme.colors.border,
-                    opacity:
-                      expiryMode === "preset" && expiryMinutes === p.minutes
-                        ? 1
-                        : 0.6,
-                    backgroundColor: theme.colors.surface,
-                  }}
                 >
-                  <Text style={{ fontWeight: "600" }}>{p.label}</Text>
+                  <BChip
+                    c={c}
+                    label={p.label}
+                    selected={
+                      expiryMode === "preset" && expiryMinutes === p.minutes
+                    }
+                  />
                 </Pressable>
               ))}
 
@@ -894,64 +690,37 @@ export default function InviteForm(props: Props) {
                   setExpiryMode("never");
                   setExpiryMinutes(null);
                 }}
-                style={{
-                  paddingVertical: 10,
-                  paddingHorizontal: 12,
-                  borderRadius: 10,
-                  borderWidth: 1,
-                  borderColor: theme.colors.border,
-                  opacity: expiryMode === "never" ? 1 : 0.6,
-                  backgroundColor: theme.colors.surface,
-                }}
               >
-                <Text style={{ fontWeight: "600" }}>
-                  {t("inviteForm.expiry_never")}
-                </Text>
+                <BChip
+                  c={c}
+                  label={t("inviteForm.expiry_never")}
+                  selected={expiryMode === "never"}
+                />
               </Pressable>
             </View>
-            <Text style={{ opacity: 0.7 }}>{expiryHint}</Text>
-          </View>
+            <BText c={c} v="body" color={c.subtext}>
+              {expiryHint}
+            </BText>
+          </BCard>
         </>
       ) : null}
 
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        <Pressable
-          onPress={handleSubmit}
-          disabled={submitting}
-          style={{
-            flex: 1,
-            padding: 12,
-            borderRadius: 10,
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-            backgroundColor: theme.colors.surface,
-            alignItems: "center",
-            opacity: submitting ? 0.6 : 1,
-          }}
-        >
-          <Text style={{ fontWeight: "800" }}>
-            {submitting ? t("inviteForm.submitting") : effectiveSubmitLabel}
-          </Text>
-        </Pressable>
+      <BButton
+        c={c}
+        tone="primary"
+        full
+        label={submitting ? t("inviteForm.submitting") : effectiveSubmitLabel}
+        onPress={handleSubmit}
+      />
 
-        {onCancel ? (
-          <Pressable
-            onPress={onCancel}
-            disabled={submitting}
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              borderWidth: 1,
-              borderColor: theme.colors.border,
-              backgroundColor: theme.colors.surface,
-              alignItems: "center",
-              opacity: submitting ? 0.6 : 1,
-            }}
-          >
-            <Text style={{ fontWeight: "700" }}>{t("inviteForm.cancel")}</Text>
-          </Pressable>
-        ) : null}
-      </View>
+      {onCancel ? (
+        <BButton
+          c={c}
+          tone="secondary"
+          label={t("inviteForm.cancel")}
+          onPress={onCancel}
+        />
+      ) : null}
     </View>
   );
 }

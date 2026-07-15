@@ -1,22 +1,29 @@
 // app/login.tsx
 import { useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { backend } from "../lib/backend";
 import { ensureProfile } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
-import { Screen, PrimaryButton } from "../src/ui/common";
-import { useTheme } from "../src/ui/theme/ThemeProvider";
+import { useUIKit } from "../src/ui/theme/useUIKit";
+import { hardShadow, radius, space } from "../src/ui/theme/uikit";
+import {
+  BButton,
+  BCard,
+  BInput,
+  BScreen,
+  BText,
+  HardShadow,
+} from "../src/ui/components/brutal";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { t } = useT();
-  const theme = useTheme();
+  const c = useUIKit();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const brandIconColor = theme.colors.brand;
 
   async function onLogin() {
     if (!email.trim() || !password.trim()) {
@@ -50,126 +57,82 @@ export default function LoginScreen() {
   }
 
   return (
-    <Screen>
-      <View style={{ flex: 1, justifyContent: "center", gap: 16 }}>
-        <View style={{ alignItems: "center", gap: 10 }}>
+    <BScreen c={c} scroll center>
+      <View style={{ alignItems: "center", gap: space.sm }}>
+        <HardShadow c={c} radius={radius.lg} offset={hardShadow.md}>
           <View
             style={{
-              width: 54,
-              height: 54,
-              borderRadius: 27,
-              backgroundColor: theme.isDark
-                ? theme.colors.otherBg
-                : theme.colors.brandSoft,
+              width: 74,
+              height: 74,
+              borderRadius: radius.lg,
+              borderWidth: 2,
+              borderColor: c.border,
+              backgroundColor: c.yellow,
               alignItems: "center",
               justifyContent: "center",
-              borderWidth: 1,
-              borderColor: theme.isDark
-                ? theme.colors.border
-                : theme.colors.brandBorder,
             }}
           >
             <MaterialCommunityIcons
               name="compass-rose"
-              size={28}
-              color={brandIconColor}
+              size={40}
+              color={c.ink}
             />
           </View>
-          <Text
-            style={{
-              fontFamily: "ShortStack",
-              fontSize: 26,
-              color: theme.colors.title,
-            }}
-          >
-            {t("app.name")}
-          </Text>
-          <Text style={{ fontSize: 13, color: theme.colors.subtitleText }}>
-            {t("auth.login.submitIdle")}
-          </Text>
-        </View>
-
-        <View
-          style={{
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: theme.isDark
-              ? theme.colors.border
-              : theme.colors.brandBorder,
-            backgroundColor: theme.isDark
-              ? theme.colors.surface
-              : theme.colors.brandSurface,
-            padding: 14,
-            gap: 12,
-            shadowColor: theme.colors.shadow,
-            shadowOpacity: 0.06,
-            shadowRadius: 10,
-            shadowOffset: { width: 0, height: 4 },
-          }}
+        </HardShadow>
+        <BText
+          v="display"
+          c={c}
+          color={c.ink}
+          style={{ marginTop: space.sm, fontFamily: "ShortStack" }}
         >
-          <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-            {t("auth.login.emailLabel")}
-          </Text>
-          <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder={t("auth.login.emailPlaceholder")}
-            placeholderTextColor={theme.colors.subtext}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            style={{
-              borderWidth: 1,
-              borderRadius: 12,
-              padding: 12,
-              borderColor: theme.colors.border,
-              backgroundColor: theme.isDark
-                ? theme.colors.surfaceAlt
-                : theme.colors.surface,
-              color: theme.colors.text,
-            }}
-          />
-
-          <Text style={{ fontSize: 12, color: theme.colors.subtext }}>
-            {t("auth.login.passwordLabel")}
-          </Text>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t("auth.login.passwordPlaceholder")}
-            placeholderTextColor={theme.colors.subtext}
-            secureTextEntry
-            style={{
-              borderWidth: 1,
-              borderRadius: 12,
-              padding: 12,
-              borderColor: theme.colors.border,
-              backgroundColor: theme.isDark
-                ? theme.colors.surfaceAlt
-                : theme.colors.surface,
-              color: theme.colors.text,
-            }}
-          />
-
-          <PrimaryButton
-            label={
-              submitting
-                ? t("auth.login.submitBusy")
-                : t("auth.login.submitIdle")
-            }
-            onPress={onLogin}
-            disabled={submitting}
-          />
-        </View>
-
-        <Pressable
-          onPress={() => router.push("/register")}
-          style={{ padding: 10, alignItems: "center" }}
+          {t("app.name")}
+        </BText>
+        <BText
+          c={c}
+          color={c.subtext}
+          style={{ fontFamily: "CaveatBold", fontSize: 22 }}
         >
-          <Text style={{ fontWeight: "700", color: theme.colors.text }}>
-            {t("auth.login.goRegister")}
-          </Text>
-        </Pressable>
+          {t("auth.login.submitIdle")}
+        </BText>
       </View>
-    </Screen>
+
+      <BCard c={c}>
+        <BInput
+          c={c}
+          label={t("auth.login.emailLabel")}
+          placeholder={t("auth.login.emailPlaceholder")}
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <BInput
+          c={c}
+          label={t("auth.login.passwordLabel")}
+          placeholder={t("auth.login.passwordPlaceholder")}
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <BButton
+          c={c}
+          tone="primary"
+          full
+          label={
+            submitting ? t("auth.login.submitBusy") : t("auth.login.submitIdle")
+          }
+          onPress={onLogin}
+        />
+      </BCard>
+
+      <Pressable
+        onPress={() => router.push("/register")}
+        style={{ padding: space.sm, alignItems: "center" }}
+      >
+        <BText v="bodyStrong" c={c} color={c.brand}>
+          {t("auth.login.goRegister")}
+        </BText>
+      </Pressable>
+    </BScreen>
   );
 }
