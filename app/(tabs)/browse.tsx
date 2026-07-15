@@ -4,9 +4,11 @@ import {
   Alert,
   FlatList,
   Keyboard,
+  Platform,
   Pressable,
   ScrollView,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -72,6 +74,13 @@ import {
   activityCategory,
   type ActivityCategory,
 } from "../../lib/ui/activityIcon";
+
+// gorhom's BottomSheetTextInput crashes on react-native-web when the sheet
+// unmounts (findNodeHandle on a null scroll ref). It's only needed on native
+// for keyboard coordination, so fall back to a plain TextInput on web.
+const SheetInput = (
+  Platform.OS === "web" ? TextInput : BottomSheetTextInput
+) as typeof TextInput;
 
 function distanceKm(a: DeviceLocation, b: DeviceLocation) {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -822,6 +831,7 @@ export default function BrowseScreen() {
       <BottomSheetModal
         ref={bottomSheetModalRef}
         snapPoints={searchSnapPoints}
+        enableDynamicSizing={false}
         enablePanDownToClose
         backdropComponent={renderSearchBackdrop}
         keyboardBehavior="interactive"
@@ -871,7 +881,7 @@ export default function BrowseScreen() {
             }}
           >
             <Ionicons name="search" size={16} color={theme.colors.subtext} />
-            <BottomSheetTextInput
+            <SheetInput
               value={searchText}
               onChangeText={setSearchText}
               placeholder={t("browse.searchPlaceholder")}
@@ -903,6 +913,7 @@ export default function BrowseScreen() {
       <BottomSheetModal
         ref={areaSheetRef}
         snapPoints={areaSnapPoints}
+        enableDynamicSizing={false}
         enablePanDownToClose
         backdropComponent={renderSearchBackdrop}
         keyboardBehavior="interactive"
@@ -1035,7 +1046,7 @@ export default function BrowseScreen() {
               }}
             >
               <Ionicons name="search" size={16} color={theme.colors.subtext} />
-              <BottomSheetTextInput
+              <SheetInput
                 value={areaQuery}
                 onChangeText={setAreaQuery}
                 placeholder={t("browse.area_search_placeholder")}
