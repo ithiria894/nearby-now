@@ -663,25 +663,9 @@ export function BActivityRow({
           />
         </View>
         <View style={{ flex: 1, gap: 2 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "baseline",
-              gap: space.sm,
-            }}
-          >
-            <Text
-              style={[txt(typeScale.title, c.ink), { flex: 1 }]}
-              numberOfLines={1}
-            >
-              {title}
-            </Text>
-            {trailing ? (
-              <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
-                {trailing}
-              </Text>
-            ) : null}
-          </View>
+          <Text style={txt(typeScale.title, c.ink)} numberOfLines={1}>
+            {title}
+          </Text>
           {preview ? (
             <Text
               style={
@@ -711,21 +695,41 @@ export function BActivityRow({
             </View>
           ) : null}
         </View>
-        {unread && unread > 0 ? (
+        {trailing || (unread && unread > 0) ? (
+          // Time on top, unread badge beneath — one right-aligned column so the
+          // time lines up across rows whether or not there's a badge.
           <View
             style={{
-              minWidth: 22,
-              height: 22,
-              borderRadius: 11,
-              paddingHorizontal: 6,
-              backgroundColor: c.brand,
-              alignItems: "center",
-              justifyContent: "center",
+              alignSelf: "stretch",
+              alignItems: "flex-end",
+              justifyContent: "flex-start",
+              gap: 6,
             }}
           >
-            <Text style={{ color: c.onBrand, fontSize: 11, fontWeight: "800" }}>
-              {unread > 99 ? "99+" : String(unread)}
-            </Text>
+            {trailing ? (
+              <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
+                {trailing}
+              </Text>
+            ) : null}
+            {unread && unread > 0 ? (
+              <View
+                style={{
+                  minWidth: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  paddingHorizontal: 6,
+                  backgroundColor: c.brand,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Text
+                  style={{ color: c.onBrand, fontSize: 11, fontWeight: "800" }}
+                >
+                  {unread > 99 ? "99+" : String(unread)}
+                </Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
         <MaterialCommunityIcons name="chevron-right" size={24} color={c.ink} />
