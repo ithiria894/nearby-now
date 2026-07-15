@@ -348,6 +348,20 @@ export const backend = {
         .eq("token", token);
       return { error };
     },
+    // Write this user's current location onto their push token(s), so the
+    // nearby-activity trigger can match them. No-op if they have no token row
+    // yet (web / permission denied). Allowed by push_tokens *_update_own RLS.
+    async setTokenLocation(userId: string, lat: number, lng: number) {
+      const { error } = await supabase
+        .from("push_tokens")
+        .update({
+          lat,
+          lng,
+          location_updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+      return { error };
+    },
   },
   safety: {
     // Flag another user for moderation (reporter_id defaults to auth.uid()).

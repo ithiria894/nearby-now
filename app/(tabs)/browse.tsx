@@ -51,6 +51,7 @@ import {
   type AreaLocation,
   type DeviceLocation,
 } from "../../lib/ui/location";
+import { updatePushLocation } from "../../lib/push/updateLocation";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
 import { layout, space, radius, borders } from "../../src/ui/theme/uikit";
 import {
@@ -255,6 +256,9 @@ export default function BrowseScreen() {
   const setAreaFromDevice = useCallback(async () => {
     const res = await requestDeviceLocation();
     if (res.status === "granted" && res.location) {
+      // Feed the same location we already have to the nearby-activity push
+      // targeting. Fire-and-forget — must never block or fail the browse flow.
+      void updatePushLocation(res.location.lat, res.location.lng);
       const label =
         (await reverseGeocodeLabel(res.location)) ?? t("browse.area_nearby");
       setCurrentArea({
