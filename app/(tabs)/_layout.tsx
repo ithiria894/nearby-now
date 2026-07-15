@@ -1,10 +1,14 @@
 import { Tabs } from "expo-router";
-import { View } from "react-native";
+import { useEffect } from "react";
+import { AppState, View } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useT } from "../../lib/i18n/useT";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
 import { fonts, radius, type UIColors } from "../../src/ui/theme/uikit";
+import { requireUserId } from "../../lib/domain/auth";
+import { registerForPush } from "../../lib/push/registerPush";
+import { refreshBadge } from "../../lib/push/badge";
 
 // Active tab = a color-only brand pill behind the icon (no border/shadow).
 function TabIcon({
@@ -43,6 +47,31 @@ export default function TabsLayout() {
   const { t } = useT();
   const c = useUIKit();
   const insets = useSafeAreaInsets();
+
+  // Once the user is in the app: register this device for push (permission +
+  // token store) and sync the app-icon badge to total unread. Also refresh the
+  // badge whenever the app returns to the foreground. No-op on web/simulator.
+  useEffect(() => {
+    let alive = true;
+    async function sync() {
+      try {
+        const userId = await requireUserId();
+        if (!alive) return;
+        void registerForPush(userId);
+        void refreshBadge(userId);
+      } catch {
+        // not authenticated yet — skip
+      }
+    }
+    void sync();
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active") void sync();
+    });
+    return () => {
+      alive = false;
+      sub.remove();
+    };
+  }, []);
 
   return (
     <Tabs
