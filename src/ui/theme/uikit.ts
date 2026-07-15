@@ -45,7 +45,7 @@ export const lightColors: UIColors = {
   surfaceAlt: "#EBE1C9",
   overlay: "rgba(28,24,15,0.45)",
   ink: "#1C180F",
-  border: "#1C180F", // light: black borders
+  border: "#BEAF8E", // light: soft warm taupe (was near-black #1C180F — read as "sticker/toy")
   text: "#241F14",
   subtext: "#6E6450",
   faint: "#9C927A",
@@ -63,7 +63,7 @@ export const lightColors: UIColors = {
   warn: "#F5A300",
   danger: "#FF5247",
   info: "#3B82F6",
-  shadow: "#1C180F",
+  shadow: "rgba(28,24,15,0.20)", // soft translucent warm offset (was opaque near-black slab)
 };
 
 export const darkColors: UIColors = {
@@ -90,7 +90,7 @@ export const darkColors: UIColors = {
   warn: "#FFC44D",
   danger: "#FF6A61",
   info: "#6FA8FF",
-  shadow: "#000000",
+  shadow: "rgba(0,0,0,0.45)", // soft translucent offset (was opaque black slab)
 };
 
 export const uiColors: Record<UIScheme, UIColors> = {
@@ -162,11 +162,13 @@ export const radius = { sm: 12, md: 16, lg: 20, xl: 26, pill: 999 } as const;
 // Thinner borders than classic neobrutalism — a little less bold.
 export const borders = { hair: 1, base: 1.5, thick: 2 } as const;
 
-// Small hard (no-blur) offset shadow — the brutalist signature, softened.
+// Small hard (no-blur) offset shadow — the brutalist signature, softened further
+// (gentler offsets + a translucent warm shadow color) so cards read "cozy" not
+// "sticker/toy". Still the same offset technique, just dialed down.
 export const hardShadow = {
-  sm: { x: 2, y: 2 },
-  md: { x: 3, y: 3 },
-  lg: { x: 5, y: 5 },
+  sm: { x: 1, y: 1 },
+  md: { x: 2, y: 2 },
+  lg: { x: 3, y: 3 },
 } as const;
 
 // --- Layout: cap content width, center on wide screens ----------------------
@@ -201,7 +203,7 @@ export const controls = {
   pillRadius: radius.pill,
   cardRadius: radius.lg,
   cardPadding: space.lg,
-  borderWidth: borders.thick,
+  borderWidth: borders.base,
   hitSlop: 8,
   tabBarHeight: 64,
 } as const;

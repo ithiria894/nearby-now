@@ -398,7 +398,7 @@ export function BChip({
         paddingVertical: controls.pillPaddingY,
         paddingHorizontal: controls.pillPaddingX,
         borderRadius: controls.pillRadius,
-        borderWidth: 2,
+        borderWidth: borders.base,
         borderColor: c.border,
         backgroundColor: t[tone].bg,
       }}
@@ -540,7 +540,7 @@ export function BBadge({
         paddingVertical: 3,
         paddingHorizontal: space.sm,
         borderRadius: radius.sm,
-        borderWidth: 2,
+        borderWidth: borders.base,
         borderColor: c.border,
         backgroundColor: fill,
       }}
