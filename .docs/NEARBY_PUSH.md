@@ -69,20 +69,27 @@ insert.
 
 ## Client
 
-Reuse the location `browse` already fetches — **no new permission prompt, no extra
-GPS call**:
+Two write paths, **neither adds a new permission prompt**:
 
-- `app/(tabs)/browse.tsx` `setAreaFromDevice()` already calls `requestDeviceLocation()`
-  and, on `granted`, has `res.location.lat/lng`. There, fire-and-forget
-  `updatePushLocation(lat, lng)`.
-- `lib/push/updateLocation.ts` → `updatePushLocation(lat,lng)`: resolves the current
-  user id best-effort and calls `backend.push.setTokenLocation(uid, lat, lng)`, which
-  `UPDATE push_tokens SET lat,lng,location_updated_at WHERE user_id = uid` (allowed by
-  the `*_update_own` RLS). No-op if the user has no token row yet (web / perm denied /
-  not registered) — no token, no push anyway.
+- **Browse open (silent, already-granted users)** — the `browse.tsx` mount effect calls
+  `getDeviceLocationIfGranted()`, which returns coords ONLY if foreground location is
+  already granted (it never prompts). If so → fire-and-forget `updatePushLocation`. This
+  is what keeps an opted-in user reachable on every app open.
+- **First grant (manual)** — `setAreaFromDevice()` ("use my location" ◎ tap) calls
+  `requestDeviceLocation()` (which may prompt); on `granted` it also fires
+  `updatePushLocation`. The consent point for users who haven't granted yet.
 
-`registerForPush` is unchanged (token first; location arrives via browse). One user =
-one current location (the multi-device-far-apart case is negligible for v1).
+`updatePushLocation(lat,lng)` (`lib/push/updateLocation.ts`) resolves the current user id
+best-effort and calls `backend.push.setTokenLocation(uid, lat, lng)`, which
+`UPDATE push_tokens SET lat,lng,location_updated_at WHERE user_id = uid` (allowed by the
+`*_update_own` RLS). No-op if the user has no token row yet (web / perm denied / not
+registered) — no token, no push anyway.
+
+**Coverage limit (by design):** a user who has NEVER granted location is never matched
+(we don't know where they are) and is NOT prompted on open. Driving that first grant — a
+one-time prompt or a banner on browse — is a **product/UX decision for Nicole + fd**, not
+built here. `registerForPush` is unchanged. One user = one current location (the
+multi-device-far-apart case is negligible for v1).
 
 ## Deliberately deferred (flagged, not built)
 

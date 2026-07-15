@@ -15,7 +15,13 @@ export async function updatePushLocation(
     const { session } = await backend.auth.getSession();
     const userId = session?.user?.id;
     if (!userId) return;
-    await backend.push.setTokenLocation(userId, lat, lng);
+    // setTokenLocation RESOLVES with {error} on a Postgres/RLS failure (it does
+    // not throw), so a silent write failure would otherwise leave the user
+    // un-targetable with no trail. Log it explicitly.
+    const { error } = await backend.push.setTokenLocation(userId, lat, lng);
+    if (error) {
+      console.error("updatePushLocation: setTokenLocation failed:", error);
+    }
   } catch (e) {
     console.error("updatePushLocation failed:", e);
   }

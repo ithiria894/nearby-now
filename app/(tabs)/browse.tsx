@@ -45,6 +45,7 @@ import { formatExpiryLabel } from "../../lib/i18n/i18n_format";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
 import {
+  getDeviceLocationIfGranted,
   getIpLocation,
   requestDeviceLocation,
   reverseGeocodeLabel,
@@ -223,6 +224,23 @@ export default function BrowseScreen() {
       alive = false;
     };
   }, [currentArea]);
+
+  // Keep this user's server-side location fresh for nearby-activity push
+  // targeting — silently, and ONLY for users who already granted location (never
+  // prompts). Without this, browse-open only sets an IP area and never writes the
+  // device location, so push_tokens.location stays NULL and the nearby-push
+  // trigger's freshness gate (location_updated_at > now()-30d) excludes the user.
+  // The manual "use my location" tap (setAreaFromDevice) still covers first grant.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const loc = await getDeviceLocationIfGranted();
+      if (alive && loc) void updatePushLocation(loc.lat, loc.lng);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     AsyncStorage.setItem(RECENT_AREAS_KEY, JSON.stringify(recentAreas)).catch(
