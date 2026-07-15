@@ -47,6 +47,7 @@ import {
   BText,
   PaperTexture,
 } from "../../src/ui/components/brutal";
+import { BottomNav } from "../../components/BottomNav";
 
 type ActivityRow = {
   id: string;
@@ -1004,6 +1005,10 @@ export default function RoomScreen() {
           </View>
         </View>
       </View>
+
+      {/* Keep the bottom nav visible even though the room lives outside the
+          Tabs navigator. */}
+      <BottomNav />
 
       {/* :zap: CHANGE 6: Long-press message menu (Copy/Report placeholders) */}
       <Modal
