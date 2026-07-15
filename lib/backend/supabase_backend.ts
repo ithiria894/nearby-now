@@ -303,6 +303,29 @@ export const backend = {
       return { data: (data ?? []) as any[], error };
     },
   },
+  push: {
+    // Register/refresh this device's Expo push token for the user.
+    async upsertPushToken(userId: string, token: string, platform: string) {
+      const { error } = await supabase.from("push_tokens").upsert(
+        {
+          user_id: userId,
+          token,
+          platform,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,token" }
+      );
+      return { error };
+    },
+    // Drop a token (e.g. on logout on this device).
+    async removePushToken(token: string) {
+      const { error } = await supabase
+        .from("push_tokens")
+        .delete()
+        .eq("token", token);
+      return { error };
+    },
+  },
   realtime: {
     subscribeToBrowseActivities(onChange: (payload: any) => void) {
       const channel = supabase
