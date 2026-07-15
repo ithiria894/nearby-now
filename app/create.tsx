@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { Alert } from "react-native";
 import { useRouter } from "expo-router";
+import { alertAsync } from "../lib/ui/dialog";
 import { backend } from "../lib/backend";
 import { requireUserId } from "../lib/domain/auth";
 import InviteForm, { type InviteFormPayload } from "../components/InviteForm";
@@ -69,7 +69,7 @@ export default function CreateScreen() {
       router.replace("/(tabs)/created");
     } catch (_e: any) {
       console.error(_e);
-      Alert.alert(t("create.errorTitle"), _e?.message ?? "Unknown error");
+      alertAsync(t("create.errorTitle"), _e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }

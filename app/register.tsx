@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
+import { alertAsync } from "../lib/ui/dialog";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { backend } from "../lib/backend";
 import { ensureProfile } from "../lib/domain/auth";
@@ -26,14 +27,14 @@ export default function RegisterScreen() {
 
   async function onRegister() {
     if (!email.trim() || !password.trim()) {
-      Alert.alert(
+      alertAsync(
         t("auth.register.missingTitle"),
         t("auth.register.missingBody")
       );
       return;
     }
     if (password.length < 6) {
-      Alert.alert(t("auth.register.weakTitle"), t("auth.register.weakBody"));
+      alertAsync(t("auth.register.weakTitle"), t("auth.register.weakBody"));
       return;
     }
 
@@ -57,7 +58,7 @@ export default function RegisterScreen() {
         }
         router.replace("/(tabs)/browse");
       } else {
-        Alert.alert(
+        alertAsync(
           t("auth.register.maybeExistsTitle"),
           t("auth.register.maybeExistsBody")
         );
@@ -65,10 +66,7 @@ export default function RegisterScreen() {
       }
     } catch (_e: any) {
       console.error(_e);
-      Alert.alert(
-        t("auth.register.errorTitle"),
-        _e?.message ?? "Unknown error"
-      );
+      alertAsync(t("auth.register.errorTitle"), _e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }

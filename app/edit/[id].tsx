@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { alertAsync } from "../../lib/ui/dialog";
 import { backend } from "../../lib/backend";
 import { requireUserId } from "../../lib/domain/auth";
 import type { InviteChange } from "../../lib/domain/room";
@@ -77,7 +78,7 @@ export default function EditActivityScreen() {
 
         const a = data as ActivityRow;
         if (a.creator_id !== uid) {
-          Alert.alert(t("edit.notAllowedTitle"), t("edit.notAllowedBody"));
+          alertAsync(t("edit.notAllowedTitle"), t("edit.notAllowedBody"));
           router.back();
           return;
         }
@@ -85,7 +86,7 @@ export default function EditActivityScreen() {
         setActivity(a);
       } catch (e: any) {
         console.error(e);
-        Alert.alert(t("edit.loadErrorTitle"), e?.message ?? "Unknown error");
+        alertAsync(t("edit.loadErrorTitle"), e?.message ?? "Unknown error");
         router.back();
       } finally {
         setLoading(false);
@@ -98,7 +99,7 @@ export default function EditActivityScreen() {
   async function onSave(payload: InviteFormPayload) {
     if (!userId || !activity) return;
     if (!isCreator) {
-      Alert.alert(t("edit.notAllowedTitle"), t("edit.notAllowedBody"));
+      alertAsync(t("edit.notAllowedTitle"), t("edit.notAllowedBody"));
       return;
     }
 
@@ -227,7 +228,7 @@ export default function EditActivityScreen() {
       router.replace("/(tabs)/created");
     } catch (e: any) {
       console.error(e);
-      Alert.alert(t("edit.saveErrorTitle"), e?.message ?? "Unknown error");
+      alertAsync(t("edit.saveErrorTitle"), e?.message ?? "Unknown error");
     } finally {
       setSaving(false);
     }

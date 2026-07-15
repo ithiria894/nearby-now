@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   FlatList,
   Keyboard,
   KeyboardAvoidingView,
@@ -30,6 +29,7 @@ import {
   sectionLabelForIso,
 } from "../../lib/domain/room";
 import { subscribeToRoom } from "../../lib/realtime/room";
+import { alertAsync, confirmAsync } from "../../lib/ui/dialog";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
 import {
   space,
@@ -252,11 +252,11 @@ export default function RoomScreen() {
         await loadAll(uid);
       } catch (e: any) {
         if (isAuthMissingError(e)) {
-          Alert.alert(t("room.authRequiredTitle"), t("room.authRequiredBody"));
+          alertAsync(t("room.authRequiredTitle"), t("room.authRequiredBody"));
           router.replace("/login");
           return;
         }
-        Alert.alert(t("room.loadErrorTitle"), e?.message ?? "Unknown error");
+        alertAsync(t("room.loadErrorTitle"), e?.message ?? "Unknown error");
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -346,7 +346,7 @@ export default function RoomScreen() {
       inputRef.current?.focus?.();
     } catch (e: any) {
       console.error("[join]", e);
-      Alert.alert(
+      alertAsync(
         t("room.joinFailedTitle"),
         friendlyDbError(t, e?.message ?? "Unknown error")
       );
@@ -381,63 +381,40 @@ export default function RoomScreen() {
       router.back();
     } catch (e: any) {
       console.error(e);
-      Alert.alert(t("room.leaveFailedTitle"), e?.message ?? "Unknown error");
+      alertAsync(t("room.leaveFailedTitle"), e?.message ?? "Unknown error");
     }
   }
 
-  function confirmLeave() {
-    if (Platform.OS === "web") {
-      const ok = globalThis.confirm?.(
-        `${t("room.leaveConfirmTitle")}\n\n${t("room.leaveConfirmBody")}`
-      );
-      if (ok) doLeave();
-      return;
-    }
-
-    Alert.alert(t("room.leaveConfirmTitle"), t("room.leaveConfirmBody"), [
-      { text: t("common.cancel"), style: "cancel" },
+  async function confirmLeave() {
+    const ok = await confirmAsync(
+      t("room.leaveConfirmTitle"),
+      t("room.leaveConfirmBody"),
       {
-        text: t("common.leave"),
-        style: "destructive",
-        onPress: () => doLeave(),
-      },
-    ]);
+        confirmText: t("common.leave"),
+        cancelText: t("common.cancel"),
+        destructive: true,
+      }
+    );
+    if (ok) doLeave();
   }
 
   async function closeInvite() {
     if (!userId || !activity) return;
     if (!isCreator) {
-      Alert.alert(
-        t("room.closeNotAllowedTitle"),
-        t("room.closeNotAllowedBody")
-      );
+      alertAsync(t("room.closeNotAllowedTitle"), t("room.closeNotAllowedBody"));
       return;
     }
     if (roomState.isReadOnly) return;
 
-    const ok =
-      Platform.OS === "web"
-        ? globalThis.confirm?.(
-            `${t("room.closeConfirmTitle")}\n\n${t("room.closeConfirmBody")}`
-          )
-        : await new Promise<boolean>((resolve) => {
-            Alert.alert(
-              t("room.closeConfirmTitle"),
-              t("room.closeConfirmBody"),
-              [
-                {
-                  text: t("common.cancel"),
-                  style: "cancel",
-                  onPress: () => resolve(false),
-                },
-                {
-                  text: t("common.close"),
-                  style: "destructive",
-                  onPress: () => resolve(true),
-                },
-              ]
-            );
-          });
+    const ok = await confirmAsync(
+      t("room.closeConfirmTitle"),
+      t("room.closeConfirmBody"),
+      {
+        confirmText: t("common.close"),
+        cancelText: t("common.cancel"),
+        destructive: true,
+      }
+    );
 
     if (!ok) return;
 
@@ -463,14 +440,14 @@ export default function RoomScreen() {
       await loadAll(userId);
     } catch (e: any) {
       console.error(e);
-      Alert.alert(t("room.closeFailedTitle"), e?.message ?? "Unknown error");
+      alertAsync(t("room.closeFailedTitle"), e?.message ?? "Unknown error");
     }
   }
 
   async function sendChat(text: string) {
     if (!userId) return;
     if (!canInteract) {
-      Alert.alert(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
+      alertAsync(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
       return;
     }
 
@@ -485,7 +462,7 @@ export default function RoomScreen() {
     });
 
     if (error)
-      Alert.alert(t("room.sendFailedTitle"), friendlyDbError(t, error.message));
+      alertAsync(t("room.sendFailedTitle"), friendlyDbError(t, error.message));
     else {
       setMessage("");
       await loadAll(userId);
@@ -496,7 +473,7 @@ export default function RoomScreen() {
   async function sendQuick(code: string) {
     if (!userId) return;
     if (!canInteract) {
-      Alert.alert(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
+      alertAsync(t("room.readOnlyAlertTitle"), t("room.readOnlyAlertBody"));
       return;
     }
 
@@ -508,7 +485,7 @@ export default function RoomScreen() {
     });
 
     if (error)
-      Alert.alert(t("room.failedTitle"), friendlyDbError(t, error.message));
+      alertAsync(t("room.failedTitle"), friendlyDbError(t, error.message));
     else {
       await loadAll(userId);
       scrollToBottom(true);
@@ -568,12 +545,12 @@ export default function RoomScreen() {
     if (Platform.OS === "web") {
       try {
         await navigator.clipboard.writeText(text);
-        Alert.alert(
+        alertAsync(
           t("room.clipboard.copiedTitle"),
           t("room.clipboard.copiedBody")
         );
       } catch {
-        Alert.alert(
+        alertAsync(
           t("room.clipboard.copyFailedTitle"),
           t("room.clipboard.copyFailedBody")
         );
@@ -583,14 +560,14 @@ export default function RoomScreen() {
 
     // Native placeholder (so you can test UX now without adding deps)
     // If you want real native copy, tell me and I’ll add expo-clipboard cleanly.
-    Alert.alert(
+    alertAsync(
       t("room.clipboard.nativePlaceholderTitle"),
       t("room.clipboard.nativePlaceholderBody")
     );
   }
 
   function reportMessage(_e: RoomEventRow) {
-    Alert.alert(
+    alertAsync(
       t("room.clipboard.reportPlaceholderTitle"),
       t("room.clipboard.reportPlaceholderBody")
     );

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   TextInput,
   View,
 } from "react-native";
+import { alertAsync } from "../lib/ui/dialog";
 import { useRouter } from "expo-router";
 import {
   BottomSheetBackdrop,
@@ -236,7 +236,7 @@ export default function ComposeScreen() {
       successSheetRef.current?.present();
     } catch (e: any) {
       console.error(e);
-      Alert.alert(t("compose.errorTitle"), e?.message ?? "Unknown error");
+      alertAsync(t("compose.errorTitle"), e?.message ?? "Unknown error");
     } finally {
       setSubmitting(false);
     }
