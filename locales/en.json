@@ -54,6 +54,7 @@
       "successTitle": "Success",
       "successBody": "Account created. Please sign in.",
       "errorTitle": "Register failed",
+      "genderLabel": "I am (optional)",
       "backToLogin": "Back to login",
       "maybeExistsTitle": "Already registered?",
       "maybeExistsBody": "This email may already have an account. Try logging in instead."
@@ -111,6 +112,7 @@
     "displayNameSaved": "Saved",
     "logout": "Log out",
     "logoutErrorTitle": "Logout failed",
+    "genderLabel": "Gender",
     "language": "Language",
     "theme": "Theme",
     "theme_system": "System",
@@ -442,7 +444,8 @@
   "gender": {
     "any": "any",
     "female": "female",
-    "male": "male"
+    "male": "male",
+    "other": "other"
   },
   "capacity": {
     "unlimited": "Unlimited",

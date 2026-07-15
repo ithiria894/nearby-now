@@ -80,6 +80,21 @@ export const backend = {
         .eq("id", userId);
       return { error };
     },
+    async getProfileGender(userId: string) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("gender")
+        .eq("id", userId)
+        .single();
+      return { gender: (data?.gender ?? null) as string | null, error };
+    },
+    async updateProfileGender(userId: string, gender: string | null) {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ gender })
+        .eq("id", userId);
+      return { error };
+    },
   },
   activities: {
     async createActivity(payload: Record<string, unknown>) {

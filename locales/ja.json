@@ -54,6 +54,7 @@
       "successTitle": "成功",
       "successBody": "アカウントを作成しました。サインインしてください。",
       "errorTitle": "登録に失敗",
+      "genderLabel": "性別（任意）",
       "backToLogin": "ログインに戻る",
       "maybeExistsTitle": "登録済みかも",
       "maybeExistsBody": "このメールは既に登録されている可能性があります。ログインをお試しください。"
@@ -111,6 +112,7 @@
     "displayNameSaved": "保存済み",
     "logout": "ログアウト",
     "logoutErrorTitle": "ログアウトに失敗",
+    "genderLabel": "性別",
     "language": "言語",
     "theme": "テーマ",
     "theme_system": "システム",
@@ -442,7 +444,8 @@
   "gender": {
     "any": "制限なし",
     "female": "女性",
-    "male": "男性"
+    "male": "男性",
+    "other": "その他"
   },
   "capacity": {
     "unlimited": "無制限",

@@ -10,6 +10,7 @@ import { hardShadow, radius, space } from "../src/ui/theme/uikit";
 import {
   BButton,
   BCard,
+  BChip,
   BInput,
   BScreen,
   BText,
@@ -22,6 +23,7 @@ export default function RegisterScreen() {
   const c = useUIKit();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [gender, setGender] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   async function onRegister() {
@@ -52,6 +54,9 @@ export default function RegisterScreen() {
       if (session?.user) {
         try {
           await ensureProfile();
+          if (gender) {
+            await backend.profiles.updateProfileGender(session.user.id, gender);
+          }
         } catch (pe) {
           console.error("ensureProfile (register):", pe);
         }
@@ -132,6 +137,23 @@ export default function RegisterScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
+        <View style={{ gap: 6 }}>
+          <BText c={c} v="label" color={c.subtext}>
+            {t("auth.register.genderLabel")}
+          </BText>
+          <View
+            style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
+          >
+            {(["female", "male", "other"] as const).map((g) => (
+              <Pressable
+                key={g}
+                onPress={() => setGender(gender === g ? null : g)}
+              >
+                <BChip c={c} selected={gender === g} label={t(`gender.${g}`)} />
+              </Pressable>
+            ))}
+          </View>
+        </View>
         <BButton
           c={c}
           tone="primary"

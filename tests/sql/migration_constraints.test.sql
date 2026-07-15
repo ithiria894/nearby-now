@@ -15,6 +15,21 @@ INSERT INTO activities (creator_id, title_text, status, gender_pref)
 VALUES ('00000000-0000-0000-0000-000000000001', 'test', 'open', 'aliens');
 -- Expected: ERROR: new row violates check constraint "chk_activities_gender_pref"
 
+-- gender_pref schema-as-code guard (20260715000000): the DB CHECK MUST match the
+-- app's real vocabulary components/InviteForm.tsx:16 = 'any' | 'female' | 'male'.
+-- These must SUCCEED (they were wrongly rejected before the 20260715 fix):
+--   gender_pref = 'female'  -> OK
+--   gender_pref = 'male'    -> OK
+--   gender_pref = 'any'     -> OK
+-- The old vocabulary MUST now fail:
+--   gender_pref = 'women' / 'men' / 'non-binary' -> ERROR chk_activities_gender_pref
+
+-- profiles.gender self-declared field (20260715000000):
+--   gender = 'female' / 'male' / 'other' / NULL -> OK
+--   gender = 'nonbinary' / anything else        -> ERROR chk_profiles_gender
+-- UPDATE profiles SET gender = 'female' WHERE id = auth.uid();  -- OK
+-- UPDATE profiles SET gender = 'xyz'    WHERE id = auth.uid();  -- ERROR chk_profiles_gender
+
 -- Should fail: title too long (>200 chars)
 INSERT INTO activities (creator_id, title_text, status, gender_pref)
 VALUES ('00000000-0000-0000-0000-000000000001', repeat('x', 201), 'open', 'any');
