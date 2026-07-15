@@ -602,6 +602,7 @@ export function BActivityRow({
   title,
   meta,
   badges,
+  trailing,
   last,
   accent,
   onPress,
@@ -610,8 +611,9 @@ export function BActivityRow({
   icon: string; // MaterialCommunityIcons name (NO emoji)
   iconBg: string;
   title: string;
-  meta: string;
+  meta: React.ReactNode; // string, or inline nodes (e.g. an icon + count)
   badges?: React.ReactNode;
+  trailing?: string; // small top-right text (e.g. distance, last-message time)
   last?: boolean;
   accent?: string; // optional left accent bar to flag an important row
   onPress?: () => void;
@@ -655,14 +657,38 @@ export function BActivityRow({
           />
         </View>
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={txt(typeScale.title, c.ink)} numberOfLines={1}>
-            {title}
-          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "baseline",
+              gap: space.sm,
+            }}
+          >
+            <Text
+              style={[txt(typeScale.title, c.ink), { flex: 1 }]}
+              numberOfLines={1}
+            >
+              {title}
+            </Text>
+            {trailing ? (
+              <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
+                {trailing}
+              </Text>
+            ) : null}
+          </View>
           <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
             {meta}
           </Text>
           {badges ? (
-            <View style={{ flexDirection: "row", gap: space.sm, marginTop: 2 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: space.sm,
+                marginTop: 2,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
               {badges}
             </View>
           ) : null}

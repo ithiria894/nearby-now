@@ -329,6 +329,7 @@
     "hint_gender_male": "只限男仔",
     "hint_distance": "離你大概 {{km}}km。",
     "hint_distance_short": "約 {{km}}km",
+    "hint_people": "{{count}} 人",
     "lobbyHint": "按入去入房傾",
     "cta_join": "入房",
     "cta_open": "打開房間",

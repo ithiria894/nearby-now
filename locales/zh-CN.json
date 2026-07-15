@@ -329,6 +329,7 @@
     "hint_gender_male": "仅限男生",
     "hint_distance": "离你大概 {{km}}km。",
     "hint_distance_short": "约 {{km}}km",
+    "hint_people": "{{count}} 人",
     "lobbyHint": "点击进入大厅聊天",
     "cta_join": "进入大厅",
     "cta_open": "打开大厅",

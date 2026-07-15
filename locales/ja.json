@@ -329,6 +329,7 @@
     "hint_gender_male": "男性のみ",
     "hint_distance": "約{{km}}km。",
     "hint_distance_short": "約{{km}}km",
+    "hint_people": "{{count}}人",
     "lobbyHint": "タップしてロビーで会話",
     "cta_join": "ロビーに入る",
     "cta_open": "ロビーを開く",

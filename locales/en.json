@@ -329,6 +329,7 @@
     "hint_gender_male": "Men only",
     "hint_distance": "About {{km}}km away.",
     "hint_distance_short": "{{km}}km away",
+    "hint_people": "{{count}} people",
     "lobbyHint": "Tap to enter the lobby & chat",
     "cta_join": "Join lobby",
     "cta_open": "Open lobby",

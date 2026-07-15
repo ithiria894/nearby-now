@@ -40,7 +40,7 @@ import {
 import { isJoinableActivity } from "../../lib/domain/activities";
 import { subscribeToBrowseActivities } from "../../lib/realtime/activities";
 import { useT } from "../../lib/i18n/useT";
-import { formatCapacity, formatExpiryLabel } from "../../lib/i18n/i18n_format";
+import { formatExpiryLabel } from "../../lib/i18n/i18n_format";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
 import {
@@ -646,24 +646,36 @@ export default function BrowseScreen() {
               updateCellsBatchingPeriod={50}
               removeClippedSubviews
               renderItem={({ item }) => {
-                // Crucial info only: how far + when it closes. The place is
-                // redundant with the area header, and a raw datetime is noise.
-                const distanceLabel =
-                  item.distance_km != null
-                    ? t("activityCard.hint_distance_short", {
-                        km: item.distance_km.toFixed(1),
-                      })
-                    : "";
+                // Meta is text info: venue (fallback area) · 👤 people · closes;
+                // people is "N/cap" when capped, else "N"; distance top-right.
+                const venue =
+                  (item.place_name ?? item.place_text ?? "").trim() ||
+                  areaShort;
                 const closesLabel = t("activityCard.hint_expiry_short", {
                   when: formatExpiryLabel(item.expires_at, Date.now(), t),
                 });
-                const meta = [distanceLabel, closesLabel]
-                  .filter(Boolean)
-                  .join(" · ");
-                const capacityLabel =
+                const going =
+                  typeof item.joined_count === "number" ? item.joined_count : 0;
+                const cap =
                   typeof item.capacity === "number" && item.capacity >= 1
-                    ? formatCapacity(item.capacity, t)
+                    ? item.capacity
                     : null;
+                const peopleLabel = cap ? `${going}/${cap}` : `${going}`;
+                const meta = (
+                  <>
+                    {venue} ·{" "}
+                    <MaterialCommunityIcons
+                      name="account"
+                      size={13}
+                      color={c.subtext}
+                    />
+                    {peopleLabel} · {closesLabel}
+                  </>
+                );
+                const distance =
+                  item.distance_km != null
+                    ? `${item.distance_km.toFixed(1)}km`
+                    : undefined;
                 const cat = activityCategory(item.title_text);
                 return (
                   <View style={{ marginBottom: space.sm }}>
@@ -673,17 +685,9 @@ export default function BrowseScreen() {
                       iconBg={c[cat.tint]}
                       title={item.title_text}
                       meta={meta}
+                      trailing={distance}
                       badges={
-                        <>
-                          <BBadge c={c} label={cat.label} fill={c[cat.tint]} />
-                          {capacityLabel ? (
-                            <BBadge
-                              c={c}
-                              label={capacityLabel}
-                              fill={c.surface}
-                            />
-                          ) : null}
-                        </>
+                        <BBadge c={c} label={cat.label} fill={c[cat.tint]} />
                       }
                       onPress={() => onPressCard(item)}
                     />
