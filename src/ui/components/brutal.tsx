@@ -482,28 +482,37 @@ export function BChip({
   label,
   selected,
   tone = "neutral",
+  accent,
+  onPress,
 }: {
   c: UIColors;
   label: string;
   selected?: boolean;
   tone?: ChipTone;
+  // Custom selected color for the neutral tone (e.g. a vibe's own tint), so a
+  // selected chip reads in its own hue instead of the generic brand.
+  accent?: string;
+  // Makes the chip pressable with a spring press-scale. Prefer this over
+  // wrapping BChip in your own Pressable — you get the tap animation for free.
+  onPress?: () => void;
 }) {
-  // Selected neutral chip = soft brand tint + brand outline + ink text (a calm
-  // "tonal" selection) instead of a loud full-brand fill.
+  // Selected neutral chip = soft tint + colored outline + ink text (a calm
+  // "tonal" selection) instead of a loud full fill. `accent` overrides the hue.
+  const sel = accent ?? c.brand;
   const t: Record<ChipTone, { bg: string; fg: string; border: string }> = {
     neutral: {
-      bg: selected ? mixHex(c.brand, c.surface, 0.72) : c.surface,
+      bg: selected ? mixHex(sel, c.surface, 0.72) : c.surface,
       fg: selected ? c.ink : c.text,
-      border: selected ? c.brand : c.border,
+      border: selected ? sel : c.border,
     },
     brand: { bg: c.brand, fg: c.onBrand, border: c.border },
     success: { bg: c.mint, fg: c.onBright, border: c.border },
     danger: { bg: c.coral, fg: c.onBright, border: c.border },
     warn: { bg: c.yellow, fg: c.onBright, border: c.border },
   };
-  // A little spring bump when the chip flips to selected — makes tapping a
-  // filter/option feel responsive. No bump on first mount or on deselect.
+  // Selection "pop" (on flip to selected) + a press-scale while held.
   const pop = useSharedValue(0);
+  const press = useSharedValue(1);
   const wasSelected = useRef(!!selected);
   useEffect(() => {
     if (!!selected !== wasSelected.current) {
@@ -517,9 +526,9 @@ export function BChip({
     }
   }, [selected, pop]);
   const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: 1 + pop.value * 0.07 }],
+    transform: [{ scale: (1 + pop.value * 0.07) * press.value }],
   }));
-  return (
+  const chip = (
     <Animated.View
       style={[
         {
@@ -535,6 +544,20 @@ export function BChip({
     >
       <Text style={txt(typeScale.label, t[tone].fg)}>{label}</Text>
     </Animated.View>
+  );
+  if (!onPress) return chip;
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => {
+        press.value = withTiming(0.93, { duration: 90 });
+      }}
+      onPressOut={() => {
+        press.value = withSpring(1, motion.springSpatial);
+      }}
+    >
+      {chip}
+    </Pressable>
   );
 }
 

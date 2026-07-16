@@ -1,11 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  TextInput,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
 import { alertAsync } from "../lib/ui/dialog";
 import { useRouter } from "expo-router";
 import {
@@ -392,12 +386,12 @@ export default function ComposeScreen() {
               </BText>
               {rowChips(
                 TOPICS.map((topic) => (
-                  <Pressable
+                  <BChip
                     key={topic.key}
+                    c={c}
+                    label={t(topic.labelKey)}
                     onPress={() => draftFromTopic(topic.key)}
-                  >
-                    <BChip c={c} label={t(topic.labelKey)} />
-                  </Pressable>
+                  />
                 ))
               )}
             </>
@@ -410,15 +404,19 @@ export default function ComposeScreen() {
             {t("vibe.pick")}
           </BText>
           {rowChips(
-            VIBES.map((v) => (
-              <Pressable key={v} onPress={() => setVibe(vibe === v ? null : v)}>
+            VIBES.map((v) => {
+              const tint = VIBE_META[v].tint;
+              return (
                 <BChip
+                  key={v}
                   c={c}
                   label={t(VIBE_META[v].labelKey)}
                   selected={vibe === v}
+                  accent={tint ? c[tint] : undefined}
+                  onPress={() => setVibe(vibe === v ? null : v)}
                 />
-              </Pressable>
-            ))
+              );
+            })
           )}
         </View>
 
@@ -467,14 +465,14 @@ export default function ComposeScreen() {
         >
           {rowChips(
             quickTimes.map((q) => (
-              <Pressable
+              <BChip
                 key={q.key}
+                c={c}
+                label={q.label}
                 onPress={() =>
                   setStartTime(formatDateTimeLocalFromDate(q.getDate()))
                 }
-              >
-                <BChip c={c} label={q.label} />
-              </Pressable>
+              />
             ))
           )}
           <TextInput
@@ -506,13 +504,13 @@ export default function ComposeScreen() {
           </BText>
           {rowChips(
             [null, 2, 3, 4, 6, 8].map((n) => (
-              <Pressable key={String(n)} onPress={() => setCapacity(n)}>
-                <BChip
-                  c={c}
-                  selected={capacity === n}
-                  label={n == null ? t("capacity.unlimited") : String(n)}
-                />
-              </Pressable>
+              <BChip
+                key={String(n)}
+                c={c}
+                selected={capacity === n}
+                label={n == null ? t("capacity.unlimited") : String(n)}
+                onPress={() => setCapacity(n)}
+              />
             ))
           )}
           <BText c={c} v="caption" color={c.subtext}>
@@ -520,13 +518,13 @@ export default function ComposeScreen() {
           </BText>
           {rowChips(
             (["any", "female", "male"] as const).map((g) => (
-              <Pressable key={g} onPress={() => setGender(g)}>
-                <BChip
-                  c={c}
-                  selected={gender === g}
-                  label={t(`inviteForm.gender_${g}`)}
-                />
-              </Pressable>
+              <BChip
+                key={g}
+                c={c}
+                selected={gender === g}
+                label={t(`inviteForm.gender_${g}`)}
+                onPress={() => setGender(g)}
+              />
             ))
           )}
         </BAccordion>
@@ -541,47 +539,38 @@ export default function ComposeScreen() {
         >
           {rowChips(
             <>
-              <Pressable
+              <BChip
+                c={c}
+                label={t("inviteForm.expiry_default")}
+                selected={expiryMode === "default"}
                 onPress={() => {
                   setExpiryMode("default");
                   setExpiryMinutes(null);
                 }}
-              >
-                <BChip
-                  c={c}
-                  label={t("inviteForm.expiry_default")}
-                  selected={expiryMode === "default"}
-                />
-              </Pressable>
+              />
               {EXPIRY_PRESETS.map((p) => (
-                <Pressable
+                <BChip
                   key={p.label}
+                  c={c}
+                  label={p.label}
+                  selected={
+                    expiryMode === "preset" && expiryMinutes === p.minutes
+                  }
                   onPress={() => {
                     setExpiryMode("preset");
                     setExpiryMinutes(p.minutes);
                   }}
-                >
-                  <BChip
-                    c={c}
-                    label={p.label}
-                    selected={
-                      expiryMode === "preset" && expiryMinutes === p.minutes
-                    }
-                  />
-                </Pressable>
+                />
               ))}
-              <Pressable
+              <BChip
+                c={c}
+                label={t("inviteForm.expiry_never")}
+                selected={expiryMode === "never"}
                 onPress={() => {
                   setExpiryMode("never");
                   setExpiryMinutes(null);
                 }}
-              >
-                <BChip
-                  c={c}
-                  label={t("inviteForm.expiry_never")}
-                  selected={expiryMode === "never"}
-                />
-              </Pressable>
+              />
             </>
           )}
         </BAccordion>
