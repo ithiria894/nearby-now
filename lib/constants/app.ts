@@ -1,1 +1,1 @@
-export const APP_TITLE = "nearby now";
+export const APP_TITLE = "enoki";

@@ -221,7 +221,7 @@ function NavDemo({ c }: { c: UIColors }) {
             style={{ flex: 1 }}
             numberOfLines={1}
           >
-            {page === "feed" ? "Nearby now" : "Karaoke tonight?"}
+            {page === "feed" ? "enoki" : "Karaoke tonight?"}
           </BText>
           <BIconButton
             c={c}
@@ -435,7 +435,7 @@ export default function UIDocs() {
               color={c.ink}
               style={{ marginTop: space.md, fontFamily: "ShortStack" }}
             >
-              nearby now
+              enoki
             </BText>
             <BText
               v="body"

@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Nearby Now"
+    "name": "enoki"
   },
   "tabs": {
     "browse": "Feed",
@@ -30,7 +30,7 @@
   },
   "auth": {
     "login": {
-      "title": "Nearby Now",
+      "title": "enoki",
       "emailLabel": "Email",
       "emailPlaceholder": "Email",
       "passwordLabel": "Password",

@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Nearby Now"
+    "name": "enoki"
   },
   "tabs": {
     "browse": "动态",
@@ -30,7 +30,7 @@
   },
   "auth": {
     "login": {
-      "title": "Nearby Now",
+      "title": "enoki",
       "emailLabel": "邮箱",
       "emailPlaceholder": "邮箱",
       "passwordLabel": "密码",

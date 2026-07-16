@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "NearbyNow",
+    "name": "Enoki",
     "slug": "nearby-now",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -21,8 +21,8 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow NearbyNow to use your location to find activities near you.",
-          "locationWhenInUsePermission": "Allow NearbyNow to use your location to find activities near you."
+          "locationAlwaysAndWhenInUsePermission": "Allow Enoki to use your location to find activities near you.",
+          "locationWhenInUsePermission": "Allow Enoki to use your location to find activities near you."
         }
       ],
       [
@@ -50,7 +50,7 @@
       "bundleIdentifier": "com.ithiria137.nearbynow",
       "supportsTablet": false,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "NearbyNow uses your location to show activities near you."
+        "NSLocationWhenInUseUsageDescription": "Enoki uses your location to show activities near you."
       }
     },
     "android": {
