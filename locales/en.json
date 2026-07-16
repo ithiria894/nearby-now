@@ -440,6 +440,9 @@
     "notImplementedBody": "Not implemented yet."
   },
   "inviteForm": {
+    "step_basics": "Basics",
+    "step_where": "Where",
+    "step_details": "Details",
     "titleLabel": "Title",
     "titlePlaceholder": "Title (required)",
     "titleRequired": "Title is required.",

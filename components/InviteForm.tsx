@@ -11,6 +11,7 @@ import {
   BCard,
   BChip,
   BInput,
+  BStepper,
   BText,
 } from "../src/ui/components/brutal";
 
@@ -156,6 +157,7 @@ export default function InviteForm(props: Props) {
   );
   const [candidates, setCandidates] = useState<PlaceCandidate[]>([]);
   const [searching, setSearching] = useState(false);
+  const [step, setStep] = useState(0);
   const [vibe, setVibe] = useState<string | null>(initialValues?.vibe ?? null);
   const [genderPref, setGenderPref] = useState<GenderPref>(
     (initialValues?.gender_pref as GenderPref) ?? "any"
@@ -434,172 +436,186 @@ export default function InviteForm(props: Props) {
 
   return (
     <View style={{ gap: space.md }}>
-      <BCard c={c}>
-        <BText c={c} v="label" color={c.subtext}>
-          {summaryItems.length === 0
-            ? t("inviteForm.summary_empty")
-            : t("inviteForm.summary_filled")}
-        </BText>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-          {summaryItems.length === 0 ? (
-            <BText c={c} v="caption" color={c.subtext}>
-              {t("inviteForm.summary_hint")}
-            </BText>
-          ) : (
-            summaryItems.map((it) => (
-              <BChip key={it.key} c={c} label={it.label} />
-            ))
-          )}
-        </View>
-      </BCard>
-
-      <BInput
+      <BStepper
         c={c}
-        label={t("inviteForm.titleLabel")}
-        placeholder={t("inviteForm.titlePlaceholder")}
-        value={title}
-        onChangeText={setTitle}
-        error={titleError ?? undefined}
+        current={step}
+        onStepPress={setStep}
+        steps={[
+          { label: t("inviteForm.step_basics") },
+          { label: t("inviteForm.step_where"), optional: true },
+          { label: t("inviteForm.step_details"), optional: true },
+        ]}
       />
 
-      <BCard c={c}>
-        <BText c={c} v="label" color={c.subtext}>
-          {t("inviteForm.placeLabel")}
-        </BText>
-        <BText c={c} v="caption" color={c.subtext}>
-          {t("inviteForm.placeBlurb")}
-        </BText>
-        <BInput
-          c={c}
-          label={t("inviteForm.placeLabel")}
-          placeholder={t("inviteForm.placePlaceholder")}
-          value={placeQuery}
-          onChangeText={onChangePlaceQuery}
-          hint={t("inviteForm.placeHint")}
-        />
+      {step === 0 ? (
+        <>
+          <BInput
+            c={c}
+            label={t("inviteForm.titleLabel")}
+            placeholder={t("inviteForm.titlePlaceholder")}
+            value={title}
+            onChangeText={setTitle}
+            error={titleError ?? undefined}
+          />
 
-        <BButton
-          c={c}
-          tone="secondary"
-          label={t("inviteForm.place_skip")}
-          onPress={onClearSelection}
-        />
-
-        {selectedPlace ? (
           <BCard c={c}>
-            <BText c={c} v="title" color={c.ink}>
-              {selectedPlace.name}
+            <BText c={c} v="label" color={c.subtext}>
+              {t("vibe.pick")}
             </BText>
-            <BText c={c} v="body" color={c.subtext}>
-              {selectedPlace.address}
+            <BText c={c} v="caption" color={c.subtext}>
+              {t("vibe.pick_hint")}
             </BText>
+            <View
+              style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
+            >
+              {VIBES.map((v) => (
+                <Pressable
+                  key={v}
+                  onPress={() => setVibe(vibe === v ? null : v)}
+                >
+                  <BChip
+                    c={c}
+                    label={t(VIBE_META[v].labelKey)}
+                    selected={vibe === v}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          </BCard>
+        </>
+      ) : step === 1 ? (
+        <>
+          <BCard c={c}>
+            <BText c={c} v="label" color={c.subtext}>
+              {t("inviteForm.placeLabel")}
+            </BText>
+            <BText c={c} v="caption" color={c.subtext}>
+              {t("inviteForm.placeBlurb")}
+            </BText>
+            <BInput
+              c={c}
+              label={t("inviteForm.placeLabel")}
+              placeholder={t("inviteForm.placePlaceholder")}
+              value={placeQuery}
+              onChangeText={onChangePlaceQuery}
+              hint={t("inviteForm.placeHint")}
+            />
+
             <BButton
               c={c}
               tone="secondary"
-              label={t("inviteForm.clearSelection")}
+              label={t("inviteForm.place_skip")}
               onPress={onClearSelection}
             />
+
+            {selectedPlace ? (
+              <BCard c={c}>
+                <BText c={c} v="title" color={c.ink}>
+                  {selectedPlace.name}
+                </BText>
+                <BText c={c} v="body" color={c.subtext}>
+                  {selectedPlace.address}
+                </BText>
+                <BButton
+                  c={c}
+                  tone="secondary"
+                  label={t("inviteForm.clearSelection")}
+                  onPress={onClearSelection}
+                />
+              </BCard>
+            ) : null}
+
+            {searching ? (
+              <BText c={c} v="body" color={c.subtext}>
+                {t("inviteForm.searching")}
+              </BText>
+            ) : null}
+
+            {!selectedPlace && candidates.length > 0 ? (
+              <BCard c={c}>
+                {candidates.map((cand) => (
+                  <Pressable
+                    key={cand.placeId}
+                    onPress={() => onSelectCandidate(cand)}
+                  >
+                    <View style={{ gap: 2 }}>
+                      <BText c={c} v="title" color={c.ink}>
+                        {cand.name}
+                      </BText>
+                      <BText c={c} v="caption" color={c.subtext}>
+                        {cand.address}
+                      </BText>
+                    </View>
+                  </Pressable>
+                ))}
+              </BCard>
+            ) : null}
+
+            {!selectedPlace &&
+            !searching &&
+            placeQuery.trim().length >= 3 &&
+            candidates.length === 0 ? (
+              <BText c={c} v="body" color={c.subtext}>
+                {t("inviteForm.noResults")}
+              </BText>
+            ) : null}
           </BCard>
-        ) : null}
 
-        {searching ? (
-          <BText c={c} v="body" color={c.subtext}>
-            {t("inviteForm.searching")}
-          </BText>
-        ) : null}
-
-        {!selectedPlace && candidates.length > 0 ? (
           <BCard c={c}>
-            {candidates.map((cand) => (
-              <Pressable
-                key={cand.placeId}
-                onPress={() => onSelectCandidate(cand)}
-              >
-                <View style={{ gap: 2 }}>
-                  <BText c={c} v="title" color={c.ink}>
-                    {cand.name}
-                  </BText>
-                  <BText c={c} v="caption" color={c.subtext}>
-                    {cand.address}
-                  </BText>
-                </View>
-              </Pressable>
-            ))}
+            <BText c={c} v="label" color={c.subtext}>
+              {t("inviteForm.customPlaceLabel")}
+            </BText>
+            <BInput
+              c={c}
+              label={t("inviteForm.customPlaceLabel")}
+              placeholder={t("inviteForm.customPlacePlaceholder")}
+              value={manualPlace}
+              onChangeText={setManualPlace}
+              hint={t("inviteForm.customPlaceHint")}
+            />
           </BCard>
-        ) : null}
-
-        {!selectedPlace &&
-        !searching &&
-        placeQuery.trim().length >= 3 &&
-        candidates.length === 0 ? (
-          <BText c={c} v="body" color={c.subtext}>
-            {t("inviteForm.noResults")}
-          </BText>
-        ) : null}
-      </BCard>
-
-      <BCard c={c}>
-        <BText c={c} v="label" color={c.subtext}>
-          {t("inviteForm.customPlaceLabel")}
-        </BText>
-        <BInput
-          c={c}
-          label={t("inviteForm.customPlaceLabel")}
-          placeholder={t("inviteForm.customPlacePlaceholder")}
-          value={manualPlace}
-          onChangeText={setManualPlace}
-          hint={t("inviteForm.customPlaceHint")}
-        />
-      </BCard>
-
-      <BCard c={c}>
-        <BText c={c} v="label" color={c.subtext}>
-          {t("inviteForm.timeLabel")}
-        </BText>
-        <BText c={c} v="caption" color={c.subtext}>
-          {t("inviteForm.timeBlurb")}
-        </BText>
-        <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
-          {quickTimes.map((q) => (
-            <Pressable
-              key={q.key}
-              onPress={() =>
-                setStartTime(formatDateTimeLocalFromDate(q.getDate()))
-              }
-            >
-              <BChip c={c} label={q.label} />
-            </Pressable>
-          ))}
-        </View>
-        <BInput
-          c={c}
-          label={t("inviteForm.timeLabel")}
-          placeholder={t("inviteForm.startTimePlaceholder")}
-          value={startTime}
-          onChangeText={setStartTime}
-          error={startTimeError ?? startPastDisplayError ?? undefined}
-        />
-        <BInput
-          c={c}
-          label={t("inviteForm.timeLabel")}
-          placeholder={t("inviteForm.endTimePlaceholder")}
-          value={endTime}
-          onChangeText={setEndTime}
-          error={endTimeError ?? timeRangeDisplayError ?? undefined}
-        />
-      </BCard>
-
-      <Pressable onPress={() => setShowAdvanced((prev) => !prev)}>
-        <BChip
-          c={c}
-          label={
-            showAdvanced ? t("inviteForm.more_hide") : t("inviteForm.more_show")
-          }
-        />
-      </Pressable>
-
-      {showAdvanced ? (
+        </>
+      ) : (
         <>
+          <BCard c={c}>
+            <BText c={c} v="label" color={c.subtext}>
+              {t("inviteForm.timeLabel")}
+            </BText>
+            <BText c={c} v="caption" color={c.subtext}>
+              {t("inviteForm.timeBlurb")}
+            </BText>
+            <View
+              style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
+            >
+              {quickTimes.map((q) => (
+                <Pressable
+                  key={q.key}
+                  onPress={() =>
+                    setStartTime(formatDateTimeLocalFromDate(q.getDate()))
+                  }
+                >
+                  <BChip c={c} label={q.label} />
+                </Pressable>
+              ))}
+            </View>
+            <BInput
+              c={c}
+              label={t("inviteForm.timeLabel")}
+              placeholder={t("inviteForm.startTimePlaceholder")}
+              value={startTime}
+              onChangeText={setStartTime}
+              error={startTimeError ?? startPastDisplayError ?? undefined}
+            />
+            <BInput
+              c={c}
+              label={t("inviteForm.timeLabel")}
+              placeholder={t("inviteForm.endTimePlaceholder")}
+              value={endTime}
+              onChangeText={setEndTime}
+              error={endTimeError ?? timeRangeDisplayError ?? undefined}
+            />
+          </BCard>
+
           <BCard c={c}>
             <BText c={c} v="label" color={c.subtext}>
               {t("inviteForm.capacityLabel")}
@@ -646,31 +662,6 @@ export default function InviteForm(props: Props) {
                     c={c}
                     label={t(`inviteForm.gender_${v}`)}
                     selected={genderPref === v}
-                  />
-                </Pressable>
-              ))}
-            </View>
-          </BCard>
-
-          <BCard c={c}>
-            <BText c={c} v="label" color={c.subtext}>
-              {t("vibe.pick")}
-            </BText>
-            <BText c={c} v="caption" color={c.subtext}>
-              {t("vibe.pick_hint")}
-            </BText>
-            <View
-              style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
-            >
-              {VIBES.map((v) => (
-                <Pressable
-                  key={v}
-                  onPress={() => setVibe(vibe === v ? null : v)}
-                >
-                  <BChip
-                    c={c}
-                    label={t(VIBE_META[v].labelKey)}
-                    selected={vibe === v}
                   />
                 </Pressable>
               ))}
@@ -733,15 +724,39 @@ export default function InviteForm(props: Props) {
             </BText>
           </BCard>
         </>
-      ) : null}
+      )}
 
-      <BButton
-        c={c}
-        tone="primary"
-        full
-        label={submitting ? t("inviteForm.submitting") : effectiveSubmitLabel}
-        onPress={handleSubmit}
-      />
+      <View
+        style={{ flexDirection: "row", gap: space.sm, alignItems: "center" }}
+      >
+        {step > 0 ? (
+          <BButton
+            c={c}
+            tone="secondary"
+            label={t("common.back")}
+            onPress={() => setStep((s) => s - 1)}
+          />
+        ) : null}
+        <View style={{ flex: 1 }}>
+          <BButton
+            c={c}
+            tone="primary"
+            full
+            label={
+              submitting ? t("inviteForm.submitting") : effectiveSubmitLabel
+            }
+            onPress={handleSubmit}
+          />
+        </View>
+        {step < 2 ? (
+          <BButton
+            c={c}
+            tone="secondary"
+            label={t("common.next")}
+            onPress={() => setStep((s) => s + 1)}
+          />
+        ) : null}
+      </View>
 
       {onCancel ? (
         <BButton

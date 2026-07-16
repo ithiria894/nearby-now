@@ -440,6 +440,9 @@
     "notImplementedBody": "未実装です。"
   },
   "inviteForm": {
+    "step_basics": "基本",
+    "step_where": "場所",
+    "step_details": "詳細",
     "titleLabel": "タイトル",
     "titlePlaceholder": "タイトル（必須）",
     "titleRequired": "タイトルは必須です。",

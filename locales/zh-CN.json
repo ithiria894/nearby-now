@@ -440,6 +440,9 @@
     "notImplementedBody": "暂未支持。"
   },
   "inviteForm": {
+    "step_basics": "基本",
+    "step_where": "地点",
+    "step_details": "详情",
     "titleLabel": "标题",
     "titlePlaceholder": "标题（必填）",
     "titleRequired": "请输入标题。",
