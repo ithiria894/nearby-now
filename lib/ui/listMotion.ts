@@ -6,18 +6,20 @@ import { FadeInDown, LinearTransition } from "react-native-reanimated";
 import { motion } from "../../src/ui/theme/uikit";
 
 // Re-flow transition for reordered rows (pass to Animated.FlatList's
-// itemLayoutAnimation, or a row's `layout` prop).
+// itemLayoutAnimation, or a row's `layout` prop). Uses the crisp M3 spatial
+// spring (see .docs/M3_ADOPTION_GUIDE.md §B1) — tight, no floaty settle.
 export const listLayout = LinearTransition.springify()
-  .damping(18)
-  .stiffness(160);
+  .damping(motion.springSpatial.damping)
+  .stiffness(motion.springSpatial.stiffness)
+  .mass(motion.springSpatial.mass);
 
 // Spring entrance for a row at a given index; staggered on first load and
 // capped so items deep in the list don't wait too long.
 export function rowEntering(index: number) {
   return FadeInDown.springify()
-    .damping(motion.spring.damping)
-    .stiffness(motion.spring.stiffness)
-    .mass(motion.spring.mass)
+    .damping(motion.springSpatial.damping)
+    .stiffness(motion.springSpatial.stiffness)
+    .mass(motion.springSpatial.mass)
     .delay(Math.min(index, 8) * motion.stagger);
 }
 

@@ -32,11 +32,7 @@ function TabIcon({
   // background color when the active tab changes.
   const p = useSharedValue(focused ? 1 : 0);
   useEffect(() => {
-    p.value = withSpring(focused ? 1 : 0, {
-      damping: motion.spring.damping,
-      stiffness: motion.spring.stiffness,
-      mass: motion.spring.mass,
-    });
+    p.value = withSpring(focused ? 1 : 0, motion.springSpatial);
   }, [focused, p]);
   const pillStyle = useAnimatedStyle(() => ({
     opacity: p.value,

@@ -723,9 +723,9 @@ export default function RoomScreen() {
     const entering = isNewMsg
       ? (isMine ? FadeInRight : FadeInLeft)
           .springify()
-          .damping(motion.spring.damping)
-          .stiffness(motion.spring.stiffness)
-          .mass(motion.spring.mass)
+          .damping(motion.springSpatial.damping)
+          .stiffness(motion.springSpatial.stiffness)
+          .mass(motion.springSpatial.mass)
       : undefined;
 
     // :zap: CHANGE 4: IG-ish layout: name closer + smaller gap, time near bubble

@@ -497,11 +497,7 @@ function BToggleSegment({
 }) {
   const p = useSharedValue(on ? 1 : 0);
   useEffect(() => {
-    p.value = withSpring(on ? 1 : 0, {
-      damping: motion.spring.damping,
-      stiffness: motion.spring.stiffness,
-      mass: motion.spring.mass,
-    });
+    p.value = withSpring(on ? 1 : 0, motion.springSpatial);
   }, [on, p]);
   const bgStyle = useAnimatedStyle(() => ({
     opacity: p.value,
