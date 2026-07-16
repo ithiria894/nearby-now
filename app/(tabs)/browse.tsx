@@ -16,6 +16,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
+  BottomSheetScrollView,
   BottomSheetTextInput,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
@@ -106,6 +107,7 @@ export default function BrowseScreen() {
   const PAGE_SIZE = 30;
   const RECENT_AREAS_KEY = "browse.recentAreas.v1";
   const RADIUS_KEY = "browse.radiusKm.v1";
+  const CURRENT_AREA_KEY = "browse.currentArea.v1";
 
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
@@ -137,7 +139,7 @@ export default function BrowseScreen() {
     "newest" | "closing" | "nearest" | "people"
   >("newest");
   const pickerRef = useRef<BottomSheetModal>(null);
-  const pickerSnapPoints = useMemo(() => ["50%"], []);
+  const pickerSnapPoints = useMemo(() => ["65%"], []);
   const [picker, setPicker] = useState<PickerKind | null>(null);
   // Sticky filter bar: appears under the app bar once the composer scrolls out.
   const [composerH, setComposerH] = useState(0);
@@ -197,9 +199,10 @@ export default function BrowseScreen() {
     let alive = true;
     (async () => {
       try {
-        const [recentRaw, radiusRaw] = await Promise.all([
+        const [recentRaw, radiusRaw, currentRaw] = await Promise.all([
           AsyncStorage.getItem(RECENT_AREAS_KEY),
           AsyncStorage.getItem(RADIUS_KEY),
+          AsyncStorage.getItem(CURRENT_AREA_KEY),
         ]);
 
         if (recentRaw) {
@@ -223,10 +226,28 @@ export default function BrowseScreen() {
             setRadiusKm(parsed);
           }
         }
+
+        // Restore the last-used area — better UX than re-detecting IP each
+        // launch (coarse, and it would override an area you deliberately set).
+        if (!currentArea && currentRaw) {
+          const a = JSON.parse(currentRaw) as AreaLocation;
+          if (
+            a &&
+            Number.isFinite(a.lat) &&
+            Number.isFinite(a.lng) &&
+            typeof a.label === "string"
+          ) {
+            if (!alive) return;
+            setCurrentArea(a);
+            setAreaLoading(false);
+            return;
+          }
+        }
       } catch {
         // ignore storage errors
       }
 
+      // First launch (no saved area): fall back to IP detection.
       if (currentArea) return;
       setAreaLoading(true);
       const ipArea = await getIpLocation();
@@ -250,6 +271,14 @@ export default function BrowseScreen() {
   useEffect(() => {
     AsyncStorage.setItem(RADIUS_KEY, String(radiusKm)).catch(() => {});
   }, [radiusKm]);
+
+  // Remember the active area so next launch defaults to it (see mount effect).
+  useEffect(() => {
+    if (!currentArea) return;
+    AsyncStorage.setItem(CURRENT_AREA_KEY, JSON.stringify(currentArea)).catch(
+      () => {}
+    );
+  }, [currentArea]);
 
   useEffect(() => {
     const q = areaQuery.trim();
@@ -1012,8 +1041,8 @@ export default function BrowseScreen() {
         }}
         handleIndicatorStyle={{ backgroundColor: c.border }}
       >
-        <BottomSheetView
-          style={{
+        <BottomSheetScrollView
+          contentContainerStyle={{
             padding: space.lg,
             paddingBottom: space.lg + insets.bottom,
             gap: space.sm,
@@ -1063,7 +1092,7 @@ export default function BrowseScreen() {
               </Pressable>
             );
           })}
-        </BottomSheetView>
+        </BottomSheetScrollView>
       </BottomSheetModal>
 
       <AreaSheet
