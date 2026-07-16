@@ -123,11 +123,10 @@ export function mixHex(a: string, b: string, t: number): string {
   return `#${ch(pa.r, pb.r)}${ch(pa.g, pb.g)}${ch(pa.b, pb.b)}`;
 }
 
-// Brand wordmark / text-logo font: "Momo Trust Display" (Google Fonts). Web
-// loads it via the <link> in app/_layout.tsx (family name has a space); native
-// bundles the TTF under a no-space alias (see useFonts in app/_layout.tsx).
-export const wordmarkFont =
-  Platform.OS === "web" ? "Momo Trust Display" : "MomoTrustDisplay";
+// Brand wordmark / text-logo font: "Madimi One" (Google Fonts). Web loads it
+// via the <link> in app/_layout.tsx (family name has a space); native bundles
+// the TTF under a no-space alias (see useFonts in app/_layout.tsx).
+export const wordmarkFont = Platform.OS === "web" ? "Madimi One" : "MadimiOne";
 
 // --- Typography (bold, confident) -------------------------------------------
 // Fonts loaded in app/_layout.tsx. Display/headings = Poppins; body = Inter;

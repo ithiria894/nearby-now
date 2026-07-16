@@ -96,9 +96,9 @@ export default function RootLayout() {
     CaveatSemi: Caveat_600SemiBold,
     CaveatBold: Caveat_700Bold,
 
-    // Brand wordmark/logo — Momo Trust Display (bundled TTF on native; web
-    // loads it from Google Fonts, see the <link> below).
-    MomoTrustDisplay: require("../assets/fonts/MomoTrustDisplay-Regular.ttf"),
+    // Brand wordmark/logo — Madimi One (bundled TTF on native; web loads it
+    // from Google Fonts, see the <link> below).
+    MadimiOne: require("../assets/fonts/MadimiOne-Regular.ttf"),
   });
 
   // Load Noto (Latin + CJK) from Google Fonts on web — our UI typeface. Native
@@ -111,7 +111,7 @@ export default function RootLayout() {
     link.id = id;
     link.rel = "stylesheet";
     link.href =
-      "https://fonts.googleapis.com/css2?family=Momo+Trust+Display:wght@400&family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap";
+      "https://fonts.googleapis.com/css2?family=Madimi+One:wght@400&family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap";
     document.head.appendChild(link);
   }, []);
 
