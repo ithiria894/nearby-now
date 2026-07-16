@@ -415,35 +415,55 @@ export default function BrowseScreen() {
   }, [filteredItems]);
 
   const shownItems = useMemo(() => {
+    const catOf = (x: ActivityCardActivity) =>
+      activityCategory(x.title_text).key;
+    const vibeOf = (x: ActivityCardActivity) => normalizeVibe(x.vibe);
+    // When both a category AND a vibe are chosen, soften the filter to an OR
+    // and rank: both-match first, then category-only, then vibe-only. With a
+    // single filter it stays a strict match.
+    const bothSet = !!catFilter && !!vibeFilter;
+
     let arr = filteredItems;
-    if (catFilter) {
-      arr = arr.filter((x) => activityCategory(x.title_text).key === catFilter);
+    if (bothSet) {
+      arr = arr.filter(
+        (x) => catOf(x) === catFilter || vibeOf(x) === vibeFilter
+      );
+    } else {
+      if (catFilter) arr = arr.filter((x) => catOf(x) === catFilter);
+      if (vibeFilter) arr = arr.filter((x) => vibeOf(x) === vibeFilter);
     }
-    if (vibeFilter) {
-      arr = arr.filter((x) => normalizeVibe(x.vibe) === vibeFilter);
-    }
+
     const ms = (v: string | null | undefined) =>
       v ? new Date(v).getTime() : Number.POSITIVE_INFINITY;
-    const sorted = [...arr];
-    if (sortBy === "closing") {
-      sorted.sort((a, b) => ms(a.expires_at) - ms(b.expires_at));
-    } else if (sortBy === "nearest") {
-      sorted.sort(
-        (a, b) =>
+    const cmp = (a: ActivityCardActivity, b: ActivityCardActivity) => {
+      if (sortBy === "closing") return ms(a.expires_at) - ms(b.expires_at);
+      if (sortBy === "nearest")
+        return (
           (a.distance_km ?? Number.POSITIVE_INFINITY) -
           (b.distance_km ?? Number.POSITIVE_INFINITY)
-      );
-    } else if (sortBy === "people") {
-      sorted.sort((a, b) => (b.joined_count ?? 0) - (a.joined_count ?? 0));
-    } else {
-      sorted.sort((a, b) => {
-        const ta = new Date(a.created_at ?? 0).getTime();
-        const tb = new Date(b.created_at ?? 0).getTime();
-        if (tb !== ta) return tb - ta;
-        return String(b.id).localeCompare(String(a.id));
-      });
-    }
-    return sorted;
+        );
+      if (sortBy === "people")
+        return (b.joined_count ?? 0) - (a.joined_count ?? 0);
+      const ta = new Date(a.created_at ?? 0).getTime();
+      const tb = new Date(b.created_at ?? 0).getTime();
+      if (tb !== ta) return tb - ta;
+      return String(b.id).localeCompare(String(a.id));
+    };
+    // 0 = both, 1 = category only, 2 = vibe only.
+    const rank = (x: ActivityCardActivity) => {
+      const cm = catOf(x) === catFilter;
+      const vm = vibeOf(x) === vibeFilter;
+      if (cm && vm) return 0;
+      return cm ? 1 : 2;
+    };
+
+    return [...arr].sort((a, b) => {
+      if (bothSet) {
+        const r = rank(a) - rank(b);
+        if (r !== 0) return r;
+      }
+      return cmp(a, b);
+    });
   }, [filteredItems, catFilter, vibeFilter, sortBy]);
 
   useEffect(() => {
@@ -812,6 +832,10 @@ export default function BrowseScreen() {
                 const cat = activityCategory(item.title_text);
                 const vibe = normalizeVibe(item.vibe);
                 const vm = VIBE_META[vibe];
+                // Dim the badge for a filter this item doesn't meet (happens in
+                // the soft both-filters mode).
+                const catDim = !!catFilter && cat.key !== catFilter;
+                const vibeDim = !!vibeFilter && vibe !== vibeFilter;
                 return (
                   <View style={{ marginBottom: space.sm }}>
                     <BActivityRow
@@ -832,6 +856,7 @@ export default function BrowseScreen() {
                                 catFilter === cat.key ? null : cat.key
                               );
                             }}
+                            style={{ opacity: catDim ? 0.4 : 1 }}
                           >
                             <BBadge
                               c={c}
@@ -847,6 +872,7 @@ export default function BrowseScreen() {
                                   vibeFilter === vibe ? null : vibe
                                 );
                               }}
+                              style={{ opacity: vibeDim ? 0.4 : 1 }}
                             >
                               <BBadge
                                 c={c}
