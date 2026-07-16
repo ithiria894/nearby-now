@@ -26,6 +26,7 @@ import Svg, {
   Rect,
 } from "react-native-svg";
 import Animated, {
+  Easing,
   FadeIn,
   FadeOut,
   LinearTransition,
@@ -1307,6 +1308,12 @@ export function BStepper({
 }
 
 /* ---------- accordion (collapsible optional section) ---------- */
+// M3 easing curves (see .docs/M3_ADOPTION_GUIDE.md §B1). Emphasized-decelerate
+// is the crisp "container expansion" curve — fast out of the gate, firm settle,
+// no overshoot; standard is the symmetric resize/spin curve.
+const M3_EMPHASIZED = Easing.bezier(0.05, 0.7, 0.1, 1);
+const M3_STANDARD = Easing.bezier(0.2, 0, 0, 1);
+
 // A bordered section with a tappable header (label + a summary of what's set +
 // a chevron). Collapsed by default to keep forms compact; expands in place.
 // The summary reads brand when the section holds a value, muted otherwise.
@@ -1327,19 +1334,24 @@ export function BAccordion({
   onToggle: () => void;
   children?: React.ReactNode;
 }) {
-  // Spin the chevron and let the card grow/shrink smoothly: the content fades
-  // in/out while the card's own `layout` spring animates its height, which also
-  // eases the sections below into their new positions.
+  // Crisp M3 motion (not a mushy spring): the card's height animates on the
+  // emphasized-decelerate curve, the chevron spins on the standard curve in
+  // lock-step, and the content fades in over the same beat.
   const spin = useSharedValue(open ? 1 : 0);
   useEffect(() => {
-    spin.value = withTiming(open ? 1 : 0, { duration: motion.duration.fast });
+    spin.value = withTiming(open ? 1 : 0, {
+      duration: motion.duration.base,
+      easing: M3_STANDARD,
+    });
   }, [open, spin]);
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${spin.value * 180}deg` }],
   }));
   return (
     <Animated.View
-      layout={LinearTransition.springify().damping(18).stiffness(160)}
+      layout={LinearTransition.duration(motion.duration.base).easing(
+        M3_EMPHASIZED
+      )}
       style={{
         borderWidth: borders.thick,
         borderColor: c.border,
@@ -1383,8 +1395,8 @@ export function BAccordion({
       </Pressable>
       {open ? (
         <Animated.View
-          entering={FadeIn.duration(motion.duration.fast)}
-          exiting={FadeOut.duration(motion.duration.fast)}
+          entering={FadeIn.duration(motion.duration.base).easing(M3_EMPHASIZED)}
+          exiting={FadeOut.duration(motion.duration.fast).easing(M3_STANDARD)}
           style={{
             paddingHorizontal: space.md,
             paddingBottom: space.md,
