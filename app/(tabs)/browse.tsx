@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
   Keyboard,
   Platform,
   Pressable,
@@ -24,6 +23,10 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
+import Animated, {
+  FadeInDown,
+  LinearTransition,
+} from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { ActivityCardActivity } from "../../lib/domain/activities";
@@ -55,7 +58,13 @@ import {
 } from "../../lib/ui/location";
 import { updatePushLocation } from "../../lib/push/updateLocation";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
-import { layout, space, radius, borders } from "../../src/ui/theme/uikit";
+import {
+  layout,
+  space,
+  radius,
+  borders,
+  motion,
+} from "../../src/ui/theme/uikit";
 import {
   PaperTexture,
   BComposer,
@@ -113,6 +122,11 @@ export default function BrowseScreen() {
 
   const [userId, setUserId] = useState<string | null>(null);
   const [items, setItems] = useState<ActivityCardActivity[]>([]);
+  // Track which rows have already appeared so the spring pop-in only fires the
+  // first time an item is seen (first load / a genuinely new activity) — not
+  // again when it's recycled by scroll or merely re-sorted. Reorders are
+  // handled by the list's layout spring instead.
+  const seenIds = useRef<Set<string>>(new Set());
   const [joinedSet, setJoinedSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -792,9 +806,13 @@ export default function BrowseScreen() {
               </View>
             </View>
           ) : (
-            <FlatList
+            <Animated.FlatList
               data={shownItems}
-              keyExtractor={(x) => x.id}
+              keyExtractor={(x: ActivityCardActivity) => x.id}
+              // Re-flow with a spring when items sort or change position.
+              itemLayoutAnimation={LinearTransition.springify()
+                .damping(18)
+                .stiffness(160)}
               onScroll={(e) =>
                 setShowSticky(e.nativeEvent.contentOffset.y > composerH + 16)
               }
@@ -819,8 +837,14 @@ export default function BrowseScreen() {
               windowSize={5}
               maxToRenderPerBatch={8}
               updateCellsBatchingPeriod={50}
-              removeClippedSubviews
-              renderItem={({ item }) => {
+              removeClippedSubviews={false}
+              renderItem={({
+                item,
+                index,
+              }: {
+                item: ActivityCardActivity;
+                index: number;
+              }) => {
                 // Meta is text info: venue (fallback area) · 👤 people · closes;
                 // people is "N/cap" when capped, else "N"; distance top-right.
                 const venue =
@@ -858,8 +882,23 @@ export default function BrowseScreen() {
                 // the soft both-filters mode).
                 const catDim = !!catFilter && cat.key !== catFilter;
                 const vibeDim = !!vibeFilter && vibe !== vibeFilter;
+                // Spring pop-in only the first time this row is seen; reorders
+                // are animated by the list's layout transition, not a re-entry.
+                const isNew = !seenIds.current.has(item.id);
+                if (isNew) seenIds.current.add(item.id);
                 return (
-                  <View style={{ marginBottom: space.sm }}>
+                  <Animated.View
+                    style={{ marginBottom: space.sm }}
+                    entering={
+                      isNew
+                        ? FadeInDown.springify()
+                            .damping(motion.spring.damping)
+                            .stiffness(motion.spring.stiffness)
+                            .mass(motion.spring.mass)
+                            .delay(Math.min(index, 8) * motion.stagger)
+                        : undefined
+                    }
+                  >
                     <BActivityRow
                       c={c}
                       icon={cat.icon}
@@ -907,7 +946,7 @@ export default function BrowseScreen() {
                       }
                       onPress={() => onPressCard(item)}
                     />
-                  </View>
+                  </Animated.View>
                 );
               }}
               ListEmptyComponent={

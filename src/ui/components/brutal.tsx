@@ -329,6 +329,7 @@ export function BButton({
   icon,
   onPress,
   full,
+  disabled,
   shadowColor,
   highlight,
 }: {
@@ -338,6 +339,7 @@ export function BButton({
   icon?: string;
   onPress?: () => void;
   full?: boolean;
+  disabled?: boolean; // dims to 40% and ignores taps (e.g. Post before a title exists)
   shadowColor?: string; // explicit colored shadow
   highlight?: boolean; // shadow matches the button's OWN fill (yellow button → yellow shadow)
 }) {
@@ -353,8 +355,13 @@ export function BButton({
   const shadow = shadowColor ?? (highlight ? face.bg : c.shadow); // highlight → match fill
   return (
     <Pressable
-      onPress={onPress}
-      style={{ alignSelf: full ? "stretch" : "flex-start" }}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      accessibilityState={{ disabled: !!disabled }}
+      style={{
+        alignSelf: full ? "stretch" : "flex-start",
+        opacity: disabled ? 0.4 : 1,
+      }}
     >
       {({ pressed }) => (
         <View style={{ position: "relative" }}>

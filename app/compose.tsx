@@ -19,7 +19,7 @@ import { requireUserId } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
 import { formatExpiryLabel } from "../lib/i18n/i18n_format";
 import { useUIKit } from "../src/ui/theme/useUIKit";
-import { space, radius, controls } from "../src/ui/theme/uikit";
+import { space, radius } from "../src/ui/theme/uikit";
 import {
   BAccordion,
   BAppBar,
@@ -59,44 +59,6 @@ const TOPICS = [
 ] as const;
 
 type Section = "where" | "when" | "who" | "expires";
-
-// A compact primary action for the nav bar: brand pill, dimmed until enabled.
-function PostAction({
-  c,
-  label,
-  disabled,
-  onPress,
-}: {
-  c: ReturnType<typeof useUIKit>;
-  label: string;
-  disabled?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={disabled ? undefined : onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={{ opacity: disabled ? 0.4 : 1 }}
-    >
-      <View
-        style={{
-          backgroundColor: c.brand,
-          borderWidth: 2,
-          borderColor: c.border,
-          borderRadius: controls.pillRadius,
-          paddingVertical: 6,
-          paddingHorizontal: 16,
-        }}
-      >
-        <BText c={c} v="label" color={c.onBrand}>
-          {label}
-        </BText>
-      </View>
-    </Pressable>
-  );
-}
 
 export default function ComposeScreen() {
   const router = useRouter();
@@ -386,8 +348,9 @@ export default function ComposeScreen() {
             }
             title={t("compose.navTitle")}
             right={
-              <PostAction
+              <BButton
                 c={c}
+                tone="primary"
                 label={submitting ? t("common.loading") : t("compose.post")}
                 disabled={!canPost}
                 onPress={onSubmit}
