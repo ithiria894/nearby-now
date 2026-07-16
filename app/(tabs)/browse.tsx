@@ -66,7 +66,6 @@ import {
   BButton,
   BSkeletonList,
   BText,
-  BToggle,
   BIconButton,
 } from "../../src/ui/components/brutal";
 import {
@@ -626,27 +625,12 @@ export default function BrowseScreen() {
     pickerRef.current?.present();
   };
 
-  const viewToggle = (
-    <BToggle<"list" | "map">
-      c={c}
-      value={viewMode}
-      onChange={setViewMode}
-      options={[
-        {
-          value: "list",
-          label: t("browse.mapButton_list"),
-          icon: "format-list-bulleted",
-        },
-        { value: "map", label: t("browse.mapButton_map"), icon: "map" },
-      ]}
-    />
-  );
-
   // The compact filter/sort row — rendered in-flow, sticky, and over the map.
+  // List/Map switching lives in the floating pill button (bottom-center), so
+  // the row is just the Category / Vibe / Sort pills — no crowded left toggle.
   const filterRow = (
     <FeedFilterPills
       c={c}
-      left={viewToggle}
       catLabel={catLabel}
       catActive={!!catFilter}
       vibeLabel={vibeLabel}
@@ -671,17 +655,22 @@ export default function BrowseScreen() {
         borderBottomColor: c.border,
       }}
     >
-      <BText c={c} v="display" style={{ fontFamily: "ShortStack" }}>
+      <BText
+        c={c}
+        v="display"
+        numberOfLines={1}
+        style={{ fontFamily: "ShortStack", fontSize: 22, flexShrink: 1 }}
+      >
         {t("app.name")}
       </BText>
       <View style={{ flex: 1 }} />
-      <Pressable onPress={openAreaSheet} hitSlop={8}>
+      <Pressable onPress={openAreaSheet} hitSlop={8} style={{ flexShrink: 1 }}>
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
             gap: 3,
-            maxWidth: 150,
+            maxWidth: 112,
           }}
         >
           <MaterialCommunityIcons name="map-marker" size={16} color={c.brand} />
