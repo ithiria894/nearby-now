@@ -781,6 +781,7 @@ export function BActivityRow({
   unread,
   last,
   accent,
+  stacked,
   onPress,
 }: {
   c: UIColors;
@@ -796,8 +797,93 @@ export function BActivityRow({
   unread?: number; // unread count bubble at the right edge (hidden when 0)
   last?: boolean;
   accent?: string; // optional left accent bar to flag an important row
+  // Feed layout: title spans the FULL width on top, then [icon] + meta, then
+  // [tags ............ trailing] — so long titles show more and the distance
+  // sits bottom-right. (Conversation rows keep the default inline layout.)
+  stacked?: boolean;
   onPress?: () => void;
 }) {
+  if (stacked) {
+    return (
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({
+          backgroundColor: pressed ? c.surfaceAlt : "transparent",
+        })}
+      >
+        <View
+          style={{
+            gap: space.sm,
+            paddingVertical: space.md,
+            paddingHorizontal: space.md,
+            borderBottomWidth: last ? 0 : borders.base,
+            borderBottomColor: c.border,
+            borderLeftWidth: accent ? 5 : 0,
+            borderLeftColor: accent,
+          }}
+        >
+          {/* Title — full width, up to two lines. */}
+          <Text style={txt(typeScale.title, c.ink)} numberOfLines={2}>
+            {title}
+          </Text>
+          <View style={{ flexDirection: "row", gap: space.md }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: radius.sm,
+                borderWidth: borders.base,
+                borderColor: c.border,
+                backgroundColor: iconBg,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <MaterialCommunityIcons
+                name={icon as any}
+                size={22}
+                color={iconColor ?? c.onBright}
+              />
+            </View>
+            <View style={{ flex: 1, justifyContent: "center", gap: 4 }}>
+              <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
+                {meta}
+              </Text>
+              {badges || trailing ? (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: space.sm,
+                  }}
+                >
+                  <View
+                    style={{
+                      flex: 1,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: space.sm,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {badges}
+                  </View>
+                  {trailing ? (
+                    <Text
+                      style={txt(typeScale.caption, c.subtext)}
+                      numberOfLines={1}
+                    >
+                      {trailing}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    );
+  }
   return (
     <Pressable
       onPress={onPress}

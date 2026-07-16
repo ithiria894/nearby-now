@@ -913,6 +913,7 @@ export default function BrowseScreen() {
                   >
                     <BActivityRow
                       c={c}
+                      stacked
                       icon={cat.icon}
                       // Tuned-down tile: the category tint softened toward the
                       // paper surface, so the vivid badge (+ its color bleed) is
