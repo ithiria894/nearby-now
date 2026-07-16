@@ -71,7 +71,6 @@ import {
   BAppBar,
   BBadge,
   BButton,
-  BSkeletonList,
   BText,
   BIconButton,
 } from "../../src/ui/components/brutal";
@@ -387,7 +386,9 @@ export default function BrowseScreen() {
   }, []);
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
+    // Don't paginate during the initial load — the list is briefly empty then,
+    // so onEndReached would fire and stack a second spinner under the main one.
+    if (loading || loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
       const page = await getBrowsePage({
@@ -419,7 +420,7 @@ export default function BrowseScreen() {
     } finally {
       setLoadingMore(false);
     }
-  }, [cursor, hasMore, joinedSet, loadingMore, t, userId]);
+  }, [cursor, hasMore, joinedSet, loading, loadingMore, t, userId]);
 
   const filteredItems = useMemo(() => {
     if (!currentArea) return items;
@@ -590,26 +591,9 @@ export default function BrowseScreen() {
     router.push(`/room/${a.id}`);
   }
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, backgroundColor: c.bg }}>
-        <PaperTexture opacity={0.06} />
-        <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-          <View
-            style={{
-              width: "100%",
-              maxWidth: layout.maxContentWidth,
-              alignSelf: "center",
-              paddingHorizontal: space.lg,
-              paddingTop: space.md,
-            }}
-          >
-            <BSkeletonList c={c} rows={6} />
-          </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
+  // No full-screen skeleton on load: the chrome (top nav, composer, filters) is
+  // always there, so render it immediately and show an indeterminate spinner in
+  // the list area (below) — honest about the unknown number of activities.
 
   const areaLabel = currentArea?.label ?? t("browse.area_unknown");
   // Compact label for the header — city only (the sheet shows the full label).
@@ -974,7 +958,20 @@ export default function BrowseScreen() {
                 );
               }}
               ListEmptyComponent={
-                areaLoading || !currentArea ? (
+                loading ? (
+                  <View
+                    style={{
+                      paddingTop: space.xxl,
+                      alignItems: "center",
+                      gap: space.sm,
+                    }}
+                  >
+                    <ActivityIndicator color={c.brand} />
+                    <BText c={c} color={c.subtext}>
+                      {t("common.loading")}
+                    </BText>
+                  </View>
+                ) : areaLoading || !currentArea ? (
                   <View style={{ paddingTop: space.xxl, gap: space.md }}>
                     <BText c={c} color={c.subtext}>
                       {t("browse.area_detecting")}
