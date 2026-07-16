@@ -929,6 +929,7 @@ export default function BrowseScreen() {
                               c={c}
                               label={cat.label}
                               fill={c[cat.tint]}
+                              bleed
                             />
                           </Pressable>
                           {vm.tint ? (
@@ -945,6 +946,7 @@ export default function BrowseScreen() {
                                 c={c}
                                 label={t(vm.labelKey)}
                                 fill={c[vm.tint]}
+                                bleed
                               />
                             </Pressable>
                           ) : null}

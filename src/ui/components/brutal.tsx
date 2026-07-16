@@ -697,12 +697,16 @@ export function BBadge({
   c,
   label,
   fill,
+  bleed,
 }: {
   c: UIColors;
   label: string;
   fill: string;
+  // Same-color hard offset shadow — the fill "bleeds" out behind the badge
+  // (a red badge casts a red shadow). Experimental accent for the feed tags.
+  bleed?: boolean;
 }) {
-  return (
+  const badge = (
     <View
       style={{
         paddingVertical: 3,
@@ -715,6 +719,12 @@ export function BBadge({
     >
       <Text style={txt(typeScale.label, c.onBright)}>{label}</Text>
     </View>
+  );
+  if (!bleed) return badge;
+  return (
+    <HardShadow c={c} color={fill} radius={radius.sm} offset={hardShadow.sm}>
+      {badge}
+    </HardShadow>
   );
 }
 
