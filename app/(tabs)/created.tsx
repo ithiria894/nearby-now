@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Animated from "react-native-reanimated";
+import { listLayout, rowEntering, useSeenRows } from "../../lib/ui/listMotion";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
 import { layout, space } from "../../src/ui/theme/uikit";
 import {
@@ -35,6 +37,7 @@ export default function CreatedScreen() {
   const router = useRouter();
   const { t } = useT();
   const c = useUIKit();
+  const markSeen = useSeenRows();
 
   const PAGE_SIZE = 30;
 
@@ -218,9 +221,10 @@ export default function CreatedScreen() {
         }
       />
       <SafeAreaView style={{ flex: 1 }} edges={["left", "right"]}>
-        <FlatList
+        <Animated.FlatList
           data={dataToShow}
-          keyExtractor={(x) => x.id}
+          keyExtractor={(x: ActivityCardActivity) => x.id}
+          itemLayoutAnimation={listLayout}
           style={{ flex: 1, backgroundColor: "transparent" }}
           contentContainerStyle={{
             width: "100%",
@@ -238,9 +242,18 @@ export default function CreatedScreen() {
           windowSize={5}
           maxToRenderPerBatch={8}
           updateCellsBatchingPeriod={50}
-          removeClippedSubviews
-          renderItem={({ item }) => (
-            <View style={{ marginBottom: space.sm }}>
+          removeClippedSubviews={false}
+          renderItem={({
+            item,
+            index,
+          }: {
+            item: ActivityCardActivity;
+            index: number;
+          }) => (
+            <Animated.View
+              style={{ marginBottom: space.sm }}
+              entering={markSeen(item.id) ? rowEntering(index) : undefined}
+            >
               <ConversationRow
                 c={c}
                 activity={item}
@@ -248,7 +261,7 @@ export default function CreatedScreen() {
                 userId={userId}
                 onPress={() => router.push(`/room/${item.id}`)}
               />
-            </View>
+            </Animated.View>
           )}
           ListEmptyComponent={
             <View

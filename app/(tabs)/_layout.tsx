@@ -3,9 +3,14 @@ import { useEffect } from "react";
 import { AppState, View } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 import { useT } from "../../lib/i18n/useT";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
-import { fonts, radius, type UIColors } from "../../src/ui/theme/uikit";
+import { fonts, motion, radius, type UIColors } from "../../src/ui/theme/uikit";
 import { requireUserId } from "../../lib/domain/auth";
 import { registerForPush } from "../../lib/push/registerPush";
 import { refreshBadge } from "../../lib/push/badge";
@@ -23,17 +28,44 @@ function TabIcon({
   c: UIColors;
 }) {
   const Cmp = lib === "mci" ? MaterialCommunityIcons : Ionicons;
+  // Spring the brand pill in/out behind the icon instead of hard-cutting the
+  // background color when the active tab changes.
+  const p = useSharedValue(focused ? 1 : 0);
+  useEffect(() => {
+    p.value = withSpring(focused ? 1 : 0, {
+      damping: motion.spring.damping,
+      stiffness: motion.spring.stiffness,
+      mass: motion.spring.mass,
+    });
+  }, [focused, p]);
+  const pillStyle = useAnimatedStyle(() => ({
+    opacity: p.value,
+    transform: [{ scale: 0.7 + 0.3 * p.value }],
+  }));
   return (
     <View
       style={{
         width: 52,
         height: 30,
-        borderRadius: radius.pill,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: focused ? c.brand : "transparent",
       }}
     >
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: radius.pill,
+            backgroundColor: c.brand,
+          },
+          pillStyle,
+        ]}
+      />
       <Cmp
         name={name as any}
         size={22}
@@ -77,6 +109,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        animation: "shift",
         tabBarActiveTintColor: c.brand,
         tabBarInactiveTintColor: c.subtext,
         tabBarStyle: {

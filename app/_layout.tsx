@@ -153,10 +153,21 @@ export default function RootLayout() {
         <ThemeProvider>
           {/* Every screen renders its own soft-brutalist <BAppBar/> instead of
               the plain native header. */}
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              // Drill-in screens slide from the right; "post" flows (compose,
+              // create) slide up like a sheet — set per screen below.
+              animation: "slide_from_right",
+            }}
+          >
             <Stack.Screen
               name="login"
-              options={{ title: t("rootNav.login"), headerShown: false }}
+              options={{
+                title: t("rootNav.login"),
+                headerShown: false,
+                animation: "fade",
+              }}
             />
             <Stack.Screen
               name="register"
@@ -171,6 +182,7 @@ export default function RootLayout() {
               options={{
                 title: t("rootNav.create"),
                 headerLeft: () => <StackBackButton />,
+                animation: "slide_from_bottom",
               }}
             />
             <Stack.Screen
@@ -178,6 +190,7 @@ export default function RootLayout() {
               options={{
                 title: t("compose.navTitle"),
                 headerLeft: () => <StackBackButton />,
+                animation: "slide_from_bottom",
               }}
             />
             <Stack.Screen

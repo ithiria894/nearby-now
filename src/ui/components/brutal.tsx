@@ -26,6 +26,9 @@ import Svg, {
   Rect,
 } from "react-native-svg";
 import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -38,6 +41,7 @@ import {
   fonts,
   hardShadow,
   layout,
+  motion,
   radius,
   space,
   typeScale,
@@ -1254,8 +1258,19 @@ export function BAccordion({
   onToggle: () => void;
   children?: React.ReactNode;
 }) {
+  // Spin the chevron and let the card grow/shrink smoothly: the content fades
+  // in/out while the card's own `layout` spring animates its height, which also
+  // eases the sections below into their new positions.
+  const spin = useSharedValue(open ? 1 : 0);
+  useEffect(() => {
+    spin.value = withTiming(open ? 1 : 0, { duration: motion.duration.fast });
+  }, [open, spin]);
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.value * 180}deg` }],
+  }));
   return (
-    <View
+    <Animated.View
+      layout={LinearTransition.springify().damping(18).stiffness(160)}
       style={{
         borderWidth: borders.thick,
         borderColor: c.border,
@@ -1289,14 +1304,18 @@ export function BAccordion({
             {summary}
           </Text>
         ) : null}
-        <MaterialCommunityIcons
-          name={open ? "chevron-up" : "chevron-down"}
-          size={20}
-          color={c.subtext}
-        />
+        <Animated.View style={chevronStyle}>
+          <MaterialCommunityIcons
+            name="chevron-down"
+            size={20}
+            color={c.subtext}
+          />
+        </Animated.View>
       </Pressable>
       {open ? (
-        <View
+        <Animated.View
+          entering={FadeIn.duration(motion.duration.fast)}
+          exiting={FadeOut.duration(motion.duration.fast)}
           style={{
             paddingHorizontal: space.md,
             paddingBottom: space.md,
@@ -1304,8 +1323,8 @@ export function BAccordion({
           }}
         >
           {children}
-        </View>
+        </Animated.View>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
