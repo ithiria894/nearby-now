@@ -24,7 +24,9 @@
     "unknown": "Unknown",
     "never": "Never",
     "noMore": "No more",
-    "clear": "Clear"
+    "clear": "Clear",
+    "next": "Next",
+    "save": "Save"
   },
   "auth": {
     "login": {
@@ -75,6 +77,13 @@
     "placeholder": "Type a short invite…",
     "title_label": "What's the plan?",
     "post": "Post",
+    "post_now": "Post now",
+    "add_details": "Add details ›",
+    "step_say": "Say it",
+    "step_where": "Where",
+    "step_details": "Details",
+    "where_hint": "Where's it happening? (optional)",
+    "details_hint": "Extra details — all optional.",
     "topic_label": "Need a starting point?",
     "topic_hint": "Tap a topic to draft a line — tap again for a different wording.",
     "topic_boardgame": "Boardgame",

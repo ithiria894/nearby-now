@@ -24,7 +24,9 @@
     "unknown": "未知",
     "never": "从不",
     "noMore": "没有更多",
-    "clear": "清除"
+    "clear": "清除",
+    "next": "下一步",
+    "save": "保存"
   },
   "auth": {
     "login": {
@@ -75,6 +77,13 @@
     "placeholder": "例如：今晚有没有人想去唱K？",
     "title_label": "想做什么？",
     "post": "发布",
+    "post_now": "立即发布",
+    "add_details": "添加详情 ›",
+    "step_say": "内容",
+    "step_where": "地点",
+    "step_details": "详情",
+    "where_hint": "在哪里？（可选）",
+    "details_hint": "额外信息 — 全部可选。",
     "topic_label": "不知道怎么写？",
     "topic_hint": "点一个主题帮你起草，再点一次会换个说法。",
     "topic_boardgame": "桌游",

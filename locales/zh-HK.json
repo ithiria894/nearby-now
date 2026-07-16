@@ -24,7 +24,9 @@
     "unknown": "未知",
     "never": "永不",
     "noMore": "冇更多",
-    "clear": "清除"
+    "clear": "清除",
+    "next": "下一步",
+    "save": "儲存"
   },
   "auth": {
     "login": {
@@ -75,6 +77,13 @@
     "placeholder": "例如：今晚有冇人想去唱K？",
     "title_label": "想做啲咩？",
     "post": "發佈",
+    "post_now": "即刻發佈",
+    "add_details": "加詳情 ›",
+    "step_say": "內容",
+    "step_where": "地點",
+    "step_details": "詳情",
+    "where_hint": "喺邊度搞？（可選）",
+    "details_hint": "額外資料 — 全部可選。",
     "topic_label": "唔知點寫？",
     "topic_hint": "撳一個主題幫你起稿，再撳一次會換個講法。",
     "topic_boardgame": "桌遊",

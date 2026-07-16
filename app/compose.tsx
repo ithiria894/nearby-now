@@ -28,8 +28,10 @@ import {
   BCard,
   BChip,
   BScreen,
+  BStepper,
   BText,
 } from "../src/ui/components/brutal";
+import { AreaPicker } from "../components/AreaPicker";
 import {
   getIpLocation,
   requestDeviceLocation,
@@ -76,6 +78,10 @@ export default function ComposeScreen() {
     "device" | "ip" | "manual" | null
   >(null);
   const [vibe, setVibe] = useState<string | null>(null);
+  const [step, setStep] = useState<0 | 1 | 2>(0);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [capacity, setCapacity] = useState<number | null>(null);
+  const [gender, setGender] = useState<"any" | "female" | "male">("any");
   const successLines = useMemo(
     () => [
       t("compose.success_line_1"),
@@ -225,12 +231,8 @@ export default function ComposeScreen() {
     if (!text.trim()) return;
     setSubmitting(true);
     try {
+      // Where is optional now — post with whatever area is set (IP default).
       const area = currentArea;
-      if (!area) {
-        await loadSuggestedArea();
-        areaSheetRef.current?.present();
-        return;
-      }
       const userId = await requireUserId();
 
       let activityId = createdActivityIdRef.current;
@@ -243,6 +245,8 @@ export default function ComposeScreen() {
           location_source:
             areaSource ?? (area?.approx ? "ip" : area ? "device" : null),
           vibe: vibe ?? null,
+          gender_pref: gender,
+          capacity: capacity,
           status: "open",
         });
 
@@ -281,11 +285,11 @@ export default function ComposeScreen() {
     }
   }
 
-  const areaShort = areaLoading
-    ? t("browse.area_detecting")
-    : currentArea
-      ? currentArea.label.split(",")[0].trim()
-      : t("browse.area_unknown");
+  const rowChips = (children: React.ReactNode) => (
+    <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
+      {children}
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -305,103 +309,218 @@ export default function ComposeScreen() {
                 : router.replace("/(tabs)/browse")
             }
             title={t("compose.navTitle")}
-            meta={
-              <Pressable
-                onPress={openAreaSheet}
-                accessibilityRole="button"
-                accessibilityLabel={t("browse.area_sheet_title")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: space.xs,
-                  paddingVertical: 4,
-                  paddingHorizontal: space.sm,
-                  borderRadius: radius.pill,
-                  borderWidth: 2,
-                  borderColor: c.border,
-                  backgroundColor: c.surfaceAlt,
-                  maxWidth: 220,
-                }}
-              >
-                <Ionicons name="location-sharp" size={13} color={c.brand} />
-                <BText c={c} v="label" color={c.text} numberOfLines={1}>
-                  {areaShort}
-                </BText>
-                <Ionicons name="chevron-down" size={13} color={c.subtext} />
-              </Pressable>
-            }
-            right={
-              <BButton
-                c={c}
-                tone="primary"
-                label={t("compose.post")}
-                onPress={onSubmit}
-              />
-            }
           />
         }
       >
-        <BCard c={c}>
-          <BText c={c} v="label" color={c.subtext}>
-            {t("compose.title_label")}
-          </BText>
-          <TextInput
-            value={text}
-            onChangeText={setText}
-            placeholder={t("compose.placeholder")}
-            placeholderTextColor={c.faint}
-            multiline
-            autoFocus
-            textAlignVertical="top"
-            style={{
-              minHeight: 140,
-              borderWidth: 2,
-              borderColor: c.border,
-              borderRadius: radius.lg,
-              backgroundColor: c.surface,
-              padding: space.md,
-              fontSize: 16,
-              color: c.text,
-            }}
-          />
-          <BText c={c} v="caption" color={c.subtext}>
-            {t("compose.topic_hint")}
-          </BText>
-          <View
-            style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
-          >
-            {TOPICS.map((topic) => (
-              <Pressable
-                key={topic.key}
-                onPress={() => draftFromTopic(topic.key)}
-              >
-                <BChip c={c} label={t(topic.labelKey)} />
-              </Pressable>
-            ))}
-          </View>
-        </BCard>
+        <BStepper
+          c={c}
+          current={step}
+          onStepPress={(i) => setStep(i as 0 | 1 | 2)}
+          steps={[
+            { label: t("compose.step_say") },
+            { label: t("compose.step_where"), optional: true },
+            { label: t("compose.step_details"), optional: true },
+          ]}
+        />
 
-        <BCard c={c}>
-          <BText c={c} v="label" color={c.subtext}>
-            {t("vibe.pick")}
-          </BText>
-          <BText c={c} v="caption" color={c.subtext}>
-            {t("vibe.pick_hint")}
-          </BText>
-          <View
-            style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
-          >
-            {VIBES.map((v) => (
-              <Pressable key={v} onPress={() => setVibe(vibe === v ? null : v)}>
-                <BChip
+        {step === 0 ? (
+          <>
+            <BCard c={c}>
+              <BText c={c} v="label" color={c.subtext}>
+                {t("compose.title_label")}
+              </BText>
+              <TextInput
+                value={text}
+                onChangeText={setText}
+                onFocus={() => setHelpOpen(true)}
+                placeholder={t("compose.placeholder")}
+                placeholderTextColor={c.faint}
+                multiline
+                autoFocus
+                textAlignVertical="top"
+                style={{
+                  minHeight: 120,
+                  borderWidth: 2,
+                  borderColor: c.border,
+                  borderRadius: radius.lg,
+                  backgroundColor: c.surface,
+                  padding: space.md,
+                  fontSize: 16,
+                  color: c.text,
+                }}
+              />
+              {/* Quick-help expands once you engage the title. */}
+              {helpOpen || text.trim().length > 0 ? (
+                <>
+                  <BText c={c} v="caption" color={c.subtext}>
+                    {t("compose.topic_hint")}
+                  </BText>
+                  {rowChips(
+                    TOPICS.map((topic) => (
+                      <Pressable
+                        key={topic.key}
+                        onPress={() => draftFromTopic(topic.key)}
+                      >
+                        <BChip c={c} label={t(topic.labelKey)} />
+                      </Pressable>
+                    ))
+                  )}
+                </>
+              ) : null}
+            </BCard>
+
+            <BCard c={c}>
+              <BText c={c} v="label" color={c.subtext}>
+                {t("vibe.pick")}
+              </BText>
+              {rowChips(
+                VIBES.map((v) => (
+                  <Pressable
+                    key={v}
+                    onPress={() => setVibe(vibe === v ? null : v)}
+                  >
+                    <BChip
+                      c={c}
+                      label={t(VIBE_META[v].labelKey)}
+                      selected={vibe === v}
+                    />
+                  </Pressable>
+                ))
+              )}
+            </BCard>
+
+            <View style={{ flexDirection: "row", gap: space.sm }}>
+              <View style={{ flex: 1 }}>
+                <BButton
                   c={c}
-                  label={t(VIBE_META[v].labelKey)}
-                  selected={vibe === v}
+                  tone="primary"
+                  full
+                  label={
+                    submitting ? t("common.loading") : t("compose.post_now")
+                  }
+                  onPress={onSubmit}
                 />
-              </Pressable>
-            ))}
-          </View>
-        </BCard>
+              </View>
+              <BButton
+                c={c}
+                tone="secondary"
+                label={t("compose.add_details")}
+                onPress={() => setStep(1)}
+              />
+            </View>
+          </>
+        ) : step === 1 ? (
+          <>
+            <BCard c={c}>
+              <BText c={c} v="label" color={c.subtext}>
+                {t("compose.where_hint")}
+              </BText>
+              <AreaPicker
+                c={c}
+                query={areaQuery}
+                onQueryChange={setAreaQuery}
+                results={areaResults}
+                searching={areaSearching}
+                recentAreas={recentAreas}
+                onLocate={setAreaFromDevice}
+                onPickPlace={(place) =>
+                  selectArea(
+                    {
+                      lat: place.lat,
+                      lng: place.lng,
+                      label: place.name,
+                      approx: false,
+                    },
+                    "manual"
+                  )
+                }
+                onPickRecent={(area) =>
+                  selectArea(area, area.source ?? "manual")
+                }
+                currentLabel={currentArea ? currentArea.label : null}
+                currentApprox={currentArea?.approx}
+                detecting={areaLoading}
+              />
+            </BCard>
+
+            <View style={{ flexDirection: "row", gap: space.sm }}>
+              <BButton
+                c={c}
+                tone="secondary"
+                label={t("common.back")}
+                onPress={() => setStep(0)}
+              />
+              <View style={{ flex: 1 }} />
+              <BButton
+                c={c}
+                tone="secondary"
+                label={t("compose.post")}
+                onPress={onSubmit}
+              />
+              <BButton
+                c={c}
+                tone="primary"
+                label={t("common.next")}
+                onPress={() => setStep(2)}
+              />
+            </View>
+          </>
+        ) : (
+          <>
+            <BText c={c} v="caption" color={c.subtext}>
+              {t("compose.details_hint")}
+            </BText>
+            <BCard c={c}>
+              <BText c={c} v="label" color={c.subtext}>
+                {t("inviteForm.capacityLabel")}
+              </BText>
+              {rowChips(
+                [null, 2, 3, 4, 6, 8].map((n) => (
+                  <Pressable key={String(n)} onPress={() => setCapacity(n)}>
+                    <BChip
+                      c={c}
+                      selected={capacity === n}
+                      label={n == null ? t("capacity.unlimited") : String(n)}
+                    />
+                  </Pressable>
+                ))
+              )}
+            </BCard>
+
+            <BCard c={c}>
+              <BText c={c} v="label" color={c.subtext}>
+                {t("inviteForm.genderLabel")}
+              </BText>
+              {rowChips(
+                (["any", "female", "male"] as const).map((g) => (
+                  <Pressable key={g} onPress={() => setGender(g)}>
+                    <BChip
+                      c={c}
+                      selected={gender === g}
+                      label={t(`inviteForm.gender_${g}`)}
+                    />
+                  </Pressable>
+                ))
+              )}
+            </BCard>
+
+            <View style={{ flexDirection: "row", gap: space.sm }}>
+              <BButton
+                c={c}
+                tone="secondary"
+                label={t("common.back")}
+                onPress={() => setStep(1)}
+              />
+              <View style={{ flex: 1 }} />
+              <BButton
+                c={c}
+                tone="primary"
+                label={submitting ? t("common.loading") : t("compose.post")}
+                onPress={onSubmit}
+              />
+            </View>
+          </>
+        )}
 
         <BottomSheetModal
           ref={successSheetRef}
@@ -464,36 +583,6 @@ export default function ComposeScreen() {
             </View>
           </BottomSheetView>
         </BottomSheetModal>
-
-        <AreaSheet
-          ref={areaSheetRef}
-          c={c}
-          bottomInset={insets.bottom}
-          snapPoints={areaSnapPoints}
-          backdropComponent={renderBackdrop}
-          subtitle={t("browse.area_sheet_subtitle_post")}
-          currentLabel={currentArea ? currentArea.label : null}
-          currentApprox={currentArea?.approx}
-          detecting={areaLoading}
-          query={areaQuery}
-          onQueryChange={setAreaQuery}
-          results={areaResults}
-          searching={areaSearching}
-          recentAreas={recentAreas}
-          onLocate={setAreaFromDevice}
-          onPickPlace={(place) =>
-            selectArea(
-              {
-                lat: place.lat,
-                lng: place.lng,
-                label: place.name,
-                approx: false,
-              },
-              "manual"
-            )
-          }
-          onPickRecent={(area) => selectArea(area, area.source ?? "manual")}
-        />
       </BScreen>
     </KeyboardAvoidingView>
   );

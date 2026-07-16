@@ -24,7 +24,9 @@
     "unknown": "不明",
     "never": "なし",
     "noMore": "これ以上ありません",
-    "clear": "クリア"
+    "clear": "クリア",
+    "next": "次へ",
+    "save": "保存"
   },
   "auth": {
     "login": {
@@ -75,6 +77,13 @@
     "placeholder": "例：今夜カラオケ行ける人？",
     "title_label": "何する？",
     "post": "投稿",
+    "post_now": "今すぐ投稿",
+    "add_details": "詳細を追加 ›",
+    "step_say": "内容",
+    "step_where": "場所",
+    "step_details": "詳細",
+    "where_hint": "どこで？（任意）",
+    "details_hint": "追加情報（すべて任意）。",
     "topic_label": "書き出しに迷ったら",
     "topic_hint": "トピックをタップで下書き。もう一度押すと別の言い回しに。",
     "topic_boardgame": "ボドゲ",
