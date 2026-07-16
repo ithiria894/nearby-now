@@ -769,6 +769,9 @@ export function BList({
 
 // Short, centered separator between list rows — ~half the width and the faint
 // `hairline` tint (not the structural ink border), so the list reads light.
+// The row has symmetric paddingVertical, but each list item also carries a
+// marginBottom (space.sm) below it — so without a matching marginTop the line
+// sits closer to the row above than the one below. This marginTop re-centers it.
 function RowDivider({ c }: { c: UIColors }) {
   return (
     <View
@@ -778,6 +781,7 @@ function RowDivider({ c }: { c: UIColors }) {
         alignSelf: "center",
         borderRadius: 1,
         backgroundColor: c.hairline,
+        marginTop: space.sm,
       }}
     />
   );
