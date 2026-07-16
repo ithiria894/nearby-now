@@ -700,7 +700,12 @@ export default function BrowseScreen() {
         c={c}
         v="display"
         numberOfLines={1}
-        style={{ fontFamily: wordmarkFont, fontSize: 22, flexShrink: 1 }}
+        style={{
+          fontFamily: wordmarkFont,
+          fontWeight: "400",
+          fontSize: 22,
+          flexShrink: 1,
+        }}
       >
         {t("app.name")}
       </BText>

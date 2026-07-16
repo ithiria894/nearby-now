@@ -104,7 +104,11 @@ export default function RegisterScreen() {
           v="display"
           c={c}
           color={c.ink}
-          style={{ marginTop: space.sm, fontFamily: wordmarkFont }}
+          style={{
+            marginTop: space.sm,
+            fontFamily: wordmarkFont,
+            fontWeight: "400",
+          }}
         >
           {t("app.name")}
         </BText>

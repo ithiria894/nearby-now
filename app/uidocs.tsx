@@ -434,7 +434,11 @@ export default function UIDocs() {
               v="display"
               c={c}
               color={c.ink}
-              style={{ marginTop: space.md, fontFamily: wordmarkFont }}
+              style={{
+                marginTop: space.md,
+                fontFamily: wordmarkFont,
+                fontWeight: "400",
+              }}
             >
               enoki
             </BText>
