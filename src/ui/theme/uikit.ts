@@ -9,6 +9,8 @@
 // and centered so cards never over-stretch on wide / tablet / web screens.
 // =============================================================================
 
+import { Platform } from "react-native";
+
 export type UIScheme = "light" | "dark";
 
 export type UIColors = {
@@ -120,6 +122,12 @@ export function mixHex(a: string, b: string, t: number): string {
       .padStart(2, "0");
   return `#${ch(pa.r, pb.r)}${ch(pa.g, pb.g)}${ch(pa.b, pb.b)}`;
 }
+
+// Brand wordmark / text-logo font: "Momo Trust Display" (Google Fonts). Web
+// loads it via the <link> in app/_layout.tsx (family name has a space); native
+// bundles the TTF under a no-space alias (see useFonts in app/_layout.tsx).
+export const wordmarkFont =
+  Platform.OS === "web" ? "Momo Trust Display" : "MomoTrustDisplay";
 
 // --- Typography (bold, confident) -------------------------------------------
 // Fonts loaded in app/_layout.tsx. Display/headings = Poppins; body = Inter;

@@ -62,6 +62,7 @@ import {
   radius,
   borders,
   mixHex,
+  wordmarkFont,
 } from "../../src/ui/theme/uikit";
 import {
   PaperTexture,
@@ -699,7 +700,7 @@ export default function BrowseScreen() {
         c={c}
         v="display"
         numberOfLines={1}
-        style={{ fontFamily: "ShortStack", fontSize: 22, flexShrink: 1 }}
+        style={{ fontFamily: wordmarkFont, fontSize: 22, flexShrink: 1 }}
       >
         {t("app.name")}
       </BText>

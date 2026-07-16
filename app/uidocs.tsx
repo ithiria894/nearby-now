@@ -21,6 +21,7 @@ import {
   space,
   typeScale,
   uiColors,
+  wordmarkFont,
   type UIColors,
   type UIScheme,
 } from "../src/ui/theme/uikit";
@@ -433,7 +434,7 @@ export default function UIDocs() {
               v="display"
               c={c}
               color={c.ink}
-              style={{ marginTop: space.md, fontFamily: "ShortStack" }}
+              style={{ marginTop: space.md, fontFamily: wordmarkFont }}
             >
               enoki
             </BText>
