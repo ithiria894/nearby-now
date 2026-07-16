@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { searchPlacesNominatim, type PlaceCandidate } from "../lib/api/places";
+import { VIBES, VIBE_META } from "../lib/ui/vibe";
 import { useT } from "../lib/i18n/useT";
 import { formatExpiryLabel } from "../lib/i18n/i18n_format";
 import { useUIKit } from "../src/ui/theme/useUIKit";
@@ -25,6 +26,7 @@ export type InviteFormPayload = {
   place_id: string | null;
   location_source: string | null;
   gender_pref: GenderPref;
+  vibe: string | null;
   capacity: number | null;
   start_time?: string | null;
   end_time?: string | null;
@@ -41,6 +43,7 @@ type InviteFormInitialValues = {
   place_id?: string | null;
   location_source?: string | null;
   gender_pref?: GenderPref | null;
+  vibe?: string | null;
   capacity?: number | null;
   start_time?: string | null;
   end_time?: string | null;
@@ -153,6 +156,7 @@ export default function InviteForm(props: Props) {
   );
   const [candidates, setCandidates] = useState<PlaceCandidate[]>([]);
   const [searching, setSearching] = useState(false);
+  const [vibe, setVibe] = useState<string | null>(initialValues?.vibe ?? null);
   const [genderPref, setGenderPref] = useState<GenderPref>(
     (initialValues?.gender_pref as GenderPref) ?? "any"
   );
@@ -330,6 +334,7 @@ export default function InviteForm(props: Props) {
       place_id: placeId,
       location_source: locationSource,
       gender_pref: genderPref,
+      vibe,
       capacity: parsedCapacity.value,
       start_time: startParsed.iso,
       end_time: endParsed.iso,
@@ -641,6 +646,31 @@ export default function InviteForm(props: Props) {
                     c={c}
                     label={t(`inviteForm.gender_${v}`)}
                     selected={genderPref === v}
+                  />
+                </Pressable>
+              ))}
+            </View>
+          </BCard>
+
+          <BCard c={c}>
+            <BText c={c} v="label" color={c.subtext}>
+              {t("vibe.pick")}
+            </BText>
+            <BText c={c} v="caption" color={c.subtext}>
+              {t("vibe.pick_hint")}
+            </BText>
+            <View
+              style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
+            >
+              {VIBES.map((v) => (
+                <Pressable
+                  key={v}
+                  onPress={() => setVibe(vibe === v ? null : v)}
+                >
+                  <BChip
+                    c={c}
+                    label={t(VIBE_META[v].labelKey)}
+                    selected={vibe === v}
                   />
                 </Pressable>
               ))}

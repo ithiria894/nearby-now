@@ -37,6 +37,7 @@ import {
   type AreaLocation,
 } from "../lib/ui/location";
 import { searchPlacesNominatim, type PlaceCandidate } from "../lib/api/places";
+import { VIBES, VIBE_META } from "../lib/ui/vibe";
 
 const RECENT_AREAS_KEY = "browse.recentAreas.v1";
 
@@ -74,6 +75,7 @@ export default function ComposeScreen() {
   const [areaSource, setAreaSource] = useState<
     "device" | "ip" | "manual" | null
   >(null);
+  const [vibe, setVibe] = useState<string | null>(null);
   const successLines = useMemo(
     () => [
       t("compose.success_line_1"),
@@ -240,6 +242,7 @@ export default function ComposeScreen() {
           lng: area?.lng ?? null,
           location_source:
             areaSource ?? (area?.approx ? "ip" : area ? "device" : null),
+          vibe: vibe ?? null,
           status: "open",
         });
 
@@ -373,6 +376,28 @@ export default function ComposeScreen() {
                 onPress={() => draftFromTopic(topic.key)}
               >
                 <BChip c={c} label={t(topic.labelKey)} />
+              </Pressable>
+            ))}
+          </View>
+        </BCard>
+
+        <BCard c={c}>
+          <BText c={c} v="label" color={c.subtext}>
+            {t("vibe.pick")}
+          </BText>
+          <BText c={c} v="caption" color={c.subtext}>
+            {t("vibe.pick_hint")}
+          </BText>
+          <View
+            style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
+          >
+            {VIBES.map((v) => (
+              <Pressable key={v} onPress={() => setVibe(vibe === v ? null : v)}>
+                <BChip
+                  c={c}
+                  label={t(VIBE_META[v].labelKey)}
+                  selected={vibe === v}
+                />
               </Pressable>
             ))}
           </View>

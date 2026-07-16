@@ -57,10 +57,10 @@ import {
   PaperTexture,
   BComposer,
   BActivityRow,
+  BAppBar,
   BBadge,
   BButton,
   BText,
-  BChip,
   BToggle,
   BIconButton,
 } from "../../src/ui/components/brutal";
@@ -68,6 +68,11 @@ import {
   activityCategory,
   type ActivityCategory,
 } from "../../lib/ui/activityIcon";
+import { VIBES, VIBE_META, normalizeVibe } from "../../lib/ui/vibe";
+import {
+  FeedFilterPills,
+  type PickerKind,
+} from "../../components/FeedFilterPills";
 
 // gorhom's BottomSheetTextInput crashes on react-native-web when the sheet
 // unmounts (findNodeHandle on a null scroll ref). It's only needed on native
@@ -124,6 +129,19 @@ export default function BrowseScreen() {
   const [areaSearching, setAreaSearching] = useState(false);
   const [recentAreas, setRecentAreas] = useState<AreaLocation[]>([]);
   const [radiusKm, setRadiusKm] = useState(30);
+
+  // Filter + sort. Category is derived from the title; vibe is the stored
+  // activities.vibe. Sort defaults to newest.
+  const [vibeFilter, setVibeFilter] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<
+    "newest" | "closing" | "nearest" | "people"
+  >("newest");
+  const pickerRef = useRef<BottomSheetModal>(null);
+  const pickerSnapPoints = useMemo(() => ["50%"], []);
+  const [picker, setPicker] = useState<PickerKind | null>(null);
+  // Sticky filter bar: appears under the app bar once the composer scrolls out.
+  const [composerH, setComposerH] = useState(0);
+  const [showSticky, setShowSticky] = useState(false);
 
   const paperBg = theme.colors.bg;
   const bottomInset = insets.bottom;
@@ -355,8 +373,9 @@ export default function BrowseScreen() {
       .filter(Boolean) as ActivityCardActivity[];
   }, [currentArea, items, radiusKm]);
 
-  // Tag system: derive a category per activity and let the user filter by it.
-  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  // Category is derived from the title; presentCats = categories currently in
+  // view (used to populate the Category dropdown).
+  const [catFilter, setCatFilter] = useState<string | null>(null);
   const presentCats = useMemo(() => {
     const seen = new Map<string, ActivityCategory>();
     for (const x of filteredItems) {
@@ -365,15 +384,38 @@ export default function BrowseScreen() {
     }
     return Array.from(seen.values());
   }, [filteredItems]);
-  const shownItems = useMemo(
-    () =>
-      tagFilter
-        ? filteredItems.filter(
-            (x) => activityCategory(x.title_text).key === tagFilter
-          )
-        : filteredItems,
-    [filteredItems, tagFilter]
-  );
+
+  const shownItems = useMemo(() => {
+    let arr = filteredItems;
+    if (catFilter) {
+      arr = arr.filter((x) => activityCategory(x.title_text).key === catFilter);
+    }
+    if (vibeFilter) {
+      arr = arr.filter((x) => normalizeVibe(x.vibe) === vibeFilter);
+    }
+    const ms = (v: string | null | undefined) =>
+      v ? new Date(v).getTime() : Number.POSITIVE_INFINITY;
+    const sorted = [...arr];
+    if (sortBy === "closing") {
+      sorted.sort((a, b) => ms(a.expires_at) - ms(b.expires_at));
+    } else if (sortBy === "nearest") {
+      sorted.sort(
+        (a, b) =>
+          (a.distance_km ?? Number.POSITIVE_INFINITY) -
+          (b.distance_km ?? Number.POSITIVE_INFINITY)
+      );
+    } else if (sortBy === "people") {
+      sorted.sort((a, b) => (b.joined_count ?? 0) - (a.joined_count ?? 0));
+    } else {
+      sorted.sort((a, b) => {
+        const ta = new Date(a.created_at ?? 0).getTime();
+        const tb = new Date(b.created_at ?? 0).getTime();
+        if (tb !== ta) return tb - ta;
+        return String(b.id).localeCompare(String(a.id));
+      });
+    }
+    return sorted;
+  }, [filteredItems, catFilter, vibeFilter, sortBy]);
 
   useEffect(() => {
     (async () => {
@@ -491,112 +533,185 @@ export default function BrowseScreen() {
     ? t("browse.area_detecting")
     : areaLabel.split(",")[0].trim();
 
-  const tagFilterBar =
-    presentCats.length > 1 ? (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          gap: space.sm,
-          paddingVertical: 2,
-          alignItems: "center",
-        }}
-      >
-        <Pressable onPress={() => setTagFilter(null)}>
-          <BChip c={c} label="All" selected={tagFilter === null} />
-        </Pressable>
-        {presentCats.map((cat) => (
-          <Pressable key={cat.key} onPress={() => setTagFilter(cat.key)}>
-            <BChip c={c} label={cat.label} selected={tagFilter === cat.key} />
-          </Pressable>
-        ))}
-      </ScrollView>
-    ) : (
+  // Filter pill labels + active states.
+  const catLabel = catFilter
+    ? (presentCats.find((x) => x.key === catFilter)?.label ??
+      t("filter.category"))
+    : t("filter.category");
+  const vibeLabel = vibeFilter
+    ? t(VIBE_META[normalizeVibe(vibeFilter)].labelKey)
+    : t("vibe.label");
+  const sortLabel = t(`sort.${sortBy}`);
+
+  const openPicker = (kind: PickerKind) => {
+    setPicker(kind);
+    pickerRef.current?.present();
+  };
+
+  const viewToggle = (
+    <BToggle<"list" | "map">
+      c={c}
+      value={viewMode}
+      onChange={setViewMode}
+      options={[
+        {
+          value: "list",
+          label: t("browse.mapButton_list"),
+          icon: "format-list-bulleted",
+        },
+        { value: "map", label: t("browse.mapButton_map"), icon: "map" },
+      ]}
+    />
+  );
+
+  // The compact filter/sort row — rendered in-flow, sticky, and over the map.
+  const filterRow = (
+    <FeedFilterPills
+      c={c}
+      left={viewToggle}
+      catLabel={catLabel}
+      catActive={!!catFilter}
+      vibeLabel={vibeLabel}
+      vibeActive={!!vibeFilter}
+      sortLabel={sortLabel}
+      sortActive={sortBy !== "newest"}
+      onOpen={openPicker}
+    />
+  );
+
+  // Fixed top nav: brand wordmark + location + theme + search.
+  const topNav = (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: space.sm,
+        paddingHorizontal: space.lg,
+        paddingVertical: space.sm,
+        backgroundColor: c.surface,
+        borderBottomWidth: borders.thick,
+        borderBottomColor: c.border,
+      }}
+    >
+      <BText c={c} v="display" style={{ fontFamily: "ShortStack" }}>
+        {t("app.name")}
+      </BText>
       <View style={{ flex: 1 }} />
-    );
+      <Pressable onPress={openAreaSheet} hitSlop={8}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 3,
+            maxWidth: 150,
+          }}
+        >
+          <MaterialCommunityIcons name="map-marker" size={16} color={c.brand} />
+          <BText c={c} v="bodyStrong" color={c.text} numberOfLines={1}>
+            {areaShort}
+          </BText>
+          <MaterialCommunityIcons
+            name="chevron-down"
+            size={15}
+            color={c.subtext}
+          />
+        </View>
+      </Pressable>
+      <BIconButton
+        c={c}
+        icon={theme.isDark ? "weather-sunny" : "weather-night"}
+        onPress={() => setMode(theme.isDark ? "light" : "dark")}
+      />
+      <BIconButton c={c} icon="magnify" onPress={openSearchSheet} />
+    </View>
+  );
 
   const ListHeader = (
     <View style={{ gap: space.md, paddingTop: space.md }}>
-      {/* Brand + location + search — location lives up top so it never clips */}
-      <View
-        style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
-      >
-        <BText c={c} v="display" style={{ fontFamily: "ShortStack" }}>
-          {t("app.name")}
-        </BText>
-        <View style={{ flex: 1 }} />
-        <Pressable onPress={openAreaSheet} hitSlop={8}>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 3,
-              maxWidth: 150,
-            }}
-          >
-            <MaterialCommunityIcons
-              name="map-marker"
-              size={16}
-              color={c.brand}
-            />
-            <BText c={c} v="bodyStrong" color={c.text} numberOfLines={1}>
-              {areaShort}
-            </BText>
-            <MaterialCommunityIcons
-              name="chevron-down"
-              size={15}
-              color={c.subtext}
-            />
-          </View>
-        </Pressable>
-        <BIconButton
+      {/* Create event — measured so the filter row can go sticky past it. */}
+      <View onLayout={(e) => setComposerH(e.nativeEvent.layout.height)}>
+        <BComposer
           c={c}
-          icon={theme.isDark ? "weather-sunny" : "weather-night"}
-          onPress={() => setMode(theme.isDark ? "light" : "dark")}
+          heading={t("browse.composer_title")}
+          placeholders={composerHints}
+          onPress={() => router.push("/compose")}
         />
-        <BIconButton c={c} icon="magnify" onPress={openSearchSheet} />
       </View>
-
-      {/* Composer card */}
-      <BComposer
-        c={c}
-        heading={t("browse.composer_title")}
-        placeholders={composerHints}
-        onPress={() => router.push("/compose")}
-      />
-
-      {/* View toggle + category filter share one row */}
-      <View
-        style={{ flexDirection: "row", alignItems: "center", gap: space.sm }}
-      >
-        <BToggle<"list" | "map">
-          c={c}
-          value={viewMode}
-          onChange={setViewMode}
-          options={[
-            {
-              value: "list",
-              label: t("browse.mapButton_list"),
-              icon: "format-list-bulleted",
-            },
-            { value: "map", label: t("browse.mapButton_map"), icon: "map" },
-          ]}
-        />
-        {tagFilterBar}
-      </View>
+      {filterRow}
     </View>
   );
+
+  // Options for the shared picker sheet, based on which pill is open.
+  const pickerData =
+    picker === "category"
+      ? {
+          title: t("filter.category"),
+          value: catFilter as string | null,
+          options: [
+            { key: null as string | null, label: t("filter.all") },
+            ...presentCats.map((x) => ({
+              key: x.key as string | null,
+              label: x.label,
+              icon: x.icon as string | undefined,
+            })),
+          ],
+          onSelect: (k: string | null) => setCatFilter(k),
+        }
+      : picker === "vibe"
+        ? {
+            title: t("vibe.label"),
+            value: vibeFilter as string | null,
+            options: [
+              { key: null as string | null, label: t("vibe.all") },
+              ...VIBES.map((v) => ({
+                key: v as string | null,
+                label: t(VIBE_META[v].labelKey),
+                icon: VIBE_META[v].icon as string | undefined,
+              })),
+            ],
+            onSelect: (k: string | null) => setVibeFilter(k),
+          }
+        : {
+            title: t("sort.label"),
+            value: sortBy as string | null,
+            options: [
+              { key: "newest", label: t("sort.newest"), icon: undefined },
+              { key: "closing", label: t("sort.closing"), icon: undefined },
+              { key: "nearest", label: t("sort.nearest"), icon: undefined },
+              { key: "people", label: t("sort.people"), icon: undefined },
+            ] as { key: string | null; label: string; icon?: string }[],
+            onSelect: (k: string | null) => setSortBy((k ?? "newest") as any),
+          };
 
   return (
     <>
       <View style={{ flex: 1, backgroundColor: c.bg }}>
         <PaperTexture opacity={0.06} />
         <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+          {topNav}
+          {viewMode === "list" && showSticky ? (
+            <View
+              style={{
+                paddingHorizontal: space.lg,
+                paddingVertical: space.sm,
+                backgroundColor: c.bg,
+                borderBottomWidth: borders.thick,
+                borderBottomColor: c.border,
+              }}
+            >
+              {filterRow}
+            </View>
+          ) : null}
           {viewMode === "map" ? (
             <View style={{ flex: 1, paddingBottom: tabBarSpace }}>
-              {ListHeader}
+              <View
+                style={{
+                  paddingHorizontal: space.lg,
+                  paddingVertical: space.sm,
+                }}
+              >
+                {filterRow}
+              </View>
               <View style={{ flex: 1 }}>
                 <BrowseMap
                   items={shownItems}
@@ -609,6 +724,10 @@ export default function BrowseScreen() {
             <FlatList
               data={shownItems}
               keyExtractor={(x) => x.id}
+              onScroll={(e) =>
+                setShowSticky(e.nativeEvent.contentOffset.y > composerH + 16)
+              }
+              scrollEventThrottle={16}
               style={{ flex: 1, backgroundColor: "transparent" }}
               contentContainerStyle={{
                 width: "100%",
@@ -662,6 +781,8 @@ export default function BrowseScreen() {
                     ? `${item.distance_km.toFixed(1)}km`
                     : undefined;
                 const cat = activityCategory(item.title_text);
+                const vibe = normalizeVibe(item.vibe);
+                const vm = VIBE_META[vibe];
                 return (
                   <View style={{ marginBottom: space.sm }}>
                     <BActivityRow
@@ -672,7 +793,40 @@ export default function BrowseScreen() {
                       meta={meta}
                       trailing={distance}
                       badges={
-                        <BBadge c={c} label={cat.label} fill={c[cat.tint]} />
+                        <>
+                          {/* Tap a badge to filter the feed by it. stopPropagation
+                              so the tap doesn't also open the room (web bubbles). */}
+                          <Pressable
+                            onPress={(e) => {
+                              (e as any)?.stopPropagation?.();
+                              setCatFilter(
+                                catFilter === cat.key ? null : cat.key
+                              );
+                            }}
+                          >
+                            <BBadge
+                              c={c}
+                              label={cat.label}
+                              fill={c[cat.tint]}
+                            />
+                          </Pressable>
+                          {vm.tint ? (
+                            <Pressable
+                              onPress={(e) => {
+                                (e as any)?.stopPropagation?.();
+                                setVibeFilter(
+                                  vibeFilter === vibe ? null : vibe
+                                );
+                              }}
+                            >
+                              <BBadge
+                                c={c}
+                                label={t(vm.labelKey)}
+                                fill={c[vm.tint]}
+                              />
+                            </Pressable>
+                          ) : null}
+                        </>
                       }
                       onPress={() => onPressCard(item)}
                     />
@@ -840,6 +994,75 @@ export default function BrowseScreen() {
               />
             </Pressable>
           </View>
+        </BottomSheetView>
+      </BottomSheetModal>
+
+      {/* Shared dropdown for Category / Vibe / Sort pills. */}
+      <BottomSheetModal
+        ref={pickerRef}
+        snapPoints={pickerSnapPoints}
+        enableDynamicSizing={false}
+        enablePanDownToClose
+        backdropComponent={renderSearchBackdrop}
+        onDismiss={() => setPicker(null)}
+        backgroundStyle={{
+          backgroundColor: c.surface,
+          borderTopLeftRadius: radius.lg,
+          borderTopRightRadius: radius.lg,
+        }}
+        handleIndicatorStyle={{ backgroundColor: c.border }}
+      >
+        <BottomSheetView
+          style={{
+            padding: space.lg,
+            paddingBottom: space.lg + insets.bottom,
+            gap: space.sm,
+          }}
+        >
+          <BText c={c} v="h2" color={c.ink}>
+            {pickerData.title}
+          </BText>
+          {pickerData.options.map((opt) => {
+            const selected = pickerData.value === opt.key;
+            return (
+              <Pressable
+                key={String(opt.key)}
+                onPress={() => {
+                  pickerData.onSelect(opt.key);
+                  pickerRef.current?.dismiss();
+                }}
+                style={({ pressed }) => ({
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: space.sm,
+                  paddingVertical: space.md,
+                  paddingHorizontal: space.md,
+                  borderRadius: radius.md,
+                  borderWidth: borders.thick,
+                  borderColor: selected ? c.brand : c.border,
+                  backgroundColor: pressed ? c.surfaceAlt : c.surface,
+                })}
+              >
+                {opt.icon ? (
+                  <MaterialCommunityIcons
+                    name={opt.icon as any}
+                    size={18}
+                    color={c.subtext}
+                  />
+                ) : null}
+                <BText c={c} v="title" color={c.ink} style={{ flex: 1 }}>
+                  {opt.label}
+                </BText>
+                {selected ? (
+                  <MaterialCommunityIcons
+                    name="check"
+                    size={18}
+                    color={c.brand}
+                  />
+                ) : null}
+              </Pressable>
+            );
+          })}
         </BottomSheetView>
       </BottomSheetModal>
 

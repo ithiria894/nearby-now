@@ -229,6 +229,28 @@
     "mapButton_map": "地图",
     "mapButton_list": "列表"
   },
+  "vibe": {
+    "label": "氛围",
+    "all": "任何氛围",
+    "chill": "轻松",
+    "hype": "热闹",
+    "deep": "深入",
+    "playful": "好玩",
+    "open": "随意",
+    "pick": "氛围",
+    "pick_hint": "会是什么感觉？（可选）"
+  },
+  "sort": {
+    "label": "排序",
+    "newest": "最新",
+    "closing": "快结束",
+    "nearest": "最近",
+    "people": "最多人"
+  },
+  "filter": {
+    "category": "分类",
+    "all": "全部"
+  },
   "created": {
     "headerTitle": "我创建",
     "tab_active": "进行中（{{count}}）",

@@ -229,6 +229,28 @@
     "mapButton_map": "MAP",
     "mapButton_list": "LIST"
   },
+  "vibe": {
+    "label": "Vibe",
+    "all": "Any vibe",
+    "chill": "Chill",
+    "hype": "Hype",
+    "deep": "Deep",
+    "playful": "Playful",
+    "open": "Open",
+    "pick": "Vibe",
+    "pick_hint": "How will it feel? (optional)"
+  },
+  "sort": {
+    "label": "Sort",
+    "newest": "Newest",
+    "closing": "Closing soon",
+    "nearest": "Nearest",
+    "people": "Most people"
+  },
+  "filter": {
+    "category": "Category",
+    "all": "All"
+  },
   "created": {
     "headerTitle": "Created",
     "tab_active": "Active ({{count}})",

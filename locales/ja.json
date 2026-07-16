@@ -229,6 +229,28 @@
     "mapButton_map": "地図",
     "mapButton_list": "リスト"
   },
+  "vibe": {
+    "label": "雰囲気",
+    "all": "すべての雰囲気",
+    "chill": "まったり",
+    "hype": "ワイワイ",
+    "deep": "じっくり",
+    "playful": "たのしい",
+    "open": "おまかせ",
+    "pick": "雰囲気",
+    "pick_hint": "どんな雰囲気？（任意）"
+  },
+  "sort": {
+    "label": "並び替え",
+    "newest": "新着",
+    "closing": "締切間近",
+    "nearest": "近い順",
+    "people": "人数順"
+  },
+  "filter": {
+    "category": "カテゴリ",
+    "all": "すべて"
+  },
   "created": {
     "headerTitle": "作成済み",
     "tab_active": "有効 ({{count}})",
