@@ -1135,3 +1135,93 @@ export function BAppBar({
     </View>
   );
 }
+
+/* ---------- stepper (multi-step flows) ---------- */
+// Numbered circles joined by hairlines: the active step is brand-filled,
+// completed steps show a check, upcoming steps are muted. Optional steps read
+// lighter. Tapping a step calls onStepPress (parent decides where you can go).
+export function BStepper({
+  c,
+  steps,
+  current,
+  onStepPress,
+}: {
+  c: UIColors;
+  steps: { label: string; optional?: boolean }[];
+  current: number;
+  onStepPress?: (index: number) => void;
+}) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+      {steps.map((s, i) => {
+        const done = i < current;
+        const active = i === current;
+        const filled = done || active;
+        return (
+          <React.Fragment key={i}>
+            {i > 0 ? (
+              <View
+                style={{
+                  flex: 1,
+                  height: 2,
+                  marginTop: 13,
+                  backgroundColor: i <= current ? c.brand : c.border,
+                }}
+              />
+            ) : null}
+            <Pressable
+              onPress={onStepPress ? () => onStepPress(i) : undefined}
+              disabled={!onStepPress}
+              style={{ alignItems: "center", gap: 4, maxWidth: 96 }}
+              accessibilityRole="button"
+              accessibilityLabel={s.label}
+            >
+              <View
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: radius.pill,
+                  borderWidth: borders.thick,
+                  borderColor: c.border,
+                  backgroundColor: filled ? c.brand : c.surface,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {done ? (
+                  <MaterialCommunityIcons
+                    name="check"
+                    size={16}
+                    color={c.onBrand}
+                  />
+                ) : (
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "800",
+                      color: active ? c.onBrand : c.subtext,
+                    }}
+                  >
+                    {i + 1}
+                  </Text>
+                )}
+              </View>
+              <Text
+                style={[
+                  txt(typeScale.label, active ? c.ink : c.subtext),
+                  { textAlign: "center" },
+                ]}
+                numberOfLines={1}
+              >
+                {s.label}
+              </Text>
+              {s.optional ? (
+                <Text style={txt(typeScale.caption, c.faint)}>optional</Text>
+              ) : null}
+            </Pressable>
+          </React.Fragment>
+        );
+      })}
+    </View>
+  );
+}

@@ -37,6 +37,7 @@ import {
   BList,
   BSkeleton,
   BSkeletonList,
+  BStepper,
   BTabBar,
   BText,
   BToggle,
@@ -303,6 +304,7 @@ export default function UIDocs() {
   const [scheme, setScheme] = useState<UIScheme>("light");
   const [view, setView] = useState<"list" | "map">("list");
   const [tag, setTag] = useState<string | null>(null);
+  const [step, setStep] = useState(1);
   const c = uiColors[scheme];
 
   // Animation demo state — "a new activity arrives"
@@ -860,6 +862,53 @@ export default function UIDocs() {
                 "Don't use for a single on/off",
                 "Don't brand-fill the active segment (too loud)",
                 "Don't border each segment",
+              ]}
+            />
+          </Section>
+
+          {/* Stepper */}
+          <Section
+            c={c}
+            title="Stepper"
+            note="For multi-step flows (create / edit an invite). Numbered circles joined by hairlines: active step is brand-filled, completed steps show a check, upcoming steps are muted. Optional steps read lighter. Steps are tappable so you can jump back. Keep it a map, not a gate — let people finish early when later steps are optional."
+          >
+            <BCard c={c}>
+              <BStepper
+                c={c}
+                current={step}
+                onStepPress={setStep}
+                steps={[
+                  { label: "Say it" },
+                  { label: "Where", optional: true },
+                  { label: "Details", optional: true },
+                ]}
+              />
+              <View style={{ flexDirection: "row", gap: space.sm }}>
+                <BButton
+                  c={c}
+                  tone="secondary"
+                  label="‹ Back"
+                  onPress={() => setStep((s) => Math.max(0, s - 1))}
+                />
+                <BButton
+                  c={c}
+                  tone="primary"
+                  label="Next ›"
+                  onPress={() => setStep((s) => Math.min(2, s + 1))}
+                />
+              </View>
+            </BCard>
+            <Rules
+              c={c}
+              dos={[
+                "2–4 steps with short labels",
+                "Brand-fill the active step; check the done ones",
+                "Mark optional steps + allow finishing early",
+              ]}
+              donts={[
+                "Don't use for a single form",
+                "Don't block posting behind optional steps",
+                "Don't hide where the user is in the flow",
               ]}
             />
           </Section>
