@@ -722,7 +722,7 @@ export function BBadge({
   );
   if (!bleed) return badge;
   return (
-    <HardShadow c={c} color={fill} radius={radius.sm} offset={hardShadow.sm}>
+    <HardShadow c={c} color={fill} radius={radius.sm} offset={hardShadow.lg}>
       {badge}
     </HardShadow>
   );
@@ -767,6 +767,7 @@ export function BActivityRow({
   c,
   icon,
   iconBg,
+  iconColor,
   title,
   meta,
   preview,
@@ -781,6 +782,7 @@ export function BActivityRow({
   c: UIColors;
   icon: string; // MaterialCommunityIcons name (NO emoji)
   iconBg: string;
+  iconColor?: string; // glyph color; defaults to onBright (for bold fills)
   title: string;
   meta: React.ReactNode; // string, or inline nodes (e.g. an icon + count)
   preview?: string; // conversation preview line, e.g. "Alex: see you there"
@@ -827,7 +829,7 @@ export function BActivityRow({
           <MaterialCommunityIcons
             name={icon as any}
             size={22}
-            color={c.onBright}
+            color={iconColor ?? c.onBright}
           />
         </View>
         <View style={{ flex: 1, gap: 2 }}>

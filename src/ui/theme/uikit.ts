@@ -98,6 +98,29 @@ export const uiColors: Record<UIScheme, UIColors> = {
   dark: darkColors,
 };
 
+// Blend two hex colors. t=0 → a, t=1 → b. Handy for softening a bold accent
+// toward the paper surface (a paler "container" tint) — theme-aware because
+// you pass the current surface as `b`.
+function hexToRgb(hex: string) {
+  let h = hex.replace("#", "");
+  if (h.length === 3)
+    h = h
+      .split("")
+      .map((x) => x + x)
+      .join("");
+  const n = parseInt(h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+export function mixHex(a: string, b: string, t: number): string {
+  const pa = hexToRgb(a);
+  const pb = hexToRgb(b);
+  const ch = (x: number, y: number) =>
+    Math.round(x + (y - x) * t)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${ch(pa.r, pb.r)}${ch(pa.g, pb.g)}${ch(pa.b, pb.b)}`;
+}
+
 // --- Typography (bold, confident) -------------------------------------------
 // Fonts loaded in app/_layout.tsx. Display/headings = Poppins; body = Inter;
 // accent/personality = Caveat (sparingly). Labels are UPPERCASE + tracked.

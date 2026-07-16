@@ -56,7 +56,13 @@ import {
 } from "../../lib/ui/location";
 import { updatePushLocation } from "../../lib/push/updateLocation";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
-import { layout, space, radius, borders } from "../../src/ui/theme/uikit";
+import {
+  layout,
+  space,
+  radius,
+  borders,
+  mixHex,
+} from "../../src/ui/theme/uikit";
 import {
   PaperTexture,
   BComposer,
@@ -908,7 +914,12 @@ export default function BrowseScreen() {
                     <BActivityRow
                       c={c}
                       icon={cat.icon}
-                      iconBg={c[cat.tint]}
+                      // Tuned-down tile: the category tint softened toward the
+                      // paper surface, so the vivid badge (+ its color bleed) is
+                      // the accent and the tile is a quiet echo. Glyph → ink so
+                      // it stays readable on the paler tile in both themes.
+                      iconBg={mixHex(c[cat.tint], c.surface, 0.55)}
+                      iconColor={c.ink}
                       title={item.title_text}
                       meta={meta}
                       trailing={distance}
