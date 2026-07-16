@@ -813,6 +813,8 @@ export function BActivityRow({
       >
         <View
           style={{
+            flexDirection: "row",
+            alignItems: "center",
             gap: space.sm,
             paddingVertical: space.md,
             paddingHorizontal: space.md,
@@ -822,64 +824,74 @@ export function BActivityRow({
             borderLeftColor: accent,
           }}
         >
-          {/* Title — full width, up to two lines. */}
-          <Text style={txt(typeScale.title, c.ink)} numberOfLines={2}>
-            {title}
-          </Text>
-          <View style={{ flexDirection: "row", gap: space.md }}>
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: radius.sm,
-                borderWidth: borders.base,
-                borderColor: c.border,
-                backgroundColor: iconBg,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <MaterialCommunityIcons
-                name={icon as any}
-                size={22}
-                color={iconColor ?? c.onBright}
-              />
-            </View>
-            <View style={{ flex: 1, justifyContent: "center", gap: 4 }}>
-              <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
-                {meta}
-              </Text>
-              {badges || trailing ? (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: space.sm,
-                  }}
+          <View style={{ flex: 1, gap: space.sm }}>
+            {/* Title — full width (up to the chevron), up to two lines. */}
+            <Text style={txt(typeScale.title, c.ink)} numberOfLines={2}>
+              {title}
+            </Text>
+            <View style={{ flexDirection: "row", gap: space.md }}>
+              <View
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: radius.sm,
+                  borderWidth: borders.base,
+                  borderColor: c.border,
+                  backgroundColor: iconBg,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <MaterialCommunityIcons
+                  name={icon as any}
+                  size={22}
+                  color={iconColor ?? c.onBright}
+                />
+              </View>
+              <View style={{ flex: 1, justifyContent: "center", gap: 4 }}>
+                <Text
+                  style={txt(typeScale.caption, c.subtext)}
+                  numberOfLines={1}
                 >
+                  {meta}
+                </Text>
+                {badges || trailing ? (
                   <View
                     style={{
-                      flex: 1,
                       flexDirection: "row",
                       alignItems: "center",
                       gap: space.sm,
-                      flexWrap: "wrap",
                     }}
                   >
-                    {badges}
-                  </View>
-                  {trailing ? (
-                    <Text
-                      style={txt(typeScale.caption, c.subtext)}
-                      numberOfLines={1}
+                    <View
+                      style={{
+                        flex: 1,
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: space.sm,
+                        flexWrap: "wrap",
+                      }}
                     >
-                      {trailing}
-                    </Text>
-                  ) : null}
-                </View>
-              ) : null}
+                      {badges}
+                    </View>
+                    {trailing ? (
+                      <Text
+                        style={txt(typeScale.caption, c.subtext)}
+                        numberOfLines={1}
+                      >
+                        {trailing}
+                      </Text>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
             </View>
           </View>
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color={c.ink}
+          />
         </View>
       </Pressable>
     );

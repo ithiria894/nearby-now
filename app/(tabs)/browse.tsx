@@ -865,14 +865,12 @@ export default function BrowseScreen() {
                 item: ActivityCardActivity;
                 index: number;
               }) => {
-                // Meta is text info: venue (fallback area) · 👤 people · closes;
-                // people is "N/cap" when capped, else "N"; distance top-right.
+                // Meta is text info: venue (fallback area) · 👤 people. Expiry
+                // ("closes in N days") is intentionally left off the row — too
+                // much detail; it still shows on the activity's own screen.
                 const venue =
                   (item.place_name ?? item.place_text ?? "").trim() ||
                   areaShort;
-                const closesLabel = t("activityCard.hint_expiry_short", {
-                  when: formatExpiryLabel(item.expires_at, Date.now(), t),
-                });
                 const going =
                   typeof item.joined_count === "number" ? item.joined_count : 0;
                 const cap =
@@ -888,7 +886,7 @@ export default function BrowseScreen() {
                       size={13}
                       color={c.subtext}
                     />
-                    {peopleLabel} · {closesLabel}
+                    {peopleLabel}
                   </>
                 );
                 const distance =
