@@ -373,7 +373,7 @@ export default function UIDocs() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <Stack.Screen options={{ title: "UIDocs — Design System" }} />
-      <PaperTexture opacity={scheme === "light" ? 0.06 : 0.1} />
+      <PaperTexture c={c} opacity={scheme === "light" ? 0.06 : 0.1} />
       <ScrollView
         style={{ backgroundColor: "transparent" }}
         contentContainerStyle={{

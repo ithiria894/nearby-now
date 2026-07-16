@@ -3,7 +3,7 @@
 // Rendered live in /uidocs; these are what screens will adopt on rollout.
 // Each takes `c: UIColors` so it works with the UIDocs local scheme toggle.
 // =============================================================================
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import {
   Keyboard,
   Platform,
@@ -23,6 +23,8 @@ import Svg, {
   Filter,
   FeColorMatrix,
   FeTurbulence,
+  Path,
+  Pattern,
   Rect,
 } from "react-native-svg";
 import Animated, {
@@ -51,6 +53,7 @@ import {
   type TypeStyle,
   type UIColors,
 } from "../theme/uikit";
+import { useUIKit } from "../theme/useUIKit";
 import i18n from "../../../lib/i18n/i18n";
 
 /* ---------- text ---------- */
@@ -114,8 +117,34 @@ export function BText({
   );
 }
 
-/* ---------- paper texture (subtle grain) ---------- */
-export function PaperTexture({ opacity = 0.06 }: { opacity?: number }) {
+/* ---------- paper texture (subtle grain + faint graph grid) ---------- */
+// Grain gives the paper its tooth; a barely-there graph grid on top reads as
+// "engineering paper". The grid tints to the theme (brand hue) and sits so low
+// you only notice it if you look for it. Pass `c` to override the theme colors
+// (uidocs uses its local scheme); tune `gridOpacity`/`gridCell` per surface.
+export function PaperTexture({
+  opacity = 0.06,
+  c,
+  grid = true,
+  gridCell = 24,
+  gridOpacity = 0.05,
+  gridColor,
+}: {
+  opacity?: number;
+  c?: UIColors;
+  grid?: boolean;
+  gridCell?: number;
+  gridOpacity?: number;
+  gridColor?: string;
+}) {
+  const themeColors = useUIKit();
+  const colors = c ?? themeColors;
+  // Unique per-instance ids so overlapping backdrops (e.g. mid page transition)
+  // never reference each other's <defs> on web.
+  const uid = useId().replace(/:/g, "");
+  const grainId = `grain-${uid}`;
+  const gridId = `grid-${uid}`;
+  const stroke = gridColor ?? colors.brand;
   return (
     <View
       pointerEvents="none"
@@ -123,7 +152,7 @@ export function PaperTexture({ opacity = 0.06 }: { opacity?: number }) {
     >
       <Svg width="100%" height="100%">
         <Defs>
-          <Filter id="paperGrain">
+          <Filter id={grainId}>
             <FeTurbulence
               type="fractalNoise"
               baseFrequency="0.85"
@@ -133,13 +162,39 @@ export function PaperTexture({ opacity = 0.06 }: { opacity?: number }) {
             />
             <FeColorMatrix in="n" type="saturate" values="0" />
           </Filter>
+          {grid ? (
+            <Pattern
+              id={gridId}
+              width={gridCell}
+              height={gridCell}
+              patternUnits="userSpaceOnUse"
+            >
+              {/* top + left edge of each cell → a seamless grid when tiled */}
+              <Path
+                d={`M ${gridCell} 0 L 0 0 L 0 ${gridCell}`}
+                stroke={stroke}
+                strokeWidth={1}
+                fill="none"
+              />
+            </Pattern>
+          ) : null}
         </Defs>
+        {grid ? (
+          <Rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill={`url(#${gridId})`}
+            opacity={gridOpacity}
+          />
+        ) : null}
         <Rect
           x="0"
           y="0"
           width="100%"
           height="100%"
-          filter="url(#paperGrain)"
+          filter={`url(#${grainId})`}
           opacity={opacity}
         />
       </Svg>
