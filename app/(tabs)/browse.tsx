@@ -625,12 +625,46 @@ export default function BrowseScreen() {
     pickerRef.current?.present();
   };
 
+  // Compact icon-only list/map switch, docked at the left of the controls row
+  // (a single button that flips modes) so it lives in chrome — never floating
+  // over list content. Shows the icon of the mode you'd switch TO.
+  const viewToggleBtn = (
+    <Pressable
+      onPress={() => {
+        Keyboard.dismiss();
+        setViewMode(viewMode === "map" ? "list" : "map");
+      }}
+      accessibilityRole="button"
+      accessibilityLabel={
+        viewMode === "map"
+          ? t("browse.mapButton_list")
+          : t("browse.mapButton_map")
+      }
+      style={({ pressed }) => ({
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 7,
+        paddingHorizontal: 11,
+        borderRadius: radius.pill,
+        borderWidth: 2,
+        borderColor: c.border,
+        backgroundColor: c.surface,
+        opacity: pressed ? 0.7 : 1,
+      })}
+    >
+      <MaterialCommunityIcons
+        name={viewMode === "map" ? "format-list-bulleted" : "map"}
+        size={18}
+        color={c.ink}
+      />
+    </Pressable>
+  );
+
   // The compact filter/sort row — rendered in-flow, sticky, and over the map.
-  // List/Map switching lives in the floating pill button (bottom-center), so
-  // the row is just the Category / Vibe / Sort pills — no crowded left toggle.
   const filterRow = (
     <FeedFilterPills
       c={c}
+      left={viewToggleBtn}
       catLabel={catLabel}
       catActive={!!catFilter}
       vibeLabel={vibeLabel}
@@ -968,39 +1002,6 @@ export default function BrowseScreen() {
             />
           )}
         </SafeAreaView>
-
-        <Pressable
-          onPress={() => {
-            Keyboard.dismiss();
-            setViewMode(viewMode === "map" ? "list" : "map");
-          }}
-          hitSlop={8}
-          style={({ pressed }) => ({
-            position: "absolute",
-            left: "50%",
-            transform: [{ translateX: -44 }],
-            bottom: TAB_BOTTOM + 10,
-            width: 88,
-            height: 40,
-            borderRadius: radius.pill,
-            borderWidth: 2,
-            borderColor: c.border,
-            backgroundColor: c.surface,
-            opacity: pressed ? 0.8 : 1,
-            alignItems: "center",
-            justifyContent: "center",
-          })}
-        >
-          {viewMode === "map" ? (
-            <MaterialCommunityIcons
-              name="format-list-bulleted"
-              size={22}
-              color={c.ink}
-            />
-          ) : (
-            <MaterialCommunityIcons name="map" size={22} color={c.ink} />
-          )}
-        </Pressable>
       </View>
 
       <BottomSheetModal
