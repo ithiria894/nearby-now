@@ -1225,3 +1225,80 @@ export function BStepper({
     </View>
   );
 }
+
+/* ---------- accordion (collapsible optional section) ---------- */
+// A bordered section with a tappable header (label + a summary of what's set +
+// a chevron). Collapsed by default to keep forms compact; expands in place.
+// The summary reads brand when the section holds a value, muted otherwise.
+export function BAccordion({
+  c,
+  label,
+  summary,
+  filled,
+  open,
+  onToggle,
+  children,
+}: {
+  c: UIColors;
+  label: string;
+  summary?: string; // shown on the right when collapsed
+  filled?: boolean; // has a value → summary reads in brand
+  open: boolean;
+  onToggle: () => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <View
+      style={{
+        borderWidth: borders.thick,
+        borderColor: c.border,
+        borderRadius: radius.md,
+        backgroundColor: c.surface,
+        overflow: "hidden",
+      }}
+    >
+      <Pressable
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: space.sm,
+          paddingHorizontal: space.md,
+          paddingVertical: space.md,
+        }}
+      >
+        <Text style={txt(typeScale.label, c.ink)}>{label}</Text>
+        <View style={{ flex: 1 }} />
+        {!open && summary ? (
+          <Text
+            style={[
+              txt(typeScale.caption, filled ? c.brand : c.faint),
+              { maxWidth: 180 },
+            ]}
+            numberOfLines={1}
+          >
+            {summary}
+          </Text>
+        ) : null}
+        <MaterialCommunityIcons
+          name={open ? "chevron-up" : "chevron-down"}
+          size={20}
+          color={c.subtext}
+        />
+      </Pressable>
+      {open ? (
+        <View
+          style={{
+            paddingHorizontal: space.md,
+            paddingBottom: space.md,
+            gap: space.sm,
+          }}
+        >
+          {children}
+        </View>
+      ) : null}
+    </View>
+  );
+}

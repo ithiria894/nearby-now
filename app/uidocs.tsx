@@ -37,6 +37,7 @@ import {
   BList,
   BSkeleton,
   BSkeletonList,
+  BAccordion,
   BStepper,
   BTabBar,
   BText,
@@ -305,6 +306,7 @@ export default function UIDocs() {
   const [view, setView] = useState<"list" | "map">("list");
   const [tag, setTag] = useState<string | null>(null);
   const [step, setStep] = useState(1);
+  const [accOpen, setAccOpen] = useState<string | null>("when");
   const c = uiColors[scheme];
 
   // Animation demo state — "a new activity arrives"
@@ -909,6 +911,69 @@ export default function UIDocs() {
                 "Don't use for a single form",
                 "Don't block posting behind optional steps",
                 "Don't hide where the user is in the flow",
+              ]}
+            />
+          </Section>
+
+          {/* Accordion */}
+          <Section
+            c={c}
+            title="Accordion"
+            note="For optional fields on a compact form (Quick Post / Create). Everything the user needs to post lives above; the rest collapses into tappable rows. A collapsed row shows a summary of its value — brand-colored when set, muted when empty — so the form reads at a glance without expanding. One page, no stepper, no sheets: post the moment a title exists, open a section only when you have something to add."
+          >
+            <BCard c={c}>
+              <BAccordion
+                c={c}
+                label="Where"
+                summary="Add a place"
+                open={accOpen === "where"}
+                onToggle={() =>
+                  setAccOpen((v) => (v === "where" ? null : "where"))
+                }
+              >
+                <BText c={c} v="body" color={c.subtext}>
+                  Location picker lives here.
+                </BText>
+              </BAccordion>
+              <BAccordion
+                c={c}
+                label="When"
+                summary="Tonight · 8:00 PM"
+                filled
+                open={accOpen === "when"}
+                onToggle={() =>
+                  setAccOpen((v) => (v === "when" ? null : "when"))
+                }
+              >
+                <View style={{ flexDirection: "row", gap: space.sm }}>
+                  <BChip c={c} label="Tonight" selected />
+                  <BChip c={c} label="Later" />
+                  <BChip c={c} label="Weekend" />
+                </View>
+              </BAccordion>
+              <BAccordion
+                c={c}
+                label="Who's it for"
+                summary="Anyone"
+                open={accOpen === "who"}
+                onToggle={() => setAccOpen((v) => (v === "who" ? null : "who"))}
+              >
+                <BText c={c} v="body" color={c.subtext}>
+                  Capacity + gender preference here.
+                </BText>
+              </BAccordion>
+            </BCard>
+            <Rules
+              c={c}
+              dos={[
+                "Keep the required field (title) outside — above the accordions",
+                "Show a value summary on the collapsed row (brand when set)",
+                "Collapse by default; open in place on tap",
+              ]}
+              donts={[
+                "Don't gate posting behind an accordion",
+                "Don't nest accordions inside accordions",
+                "Don't hide a required field in a collapsed section",
               ]}
             />
           </Section>

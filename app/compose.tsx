@@ -8,27 +8,25 @@ import {
 } from "react-native";
 import { alertAsync } from "../lib/ui/dialog";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AreaSheet, type AreaSheetHandle } from "../components/AreaSheet";
 import { backend } from "../lib/backend";
 import { requireUserId } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
+import { formatExpiryLabel } from "../lib/i18n/i18n_format";
 import { useUIKit } from "../src/ui/theme/useUIKit";
-import { space, radius } from "../src/ui/theme/uikit";
+import { space, radius, controls } from "../src/ui/theme/uikit";
 import {
+  BAccordion,
   BAppBar,
   BButton,
   BCard,
   BChip,
   BScreen,
-  BStepper,
   BText,
 } from "../src/ui/components/brutal";
 import { AreaPicker } from "../components/AreaPicker";
@@ -40,6 +38,12 @@ import {
 } from "../lib/ui/location";
 import { searchPlacesNominatim, type PlaceCandidate } from "../lib/api/places";
 import { VIBES, VIBE_META } from "../lib/ui/vibe";
+import {
+  EXPIRY_PRESETS,
+  buildQuickTimes,
+  formatDateTimeLocalFromDate,
+  parseDateTimeInput,
+} from "../lib/ui/form_time";
 
 const RECENT_AREAS_KEY = "browse.recentAreas.v1";
 
@@ -54,20 +58,57 @@ const TOPICS = [
   { key: "dinner", labelKey: "compose.topic_dinner" },
 ] as const;
 
+type Section = "where" | "when" | "who" | "expires";
+
+// A compact primary action for the nav bar: brand pill, dimmed until enabled.
+function PostAction({
+  c,
+  label,
+  disabled,
+  onPress,
+}: {
+  c: ReturnType<typeof useUIKit>;
+  label: string;
+  disabled?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={{ opacity: disabled ? 0.4 : 1 }}
+    >
+      <View
+        style={{
+          backgroundColor: c.brand,
+          borderWidth: 2,
+          borderColor: c.border,
+          borderRadius: controls.pillRadius,
+          paddingVertical: 6,
+          paddingHorizontal: 16,
+        }}
+      >
+        <BText c={c} v="label" color={c.onBrand}>
+          {label}
+        </BText>
+      </View>
+    </Pressable>
+  );
+}
+
 export default function ComposeScreen() {
   const router = useRouter();
   const { t } = useT();
   const c = useUIKit();
-  const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const createdActivityIdRef = useRef<string | null>(null);
   const [successLine, setSuccessLine] = useState<string>("");
   const successSheetRef = useRef<BottomSheetModal>(null);
-  const areaSheetRef = useRef<AreaSheetHandle>(null);
   const successSnapPoints = useMemo(() => ["45%"], []);
-  const areaSnapPoints = useMemo(() => ["65%"], []);
   const [currentArea, setCurrentArea] = useState<AreaLocation | null>(null);
   const [areaLoading, setAreaLoading] = useState(false);
   const [areaQuery, setAreaQuery] = useState("");
@@ -78,10 +119,20 @@ export default function ComposeScreen() {
     "device" | "ip" | "manual" | null
   >(null);
   const [vibe, setVibe] = useState<string | null>(null);
-  const [step, setStep] = useState<0 | 1 | 2>(0);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<Section | null>(null);
   const [capacity, setCapacity] = useState<number | null>(null);
   const [gender, setGender] = useState<"any" | "female" | "male">("any");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [expiryMode, setExpiryMode] = useState<"default" | "never" | "preset">(
+    "default"
+  );
+  const [expiryMinutes, setExpiryMinutes] = useState<number | null>(null);
+
+  const canPost = text.trim().length > 0 && !submitting;
+  const quickTimes = useMemo(() => buildQuickTimes(t), [t]);
+
   const successLines = useMemo(
     () => [
       t("compose.success_line_1"),
@@ -96,6 +147,9 @@ export default function ComposeScreen() {
   const renderBackdrop = (props: any) => (
     <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} />
   );
+
+  const toggleSection = (s: Section) =>
+    setOpenSection((v) => (v === s ? null : s));
 
   useEffect(() => {
     (async () => {
@@ -184,21 +238,6 @@ export default function ComposeScreen() {
     return null;
   };
 
-  const loadSuggestedArea = async () => {
-    if (currentArea || areaLoading) return;
-    setAreaLoading(true);
-    try {
-      const ipArea = await getIpLocation();
-      if (ipArea) {
-        selectArea(ipArea, "ip");
-      }
-    } finally {
-      setAreaLoading(false);
-    }
-  };
-
-  const openAreaSheet = () => areaSheetRef.current?.present();
-
   function draftFromTopic(topicKey: string) {
     const raw = t(`compose.gen.${topicKey}`, {
       returnObjects: true,
@@ -227,6 +266,28 @@ export default function ComposeScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ---- collapsed-row summaries (brand when a value is set) ----
+  const whereSummary = currentArea?.label ?? undefined;
+  const whenSummary = startTime.trim() || undefined;
+  const whoSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (gender !== "any")
+      parts.push(t(gender === "female" ? "compose.g_women" : "compose.g_men"));
+    if (capacity != null) parts.push(t("compose.people_n", { n: capacity }));
+    return parts.length ? parts.join(" · ") : t("compose.who_anyone");
+  }, [gender, capacity, t]);
+  const whoFilled = gender !== "any" || capacity != null;
+  const expiresSummary =
+    expiryMode === "never"
+      ? t("inviteForm.expiry_never")
+      : expiryMode === "preset" && expiryMinutes != null
+        ? formatExpiryLabel(
+            new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString(),
+            Date.now(),
+            t
+          )
+        : t("inviteForm.expiry_default");
+
   async function onSubmit() {
     if (!text.trim()) return;
     setSubmitting(true);
@@ -235,9 +296,12 @@ export default function ComposeScreen() {
       const area = currentArea;
       const userId = await requireUserId();
 
+      const startParsed = parseDateTimeInput(startTime);
+      const endParsed = parseDateTimeInput(endTime);
+
       let activityId = createdActivityIdRef.current;
       if (!activityId) {
-        const { data, error } = await backend.activities.createActivity({
+        const payload: Record<string, unknown> = {
           creator_id: userId,
           title_text: text.replace(/\s+/g, " ").trim().slice(0, 200),
           lat: area?.lat ?? null,
@@ -247,8 +311,20 @@ export default function ComposeScreen() {
           vibe: vibe ?? null,
           gender_pref: gender,
           capacity: capacity,
+          start_time: startParsed.iso,
+          end_time: endParsed.iso,
           status: "open",
-        });
+        };
+        if (expiryMode === "never") {
+          payload.expires_at = null;
+        } else if (expiryMode === "preset" && expiryMinutes != null) {
+          payload.expires_at = new Date(
+            Date.now() + expiryMinutes * 60 * 1000
+          ).toISOString();
+        }
+
+        const { data, error } =
+          await backend.activities.createActivity(payload);
 
         if (error) throw error;
 
@@ -309,218 +385,243 @@ export default function ComposeScreen() {
                 : router.replace("/(tabs)/browse")
             }
             title={t("compose.navTitle")}
+            right={
+              <PostAction
+                c={c}
+                label={submitting ? t("common.loading") : t("compose.post")}
+                disabled={!canPost}
+                onPress={onSubmit}
+              />
+            }
           />
         }
       >
-        <BStepper
-          c={c}
-          current={step}
-          onStepPress={(i) => setStep(i as 0 | 1 | 2)}
-          steps={[
-            { label: t("compose.step_say") },
-            { label: t("compose.step_where"), optional: true },
-            { label: t("compose.step_details"), optional: true },
-          ]}
-        />
-
-        {step === 0 ? (
-          <>
-            <BCard c={c}>
-              <BText c={c} v="label" color={c.subtext}>
-                {t("compose.title_label")}
-              </BText>
-              <TextInput
-                value={text}
-                onChangeText={setText}
-                onFocus={() => setHelpOpen(true)}
-                placeholder={t("compose.placeholder")}
-                placeholderTextColor={c.faint}
-                multiline
-                autoFocus
-                textAlignVertical="top"
-                style={{
-                  minHeight: 120,
-                  borderWidth: 2,
-                  borderColor: c.border,
-                  borderRadius: radius.lg,
-                  backgroundColor: c.surface,
-                  padding: space.md,
-                  fontSize: 16,
-                  color: c.text,
-                }}
-              />
-              {/* Quick-help expands once you engage the title. */}
-              {helpOpen || text.trim().length > 0 ? (
-                <>
-                  <BText c={c} v="caption" color={c.subtext}>
-                    {t("compose.topic_hint")}
-                  </BText>
-                  {rowChips(
-                    TOPICS.map((topic) => (
-                      <Pressable
-                        key={topic.key}
-                        onPress={() => draftFromTopic(topic.key)}
-                      >
-                        <BChip c={c} label={t(topic.labelKey)} />
-                      </Pressable>
-                    ))
-                  )}
-                </>
-              ) : null}
-            </BCard>
-
-            <BCard c={c}>
-              <BText c={c} v="label" color={c.subtext}>
-                {t("vibe.pick")}
+        {/* Title — the only thing you need to post. */}
+        <BCard c={c}>
+          <BText c={c} v="label" color={c.subtext}>
+            {t("compose.title_label")}
+          </BText>
+          <TextInput
+            value={text}
+            onChangeText={setText}
+            onFocus={() => setHelpOpen(true)}
+            placeholder={t("compose.placeholder")}
+            placeholderTextColor={c.faint}
+            multiline
+            autoFocus
+            textAlignVertical="top"
+            style={{
+              minHeight: 110,
+              borderWidth: 2,
+              borderColor: c.border,
+              borderRadius: radius.lg,
+              backgroundColor: c.surface,
+              padding: space.md,
+              fontSize: 16,
+              color: c.text,
+            }}
+          />
+          {/* Quick-help expands once you engage the title. */}
+          {helpOpen || text.trim().length > 0 ? (
+            <>
+              <BText c={c} v="caption" color={c.subtext}>
+                {t("compose.topic_hint")}
               </BText>
               {rowChips(
-                VIBES.map((v) => (
+                TOPICS.map((topic) => (
                   <Pressable
-                    key={v}
-                    onPress={() => setVibe(vibe === v ? null : v)}
+                    key={topic.key}
+                    onPress={() => draftFromTopic(topic.key)}
                   >
-                    <BChip
-                      c={c}
-                      label={t(VIBE_META[v].labelKey)}
-                      selected={vibe === v}
-                    />
+                    <BChip c={c} label={t(topic.labelKey)} />
                   </Pressable>
                 ))
               )}
-            </BCard>
+            </>
+          ) : null}
+        </BCard>
 
-            <View style={{ flexDirection: "row", gap: space.sm }}>
-              <View style={{ flex: 1 }}>
-                <BButton
+        {/* Compact vibe row directly under the title. */}
+        <View style={{ gap: space.sm }}>
+          <BText c={c} v="label" color={c.subtext}>
+            {t("vibe.pick")}
+          </BText>
+          {rowChips(
+            VIBES.map((v) => (
+              <Pressable key={v} onPress={() => setVibe(vibe === v ? null : v)}>
+                <BChip
                   c={c}
-                  tone="primary"
-                  full
-                  label={
-                    submitting ? t("common.loading") : t("compose.post_now")
-                  }
-                  onPress={onSubmit}
+                  label={t(VIBE_META[v].labelKey)}
+                  selected={vibe === v}
                 />
-              </View>
-              <BButton
-                c={c}
-                tone="secondary"
-                label={t("compose.add_details")}
-                onPress={() => setStep(1)}
-              />
-            </View>
-          </>
-        ) : step === 1 ? (
-          <>
-            <BCard c={c}>
-              <BText c={c} v="label" color={c.subtext}>
-                {t("compose.where_hint")}
-              </BText>
-              <AreaPicker
-                c={c}
-                query={areaQuery}
-                onQueryChange={setAreaQuery}
-                results={areaResults}
-                searching={areaSearching}
-                recentAreas={recentAreas}
-                onLocate={setAreaFromDevice}
-                onPickPlace={(place) =>
-                  selectArea(
-                    {
-                      lat: place.lat,
-                      lng: place.lng,
-                      label: place.name,
-                      approx: false,
-                    },
-                    "manual"
-                  )
+              </Pressable>
+            ))
+          )}
+        </View>
+
+        {/* Optional details — collapsed until you need them. */}
+        <BAccordion
+          c={c}
+          label={t("compose.sec_where")}
+          summary={whereSummary ?? t("compose.where_add")}
+          filled={!!whereSummary}
+          open={openSection === "where"}
+          onToggle={() => toggleSection("where")}
+        >
+          <AreaPicker
+            c={c}
+            query={areaQuery}
+            onQueryChange={setAreaQuery}
+            results={areaResults}
+            searching={areaSearching}
+            recentAreas={recentAreas}
+            onLocate={setAreaFromDevice}
+            onPickPlace={(place) =>
+              selectArea(
+                {
+                  lat: place.lat,
+                  lng: place.lng,
+                  label: place.name,
+                  approx: false,
+                },
+                "manual"
+              )
+            }
+            onPickRecent={(area) => selectArea(area, area.source ?? "manual")}
+            currentLabel={currentArea ? currentArea.label : null}
+            currentApprox={currentArea?.approx}
+            detecting={areaLoading}
+          />
+        </BAccordion>
+
+        <BAccordion
+          c={c}
+          label={t("compose.sec_when")}
+          summary={whenSummary ?? t("compose.when_add")}
+          filled={!!whenSummary}
+          open={openSection === "when"}
+          onToggle={() => toggleSection("when")}
+        >
+          {rowChips(
+            quickTimes.map((q) => (
+              <Pressable
+                key={q.key}
+                onPress={() =>
+                  setStartTime(formatDateTimeLocalFromDate(q.getDate()))
                 }
-                onPickRecent={(area) =>
-                  selectArea(area, area.source ?? "manual")
-                }
-                currentLabel={currentArea ? currentArea.label : null}
-                currentApprox={currentArea?.approx}
-                detecting={areaLoading}
-              />
-            </BCard>
+              >
+                <BChip c={c} label={q.label} />
+              </Pressable>
+            ))
+          )}
+          <TextInput
+            value={startTime}
+            onChangeText={setStartTime}
+            placeholder={t("inviteForm.startTimePlaceholder")}
+            placeholderTextColor={c.faint}
+            style={inputStyle(c)}
+          />
+          <TextInput
+            value={endTime}
+            onChangeText={setEndTime}
+            placeholder={t("inviteForm.endTimePlaceholder")}
+            placeholderTextColor={c.faint}
+            style={inputStyle(c)}
+          />
+        </BAccordion>
 
-            <View style={{ flexDirection: "row", gap: space.sm }}>
-              <BButton
-                c={c}
-                tone="secondary"
-                label={t("common.back")}
-                onPress={() => setStep(0)}
-              />
-              <View style={{ flex: 1 }} />
-              <BButton
-                c={c}
-                tone="secondary"
-                label={t("compose.post")}
-                onPress={onSubmit}
-              />
-              <BButton
-                c={c}
-                tone="primary"
-                label={t("common.next")}
-                onPress={() => setStep(2)}
-              />
-            </View>
-          </>
-        ) : (
-          <>
-            <BText c={c} v="caption" color={c.subtext}>
-              {t("compose.details_hint")}
-            </BText>
-            <BCard c={c}>
-              <BText c={c} v="label" color={c.subtext}>
-                {t("inviteForm.capacityLabel")}
-              </BText>
-              {rowChips(
-                [null, 2, 3, 4, 6, 8].map((n) => (
-                  <Pressable key={String(n)} onPress={() => setCapacity(n)}>
-                    <BChip
-                      c={c}
-                      selected={capacity === n}
-                      label={n == null ? t("capacity.unlimited") : String(n)}
-                    />
-                  </Pressable>
-                ))
-              )}
-            </BCard>
+        <BAccordion
+          c={c}
+          label={t("compose.sec_who")}
+          summary={whoSummary}
+          filled={whoFilled}
+          open={openSection === "who"}
+          onToggle={() => toggleSection("who")}
+        >
+          <BText c={c} v="caption" color={c.subtext}>
+            {t("inviteForm.capacityLabel")}
+          </BText>
+          {rowChips(
+            [null, 2, 3, 4, 6, 8].map((n) => (
+              <Pressable key={String(n)} onPress={() => setCapacity(n)}>
+                <BChip
+                  c={c}
+                  selected={capacity === n}
+                  label={n == null ? t("capacity.unlimited") : String(n)}
+                />
+              </Pressable>
+            ))
+          )}
+          <BText c={c} v="caption" color={c.subtext}>
+            {t("inviteForm.genderLabel")}
+          </BText>
+          {rowChips(
+            (["any", "female", "male"] as const).map((g) => (
+              <Pressable key={g} onPress={() => setGender(g)}>
+                <BChip
+                  c={c}
+                  selected={gender === g}
+                  label={t(`inviteForm.gender_${g}`)}
+                />
+              </Pressable>
+            ))
+          )}
+        </BAccordion>
 
-            <BCard c={c}>
-              <BText c={c} v="label" color={c.subtext}>
-                {t("inviteForm.genderLabel")}
-              </BText>
-              {rowChips(
-                (["any", "female", "male"] as const).map((g) => (
-                  <Pressable key={g} onPress={() => setGender(g)}>
-                    <BChip
-                      c={c}
-                      selected={gender === g}
-                      label={t(`inviteForm.gender_${g}`)}
-                    />
-                  </Pressable>
-                ))
-              )}
-            </BCard>
-
-            <View style={{ flexDirection: "row", gap: space.sm }}>
-              <BButton
-                c={c}
-                tone="secondary"
-                label={t("common.back")}
-                onPress={() => setStep(1)}
-              />
-              <View style={{ flex: 1 }} />
-              <BButton
-                c={c}
-                tone="primary"
-                label={submitting ? t("common.loading") : t("compose.post")}
-                onPress={onSubmit}
-              />
-            </View>
-          </>
-        )}
+        <BAccordion
+          c={c}
+          label={t("compose.sec_expires")}
+          summary={expiresSummary}
+          filled={expiryMode !== "default"}
+          open={openSection === "expires"}
+          onToggle={() => toggleSection("expires")}
+        >
+          {rowChips(
+            <>
+              <Pressable
+                onPress={() => {
+                  setExpiryMode("default");
+                  setExpiryMinutes(null);
+                }}
+              >
+                <BChip
+                  c={c}
+                  label={t("inviteForm.expiry_default")}
+                  selected={expiryMode === "default"}
+                />
+              </Pressable>
+              {EXPIRY_PRESETS.map((p) => (
+                <Pressable
+                  key={p.label}
+                  onPress={() => {
+                    setExpiryMode("preset");
+                    setExpiryMinutes(p.minutes);
+                  }}
+                >
+                  <BChip
+                    c={c}
+                    label={p.label}
+                    selected={
+                      expiryMode === "preset" && expiryMinutes === p.minutes
+                    }
+                  />
+                </Pressable>
+              ))}
+              <Pressable
+                onPress={() => {
+                  setExpiryMode("never");
+                  setExpiryMinutes(null);
+                }}
+              >
+                <BChip
+                  c={c}
+                  label={t("inviteForm.expiry_never")}
+                  selected={expiryMode === "never"}
+                />
+              </Pressable>
+            </>
+          )}
+        </BAccordion>
 
         <BottomSheetModal
           ref={successSheetRef}
@@ -586,4 +687,17 @@ export default function ComposeScreen() {
       </BScreen>
     </KeyboardAvoidingView>
   );
+}
+
+function inputStyle(c: ReturnType<typeof useUIKit>) {
+  return {
+    borderWidth: 2,
+    borderColor: c.border,
+    borderRadius: radius.md,
+    backgroundColor: c.surface,
+    paddingHorizontal: space.md,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: c.text,
+  } as const;
 }
