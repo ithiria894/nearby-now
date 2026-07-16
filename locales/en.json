@@ -40,7 +40,8 @@
       "submitIdle": "Sign In",
       "submitBusy": "Signing in…",
       "errorTitle": "Login failed",
-      "goRegister": "Create an account"
+      "goRegister": "Create an account",
+      "forgotPassword": "Forgot password?"
     },
     "register": {
       "title": "Create account",
@@ -61,13 +62,39 @@
       "backToLogin": "Back to login",
       "maybeExistsTitle": "Already registered?",
       "maybeExistsBody": "This email may already have an account. Try logging in instead."
+    },
+    "forgot": {
+      "title": "Reset password",
+      "subtitle": "Enter your email and we'll send you a reset link.",
+      "send": "Send reset link",
+      "missingTitle": "Email needed",
+      "missingBody": "Enter your email address.",
+      "errorTitle": "Couldn't send",
+      "sentBody": "If {{email}} has an account, a reset link is on its way. Check your inbox.",
+      "backToLogin": "Back to login"
+    },
+    "reset": {
+      "title": "New password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "save": "Save new password",
+      "weakTitle": "Password too short",
+      "weakBody": "Use at least 6 characters.",
+      "mismatchTitle": "Passwords don't match",
+      "mismatchBody": "Re-enter the same password.",
+      "doneTitle": "Password updated",
+      "doneBody": "Log in with your new password.",
+      "errorTitle": "Couldn't update"
     }
   },
   "create": {
     "navTitle": "Create",
     "title": "Create an invite",
     "submit": "Post now",
-    "errorTitle": "Create failed"
+    "errorTitle": "Create failed",
+    "reuse": "Reuse a past invite",
+    "reuseTitle": "Reuse which invite?",
+    "reuseClose": "Cancel"
   },
   "compose": {
     "navTitle": "Quick Post",

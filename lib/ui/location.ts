@@ -62,6 +62,32 @@ export async function requestDeviceLocation(): Promise<LocationResult> {
   };
 }
 
+/**
+ * Device location for push targeting WITHOUT ever prompting: returns coords only
+ * if foreground location permission is ALREADY granted, else null. Lets us keep
+ * push_tokens.location fresh on browse open for users who've opted in, with no
+ * disruptive permission dialog. (The nearby-activity push trigger excludes any
+ * token whose location_updated_at is stale/NULL, so this write is what makes an
+ * opted-in user actually reachable.)
+ */
+export async function getDeviceLocationIfGranted(): Promise<DeviceLocation | null> {
+  if (Platform.OS === "web") return null;
+  try {
+    const perm = await Location.getForegroundPermissionsAsync();
+    if (perm.status !== "granted") return null;
+    const pos = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+    return {
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude,
+      accuracy: pos.coords.accuracy ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function reverseGeocodeLabel(
   loc: DeviceLocation
 ): Promise<string | null> {

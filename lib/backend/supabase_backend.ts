@@ -54,6 +54,29 @@ export const backend = {
         unsubscribe: () => sub.subscription.unsubscribe(),
       };
     },
+    // Send a password-recovery email. redirectTo deep-links back into the app.
+    async resetPasswordForEmail(email: string, redirectTo?: string) {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo ? { redirectTo } : undefined
+      );
+      return { error };
+    },
+    // Set the new password (must be in a recovery session — see setSessionFromTokens).
+    async updatePassword(newPassword: string) {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+      return { error };
+    },
+    // Establish a session from tokens parsed out of a recovery deep link.
+    async setSessionFromTokens(accessToken: string, refreshToken: string) {
+      const { data, error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      return { session: data?.session ?? null, error };
+    },
   },
   profiles: {
     async upsertProfile(userId: string) {
@@ -301,6 +324,86 @@ export const backend = {
         .select("activity_id, last_read_at")
         .eq("user_id", userId);
       return { data: (data ?? []) as any[], error };
+    },
+  },
+  push: {
+    // Register/refresh this device's Expo push token for the user.
+    async upsertPushToken(userId: string, token: string, platform: string) {
+      const { error } = await supabase.from("push_tokens").upsert(
+        {
+          user_id: userId,
+          token,
+          platform,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,token" }
+      );
+      return { error };
+    },
+    // Drop a token (e.g. on logout on this device).
+    async removePushToken(token: string) {
+      const { error } = await supabase
+        .from("push_tokens")
+        .delete()
+        .eq("token", token);
+      return { error };
+    },
+    // Write this user's current location onto their push token(s), so the
+    // nearby-activity trigger can match them. No-op if they have no token row
+    // yet (web / permission denied). Allowed by push_tokens *_update_own RLS.
+    async setTokenLocation(userId: string, lat: number, lng: number) {
+      const { error } = await supabase
+        .from("push_tokens")
+        .update({
+          lat,
+          lng,
+          location_updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId);
+      return { error };
+    },
+  },
+  safety: {
+    // Flag another user for moderation (reporter_id defaults to auth.uid()).
+    async reportUser(params: {
+      reportedUserId: string;
+      activityId?: string | null;
+      reason?: string | null;
+    }) {
+      const { error } = await supabase.from("user_reports").insert({
+        reported_user_id: params.reportedUserId,
+        activity_id: params.activityId ?? null,
+        reason: params.reason ?? null,
+      });
+      return { error };
+    },
+    // Block a user (blocker_id defaults to auth.uid()). Idempotent.
+    async blockUser(blockedId: string) {
+      const { error } = await supabase
+        .from("user_blocks")
+        .upsert(
+          { blocked_id: blockedId },
+          { onConflict: "blocker_id,blocked_id" }
+        );
+      return { error };
+    },
+    async unblockUser(blockedId: string) {
+      // RLS scopes the delete to the caller's own rows (blocker_id = auth.uid()).
+      const { error } = await supabase
+        .from("user_blocks")
+        .delete()
+        .eq("blocked_id", blockedId);
+      return { error };
+    },
+    // The ids this user has blocked (used to filter feed + room content).
+    async getBlockedIds() {
+      const { data, error } = await supabase
+        .from("user_blocks")
+        .select("blocked_id");
+      const ids = ((data ?? []) as { blocked_id: string }[]).map(
+        (r) => r.blocked_id
+      );
+      return { data: ids, error };
     },
   },
   realtime: {

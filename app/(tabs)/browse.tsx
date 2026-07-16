@@ -46,12 +46,14 @@ import { formatExpiryLabel } from "../../lib/i18n/i18n_format";
 import { useTheme, useThemeSettings } from "../../src/ui/theme/ThemeProvider";
 import { handleError } from "../../lib/ui/handleError";
 import {
+  getDeviceLocationIfGranted,
   getIpLocation,
   requestDeviceLocation,
   reverseGeocodeLabel,
   type AreaLocation,
   type DeviceLocation,
 } from "../../lib/ui/location";
+import { updatePushLocation } from "../../lib/push/updateLocation";
 import { useUIKit } from "../../src/ui/theme/useUIKit";
 import { layout, space, radius, borders } from "../../src/ui/theme/uikit";
 import {
@@ -262,6 +264,23 @@ export default function BrowseScreen() {
     };
   }, [currentArea]);
 
+  // Keep this user's server-side location fresh for nearby-activity push
+  // targeting — silently, and ONLY for users who already granted location (never
+  // prompts). Without this, browse-open only sets an IP area and never writes the
+  // device location, so push_tokens.location stays NULL and the nearby-push
+  // trigger's freshness gate (location_updated_at > now()-30d) excludes the user.
+  // The manual "use my location" tap (setAreaFromDevice) still covers first grant.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const loc = await getDeviceLocationIfGranted();
+      if (alive && loc) void updatePushLocation(loc.lat, loc.lng);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   useEffect(() => {
     AsyncStorage.setItem(RECENT_AREAS_KEY, JSON.stringify(recentAreas)).catch(
       () => {}
@@ -302,6 +321,9 @@ export default function BrowseScreen() {
   const setAreaFromDevice = useCallback(async () => {
     const res = await requestDeviceLocation();
     if (res.status === "granted" && res.location) {
+      // Feed the same location we already have to the nearby-activity push
+      // targeting. Fire-and-forget — must never block or fail the browse flow.
+      void updatePushLocation(res.location.lat, res.location.lng);
       const label =
         (await reverseGeocodeLabel(res.location)) ?? t("browse.area_nearby");
       setCurrentArea({

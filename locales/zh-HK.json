@@ -40,7 +40,8 @@
       "submitIdle": "登入",
       "submitBusy": "登入中…",
       "errorTitle": "登入失敗",
-      "goRegister": "建立帳戶"
+      "goRegister": "建立帳戶",
+      "forgotPassword": "忘記密碼？"
     },
     "register": {
       "title": "建立帳戶",
@@ -61,13 +62,39 @@
       "backToLogin": "返回登入",
       "maybeExistsTitle": "可能已註冊",
       "maybeExistsBody": "呢個電郵可能已經有帳戶，試下直接登入。"
+    },
+    "forgot": {
+      "title": "重設密碼",
+      "subtitle": "輸入電郵，我哋會寄個重設連結俾你。",
+      "send": "寄出重設連結",
+      "missingTitle": "要填電郵",
+      "missingBody": "請輸入電郵地址。",
+      "errorTitle": "寄唔到",
+      "sentBody": "如果 {{email}} 有帳戶，重設連結已經寄出，請查收。",
+      "backToLogin": "返回登入"
+    },
+    "reset": {
+      "title": "新密碼",
+      "newPassword": "新密碼",
+      "confirmPassword": "確認密碼",
+      "save": "儲存新密碼",
+      "weakTitle": "密碼太短",
+      "weakBody": "最少 6 個字。",
+      "mismatchTitle": "兩次密碼唔一樣",
+      "mismatchBody": "請再入相同密碼。",
+      "doneTitle": "密碼已更新",
+      "doneBody": "用新密碼登入啦。",
+      "errorTitle": "更新唔到"
     }
   },
   "create": {
     "navTitle": "建立邀請",
     "title": "建立一個邀請",
     "submit": "立即發佈",
-    "errorTitle": "建立失敗"
+    "errorTitle": "建立失敗",
+    "reuse": "用返之前開過嘅",
+    "reuseTitle": "揀邊個舊邀請?",
+    "reuseClose": "取消"
   },
   "compose": {
     "navTitle": "快貼",
