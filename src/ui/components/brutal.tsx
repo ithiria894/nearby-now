@@ -767,6 +767,22 @@ export function BList({
   );
 }
 
+// Short, centered separator between list rows — ~half the width and the faint
+// `hairline` tint (not the structural ink border), so the list reads light.
+function RowDivider({ c }: { c: UIColors }) {
+  return (
+    <View
+      style={{
+        height: 2,
+        width: "50%",
+        alignSelf: "center",
+        borderRadius: 1,
+        backgroundColor: c.hairline,
+      }}
+    />
+  );
+}
+
 export function BActivityRow({
   c,
   icon,
@@ -805,6 +821,100 @@ export function BActivityRow({
 }) {
   if (stacked) {
     return (
+      <>
+        <Pressable
+          onPress={onPress}
+          style={({ pressed }) => ({
+            backgroundColor: pressed ? c.surfaceAlt : "transparent",
+          })}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: space.sm,
+              paddingVertical: space.md,
+              paddingHorizontal: space.md,
+              borderLeftWidth: accent ? 5 : 0,
+              borderLeftColor: accent,
+            }}
+          >
+            <View style={{ flex: 1, gap: space.sm }}>
+              {/* Title — full width (up to the chevron), up to two lines. */}
+              <Text style={txt(typeScale.title, c.ink)} numberOfLines={2}>
+                {title}
+              </Text>
+              <View style={{ flexDirection: "row", gap: space.md }}>
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: radius.sm,
+                    borderWidth: borders.base,
+                    borderColor: c.border,
+                    backgroundColor: iconBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name={icon as any}
+                    size={22}
+                    color={iconColor ?? c.onBright}
+                  />
+                </View>
+                <View style={{ flex: 1, justifyContent: "center", gap: 4 }}>
+                  <Text
+                    style={txt(typeScale.caption, c.subtext)}
+                    numberOfLines={1}
+                  >
+                    {meta}
+                  </Text>
+                  {badges || trailing ? (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: space.sm,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flex: 1,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: space.sm,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        {badges}
+                      </View>
+                      {trailing ? (
+                        <Text
+                          style={txt(typeScale.caption, c.subtext)}
+                          numberOfLines={1}
+                        >
+                          {trailing}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+            </View>
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={24}
+              color={c.ink}
+            />
+          </View>
+        </Pressable>
+        {!last ? <RowDivider c={c} /> : null}
+      </>
+    );
+  }
+  return (
+    <>
       <Pressable
         onPress={onPress}
         style={({ pressed }) => ({
@@ -815,78 +925,108 @@ export function BActivityRow({
           style={{
             flexDirection: "row",
             alignItems: "center",
-            gap: space.sm,
+            gap: space.md,
             paddingVertical: space.md,
             paddingHorizontal: space.md,
-            borderBottomWidth: last ? 0 : borders.base,
-            borderBottomColor: c.border,
             borderLeftWidth: accent ? 5 : 0,
             borderLeftColor: accent,
           }}
         >
-          <View style={{ flex: 1, gap: space.sm }}>
-            {/* Title — full width (up to the chevron), up to two lines. */}
-            <Text style={txt(typeScale.title, c.ink)} numberOfLines={2}>
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: radius.sm,
+              borderWidth: borders.base,
+              borderColor: c.border,
+              backgroundColor: iconBg,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <MaterialCommunityIcons
+              name={icon as any}
+              size={22}
+              color={iconColor ?? c.onBright}
+            />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={txt(typeScale.title, c.ink)} numberOfLines={1}>
               {title}
             </Text>
-            <View style={{ flexDirection: "row", gap: space.md }}>
+            {preview ? (
+              <Text
+                style={
+                  previewMuted
+                    ? txt(typeScale.caption, c.faint)
+                    : [txt(typeScale.caption, c.text), { fontWeight: "600" }]
+                }
+                numberOfLines={1}
+              >
+                {preview}
+              </Text>
+            ) : null}
+            <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
+              {meta}
+            </Text>
+            {badges ? (
               <View
                 style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: radius.sm,
-                  borderWidth: borders.base,
-                  borderColor: c.border,
-                  backgroundColor: iconBg,
+                  flexDirection: "row",
+                  gap: space.sm,
+                  marginTop: 2,
                   alignItems: "center",
-                  justifyContent: "center",
+                  flexWrap: "wrap",
                 }}
               >
-                <MaterialCommunityIcons
-                  name={icon as any}
-                  size={22}
-                  color={iconColor ?? c.onBright}
-                />
+                {badges}
               </View>
-              <View style={{ flex: 1, justifyContent: "center", gap: 4 }}>
+            ) : null}
+          </View>
+          {trailing || (unread && unread > 0) ? (
+            // Time on top, unread badge beneath — one right-aligned column so the
+            // time lines up across rows whether or not there's a badge.
+            <View
+              style={{
+                alignSelf: "stretch",
+                alignItems: "flex-end",
+                justifyContent: "flex-start",
+                gap: 6,
+              }}
+            >
+              {trailing ? (
                 <Text
                   style={txt(typeScale.caption, c.subtext)}
                   numberOfLines={1}
                 >
-                  {meta}
+                  {trailing}
                 </Text>
-                {badges || trailing ? (
-                  <View
+              ) : null}
+              {unread && unread > 0 ? (
+                <View
+                  style={{
+                    minWidth: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    paddingHorizontal: 6,
+                    backgroundColor: c.brand,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
                     style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: space.sm,
+                      color: c.onBrand,
+                      fontSize: 11,
+                      fontWeight: "800",
                     }}
                   >
-                    <View
-                      style={{
-                        flex: 1,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: space.sm,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      {badges}
-                    </View>
-                    {trailing ? (
-                      <Text
-                        style={txt(typeScale.caption, c.subtext)}
-                        numberOfLines={1}
-                      >
-                        {trailing}
-                      </Text>
-                    ) : null}
-                  </View>
-                ) : null}
-              </View>
+                    {unread > 99 ? "99+" : String(unread)}
+                  </Text>
+                </View>
+              ) : null}
             </View>
-          </View>
+          ) : null}
           <MaterialCommunityIcons
             name="chevron-right"
             size={24}
@@ -894,119 +1034,8 @@ export function BActivityRow({
           />
         </View>
       </Pressable>
-    );
-  }
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: pressed ? c.surfaceAlt : "transparent",
-      })}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: space.md,
-          paddingVertical: space.md,
-          paddingHorizontal: space.md,
-          borderBottomWidth: last ? 0 : borders.base,
-          borderBottomColor: c.border,
-          borderLeftWidth: accent ? 5 : 0,
-          borderLeftColor: accent,
-        }}
-      >
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.sm,
-            borderWidth: borders.base,
-            borderColor: c.border,
-            backgroundColor: iconBg,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <MaterialCommunityIcons
-            name={icon as any}
-            size={22}
-            color={iconColor ?? c.onBright}
-          />
-        </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text style={txt(typeScale.title, c.ink)} numberOfLines={1}>
-            {title}
-          </Text>
-          {preview ? (
-            <Text
-              style={
-                previewMuted
-                  ? txt(typeScale.caption, c.faint)
-                  : [txt(typeScale.caption, c.text), { fontWeight: "600" }]
-              }
-              numberOfLines={1}
-            >
-              {preview}
-            </Text>
-          ) : null}
-          <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
-            {meta}
-          </Text>
-          {badges ? (
-            <View
-              style={{
-                flexDirection: "row",
-                gap: space.sm,
-                marginTop: 2,
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              {badges}
-            </View>
-          ) : null}
-        </View>
-        {trailing || (unread && unread > 0) ? (
-          // Time on top, unread badge beneath — one right-aligned column so the
-          // time lines up across rows whether or not there's a badge.
-          <View
-            style={{
-              alignSelf: "stretch",
-              alignItems: "flex-end",
-              justifyContent: "flex-start",
-              gap: 6,
-            }}
-          >
-            {trailing ? (
-              <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
-                {trailing}
-              </Text>
-            ) : null}
-            {unread && unread > 0 ? (
-              <View
-                style={{
-                  minWidth: 22,
-                  height: 22,
-                  borderRadius: 11,
-                  paddingHorizontal: 6,
-                  backgroundColor: c.brand,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text
-                  style={{ color: c.onBrand, fontSize: 11, fontWeight: "800" }}
-                >
-                  {unread > 99 ? "99+" : String(unread)}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-        <MaterialCommunityIcons name="chevron-right" size={24} color={c.ink} />
-      </View>
-    </Pressable>
+      {!last ? <RowDivider c={c} /> : null}
+    </>
   );
 }
 
