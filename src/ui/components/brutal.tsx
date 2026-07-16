@@ -46,6 +46,7 @@ import {
   fonts,
   hardShadow,
   layout,
+  mixHex,
   motion,
   radius,
   space,
@@ -487,15 +488,18 @@ export function BChip({
   selected?: boolean;
   tone?: ChipTone;
 }) {
-  const t: Record<ChipTone, { bg: string; fg: string }> = {
+  // Selected neutral chip = soft brand tint + brand outline + ink text (a calm
+  // "tonal" selection) instead of a loud full-brand fill.
+  const t: Record<ChipTone, { bg: string; fg: string; border: string }> = {
     neutral: {
-      bg: selected ? c.brand : c.surface,
-      fg: selected ? c.onBrand : c.text,
+      bg: selected ? mixHex(c.brand, c.surface, 0.72) : c.surface,
+      fg: selected ? c.ink : c.text,
+      border: selected ? c.brand : c.border,
     },
-    brand: { bg: c.brand, fg: c.onBrand },
-    success: { bg: c.mint, fg: c.onBright },
-    danger: { bg: c.coral, fg: c.onBright },
-    warn: { bg: c.yellow, fg: c.onBright },
+    brand: { bg: c.brand, fg: c.onBrand, border: c.border },
+    success: { bg: c.mint, fg: c.onBright, border: c.border },
+    danger: { bg: c.coral, fg: c.onBright, border: c.border },
+    warn: { bg: c.yellow, fg: c.onBright, border: c.border },
   };
   // A little spring bump when the chip flips to selected — makes tapping a
   // filter/option feel responsive. No bump on first mount or on deselect.
@@ -523,7 +527,7 @@ export function BChip({
           paddingHorizontal: controls.pillPaddingX,
           borderRadius: controls.pillRadius,
           borderWidth: 2,
-          borderColor: c.border,
+          borderColor: t[tone].border,
           backgroundColor: t[tone].bg,
         },
         animStyle,
@@ -722,7 +726,7 @@ export function BBadge({
   );
   if (!bleed) return badge;
   return (
-    <HardShadow c={c} color={fill} radius={radius.sm} offset={hardShadow.lg}>
+    <HardShadow c={c} color={fill} radius={radius.sm} offset={hardShadow.md}>
       {badge}
     </HardShadow>
   );

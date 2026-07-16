@@ -2,7 +2,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import type { UIColors } from "../src/ui/theme/uikit";
-import { radius, space } from "../src/ui/theme/uikit";
+import { mixHex, radius, space } from "../src/ui/theme/uikit";
 
 export type PickerKind = "category" | "vibe" | "sort";
 
@@ -31,21 +31,23 @@ function Pill({
         borderRadius: radius.pill,
         borderWidth: 2,
         borderColor: active ? c.brand : c.border,
-        backgroundColor: active ? c.brand : c.surface,
+        // Soft "tonal" selection: pale brand tint + brand outline, not a loud
+        // full-brand fill.
+        backgroundColor: active ? mixHex(c.brand, c.surface, 0.72) : c.surface,
       }}
     >
       {icon ? (
         <MaterialCommunityIcons
           name={icon as any}
           size={14}
-          color={active ? c.onBrand : c.subtext}
+          color={active ? c.ink : c.subtext}
         />
       ) : null}
       <Text
         style={{
           fontSize: 12,
           fontWeight: "700",
-          color: active ? c.onBrand : c.text,
+          color: active ? c.ink : c.text,
         }}
       >
         {label}
@@ -53,7 +55,7 @@ function Pill({
       <MaterialCommunityIcons
         name="chevron-down"
         size={14}
-        color={active ? c.onBrand : c.subtext}
+        color={active ? c.ink : c.subtext}
       />
     </Pressable>
   );
