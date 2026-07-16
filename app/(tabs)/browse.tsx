@@ -72,6 +72,7 @@ import {
   BAppBar,
   BBadge,
   BButton,
+  BSkeletonList,
   BText,
   BToggle,
   BIconButton,
@@ -595,19 +596,21 @@ export default function BrowseScreen() {
 
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: c.bg,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+      <View style={{ flex: 1, backgroundColor: c.bg }}>
         <PaperTexture opacity={0.06} />
-        <ActivityIndicator color={c.brand} />
-        <BText c={c} color={c.subtext} style={{ marginTop: space.md }}>
-          {t("common.loading")}
-        </BText>
+        <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+          <View
+            style={{
+              width: "100%",
+              maxWidth: layout.maxContentWidth,
+              alignSelf: "center",
+              paddingHorizontal: space.lg,
+              paddingTop: space.md,
+            }}
+          >
+            <BSkeletonList c={c} rows={6} />
+          </View>
+        </SafeAreaView>
       </View>
     );
   }

@@ -10,6 +10,7 @@ import { layout, space } from "../../src/ui/theme/uikit";
 import {
   BAppBar,
   BButton,
+  BSkeletonList,
   BText,
   BToggle,
   PaperTexture,
@@ -182,13 +183,18 @@ export default function CreatedScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: c.bg }}>
         <PaperTexture opacity={0.06} />
-        <SafeAreaView
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-          edges={["top"]}
-        >
-          <BText c={c} color={c.subtext}>
-            {t("common.loading")}
-          </BText>
+        <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+          <View
+            style={{
+              width: "100%",
+              maxWidth: layout.maxContentWidth,
+              alignSelf: "center",
+              paddingHorizontal: space.lg,
+              paddingTop: space.md,
+            }}
+          >
+            <BSkeletonList c={c} rows={6} />
+          </View>
         </SafeAreaView>
       </View>
     );

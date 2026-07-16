@@ -3,7 +3,7 @@
 // Rendered live in /uidocs; these are what screens will adopt on rollout.
 // Each takes `c: UIColors` so it works with the UIDocs local scheme toggle.
 // =============================================================================
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   Platform,
@@ -32,6 +32,8 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
+  withSequence,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -439,23 +441,110 @@ export function BChip({
     danger: { bg: c.coral, fg: c.onBright },
     warn: { bg: c.yellow, fg: c.onBright },
   };
+  // A little spring bump when the chip flips to selected — makes tapping a
+  // filter/option feel responsive. No bump on first mount or on deselect.
+  const pop = useSharedValue(0);
+  const wasSelected = useRef(!!selected);
+  useEffect(() => {
+    if (!!selected !== wasSelected.current) {
+      wasSelected.current = !!selected;
+      if (selected) {
+        pop.value = withSequence(
+          withTiming(1, { duration: motion.duration.fast / 2 }),
+          withTiming(0, { duration: motion.duration.fast / 2 })
+        );
+      }
+    }
+  }, [selected, pop]);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + pop.value * 0.07 }],
+  }));
   return (
-    <View
-      style={{
-        paddingVertical: controls.pillPaddingY,
-        paddingHorizontal: controls.pillPaddingX,
-        borderRadius: controls.pillRadius,
-        borderWidth: 2,
-        borderColor: c.border,
-        backgroundColor: t[tone].bg,
-      }}
+    <Animated.View
+      style={[
+        {
+          paddingVertical: controls.pillPaddingY,
+          paddingHorizontal: controls.pillPaddingX,
+          borderRadius: controls.pillRadius,
+          borderWidth: 2,
+          borderColor: c.border,
+          backgroundColor: t[tone].bg,
+        },
+        animStyle,
+      ]}
     >
       <Text style={txt(typeScale.label, t[tone].fg)}>{label}</Text>
-    </View>
+    </Animated.View>
   );
 }
 
 /* ---------- toggle (segmented switch) ---------- */
+// One segment: the "raised" fill springs in/out behind the label instead of
+// hard-cutting when the active segment changes.
+function BToggleSegment({
+  c,
+  on,
+  icon,
+  label,
+  onPress,
+}: {
+  c: UIColors;
+  on: boolean;
+  icon?: string;
+  label: string;
+  onPress: () => void;
+}) {
+  const p = useSharedValue(on ? 1 : 0);
+  useEffect(() => {
+    p.value = withSpring(on ? 1 : 0, {
+      damping: motion.spring.damping,
+      stiffness: motion.spring.stiffness,
+      mass: motion.spring.mass,
+    });
+  }, [on, p]);
+  const bgStyle = useAnimatedStyle(() => ({
+    opacity: p.value,
+    transform: [{ scale: 0.85 + 0.15 * p.value }],
+  }));
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingVertical: 7,
+        paddingHorizontal: space.md,
+        borderRadius: radius.pill,
+      }}
+    >
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: radius.pill,
+            backgroundColor: c.surfaceAlt,
+          },
+          bgStyle,
+        ]}
+      />
+      {icon ? (
+        <MaterialCommunityIcons
+          name={icon as any}
+          size={16}
+          color={on ? c.ink : c.subtext}
+        />
+      ) : null}
+      <Text style={txt(typeScale.label, on ? c.ink : c.subtext)}>{label}</Text>
+    </Pressable>
+  );
+}
+
 // A single pill container with 2+ segments; the active one is brand-filled.
 // Use for view switches like List / Map. NO per-segment borders.
 export function BToggle<T extends string>({
@@ -481,36 +570,16 @@ export function BToggle<T extends string>({
         padding: 3,
       }}
     >
-      {options.map((o) => {
-        const on = o.value === value;
-        return (
-          <Pressable
-            key={o.value}
-            onPress={() => onChange(o.value)}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              paddingVertical: 7,
-              paddingHorizontal: space.md,
-              borderRadius: radius.pill,
-              // subtle "raised" fill for the active segment — no color pop
-              backgroundColor: on ? c.surfaceAlt : "transparent",
-            }}
-          >
-            {o.icon ? (
-              <MaterialCommunityIcons
-                name={o.icon as any}
-                size={16}
-                color={on ? c.ink : c.subtext}
-              />
-            ) : null}
-            <Text style={txt(typeScale.label, on ? c.ink : c.subtext)}>
-              {o.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+      {options.map((o) => (
+        <BToggleSegment
+          key={o.value}
+          c={c}
+          on={o.value === value}
+          icon={o.icon}
+          label={o.label}
+          onPress={() => onChange(o.value)}
+        />
+      ))}
     </View>
   );
 }
