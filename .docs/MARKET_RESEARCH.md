@@ -14,37 +14,45 @@ _2026-07-16。18-agent 並行研究(demand 驗證 ×3、競品拆解 ×13、comp
 ## 1. 一句總結(the story)
 
 > **架構白位係真嘅**:13 個競品,**10 個逼你做 host 或者填 profile**,而且**全部係 scheduled 唔係即興 nearby**。冇一個夾齊「**無 host + 匿名 + 即興 nearby**」呢三樣 —— 正正係 enoki 嘅 thesis。
-> **但唯一試過幾乎一模一樣 spec 嘅 Flock(Vancouver 出品)冇死於 model 錯,係死於 cold-start(空 feed / liquidity)。** → enoki 個 model 被 Flock 驗證咗,**真正嘅仗係 cold-start**。
+> **而且已經有一個 LIVE 嘅直接競爭對手:Flock**(App Store id 6749288988,Bryan Nguyen,「serendipitous IRL communities & meetups」)—— **啱啱 2026-02 出、上星期(2026-07-09)先更新過、每週 iterate**,做緊幾乎一模一樣嘅 space。但仲好早(App Store 0 評分 = traction 未起,cold-start 佢都未 crack)。→ enoki 個 model 有 live precedent 驗證咗,**但你唔係一個人喺度,而真正嘅仗(對佢同對你)都係 cold-start**。
+>
+> ⚠️ **更正**:第一版本報告話「Flock 死咗」係錯 —— 個 research agent 撈亂咗兩個同名 app(攞咗 Google Play 一個疑似棄坑嘅「Flock: Hangout & Meetup」當咗真身)。去 App Store source of truth 一 check 就打面:Flock 生勾勾。教訓:唔好信 agent narrative,去 authoritative source。
 
 ---
 
 ## 2. 競品全景(13 個,對 enoki 三條軸)
 
-| 競品                                   | 要 host?                                  | 要 profile?                                    | 即興+nearby?                                       | 逼 host/profile | 最大限制 / gap                                                                  |
-| -------------------------------------- | ----------------------------------------- | ---------------------------------------------- | -------------------------------------------------- | --------------- | ------------------------------------------------------------------------------- |
-| **Meetup**                             | ✅ 要,仲要**課金**(~$30/mo organizer sub) | 唔強制                                         | ❌ scheduled(建議提早 6 週宣傳)                    | True            | 冇人課金做 organizer 就乜都冇;organizer burnout                                 |
-| **Bumble BFF**                         | group「Plans」要                          | ✅ **重**(selfie 驗證 + 4 相 + bio)            | ❌ swipe-match-then-schedule                       | True            | 掛住「spontaneous friendship」但係 scheduling app;要 swipe 完先見面             |
-| **Partiful**                           | ✅ **重**(整 event page、管 guest list)   | 客人淨係電話號 RSVP                            | ❌ 全部 scheduled                                  | True            | 係現有社交圈嘅 planning/RSVP 工具,唔係陌生人 discovery                          |
-| **Nextdoor**                           | ✅ Event 要填完整 form                    | ✅ **真名 + 住址驗證**先入到                   | ❌ scheduled                                       | True            | 逼永久真身份;根本唔算「識人」app,discourse 全講 moderation/marketplace          |
-| **Luma**                               | ✅ 每個 event 要 host 管                  | 客人 name+email;host 重                        | ❌ scheduled、按城市/類別                          | True            | 冇「而家做 X 邊個一齊」嘅零 setup 即興位                                        |
-| **Timeleft**                           | ❌ 冇 host(公司包辦)                      | ✅ **重**(真相 + 真名 + 可能 ID)               | ❌ 固定每週(如逢三 7pm 晚餐)                       | True            | 週會 appointment,唔係即興;要提前 book                                           |
-| **222**                                | ❌ 冇 peer host(公司做唯一 organizer)     | ✅ **重**(~30 題 MBTI 式問卷)                  | ❌ 公司排期、城市級                                | True            | 移走 peer host 但變咗**收費、侵入、公司 gatekeep**                              |
-| **Fever**                              | ✅ **重**(FeverZone event 管理)           | 未驗(頁 403)                                   | ❌ ticketed、scheduled                             | True            | 整個即興零-organizer 層佢個 ticketing 架構掂唔到                                |
-| **Yubo**                               | 功能上要(整 profile 俾人 swipe / go live) | ✅ 強制(DOB、名、性別、電話)                   | livestream 即時但**冇活動 object**                 | True            | 永遠出唔到 app 去真實世界「而家做 X」                                           |
-| **Peanut**(Find Mom Friends)           | group meetup 有軟 host                    | ✅ **重**(相、bio、interest packs、小朋友年齡) | nearby ✅ 但唔即興                                 | True            | swipe→match→DM,match 到 IRL 轉換失敗                                            |
-| **HeyMandi**                           | ❌(根本冇 group 功能)                     | 部分(post 一句 + hashtag,無相無名)             | 有「Nearby Perspectives」但係 1:1                  | False           | 1:1 chat/dating-adjacent,**驗證咗「chat-before-photo 輕身份」但解緊另一個問題** |
-| **Mozi**(Ev Williams)                  | ❌ 冇 host **但都冇「開活動」**           | ❌ 冇 public profile                           | ❌ 只係你**已認識**嘅 contact 撞位                 | False           | 永遠唔會 surface 新人,冇人可以 broadcast「我而家做 X」                          |
-| **Flock: Hangout & Meetup**(Vancouver) | ❌ **無正式 host**                        | 未 hands-on 裝(標 [UNVERIFIED])                | ✅ **spontaneous + nearby**(唯一同 enoki 幾乎一致) | **False**       | **幾乎試齊 enoki spec,唔係 model 錯,係 liquidity / cold-start 卡死 + 疑似棄坑** |
+| 競品                                          | 要 host?                                  | 要 profile?                                    | 即興+nearby?                                   | 逼 host/profile | 最大限制 / gap                                                                                    |
+| --------------------------------------------- | ----------------------------------------- | ---------------------------------------------- | ---------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------- |
+| **Meetup**                                    | ✅ 要,仲要**課金**(~$30/mo organizer sub) | 唔強制                                         | ❌ scheduled(建議提早 6 週宣傳)                | True            | 冇人課金做 organizer 就乜都冇;organizer burnout                                                   |
+| **Bumble BFF**                                | group「Plans」要                          | ✅ **重**(selfie 驗證 + 4 相 + bio)            | ❌ swipe-match-then-schedule                   | True            | 掛住「spontaneous friendship」但係 scheduling app;要 swipe 完先見面                               |
+| **Partiful**                                  | ✅ **重**(整 event page、管 guest list)   | 客人淨係電話號 RSVP                            | ❌ 全部 scheduled                              | True            | 係現有社交圈嘅 planning/RSVP 工具,唔係陌生人 discovery                                            |
+| **Nextdoor**                                  | ✅ Event 要填完整 form                    | ✅ **真名 + 住址驗證**先入到                   | ❌ scheduled                                   | True            | 逼永久真身份;根本唔算「識人」app,discourse 全講 moderation/marketplace                            |
+| **Luma**                                      | ✅ 每個 event 要 host 管                  | 客人 name+email;host 重                        | ❌ scheduled、按城市/類別                      | True            | 冇「而家做 X 邊個一齊」嘅零 setup 即興位                                                          |
+| **Timeleft**                                  | ❌ 冇 host(公司包辦)                      | ✅ **重**(真相 + 真名 + 可能 ID)               | ❌ 固定每週(如逢三 7pm 晚餐)                   | True            | 週會 appointment,唔係即興;要提前 book                                                             |
+| **222**                                       | ❌ 冇 peer host(公司做唯一 organizer)     | ✅ **重**(~30 題 MBTI 式問卷)                  | ❌ 公司排期、城市級                            | True            | 移走 peer host 但變咗**收費、侵入、公司 gatekeep**                                                |
+| **Fever**                                     | ✅ **重**(FeverZone event 管理)           | 未驗(頁 403)                                   | ❌ ticketed、scheduled                         | True            | 整個即興零-organizer 層佢個 ticketing 架構掂唔到                                                  |
+| **Yubo**                                      | 功能上要(整 profile 俾人 swipe / go live) | ✅ 強制(DOB、名、性別、電話)                   | livestream 即時但**冇活動 object**             | True            | 永遠出唔到 app 去真實世界「而家做 X」                                                             |
+| **Peanut**(Find Mom Friends)                  | group meetup 有軟 host                    | ✅ **重**(相、bio、interest packs、小朋友年齡) | nearby ✅ 但唔即興                             | True            | swipe→match→DM,match 到 IRL 轉換失敗                                                              |
+| **HeyMandi**                                  | ❌(根本冇 group 功能)                     | 部分(post 一句 + hashtag,無相無名)             | 有「Nearby Perspectives」但係 1:1              | False           | 1:1 chat/dating-adjacent,**驗證咗「chat-before-photo 輕身份」但解緊另一個問題**                   |
+| **Mozi**(Ev Williams)                         | ❌ 冇 host **但都冇「開活動」**           | ❌ 冇 public profile                           | ❌ 只係你**已認識**嘅 contact 撞位             | False           | 永遠唔會 surface 新人,冇人可以 broadcast「我而家做 X」                                            |
+| **Flock**(App Store 6749288988, Bryan Nguyen) | ❌ **無正式 host**                        | 未 hands-on 裝([UNVERIFIED])                   | ✅ **spontaneous + nearby**(同 enoki 三軸重疊) | **False**       | **LIVE 直接對手** —— 2026-02 出、上週先更新、每週 iterate;仲早(0 評分),cold-start 未 crack。見 §3 |
 
-**睇表就明**:除咗 Flock,冇一個做到「無 host + 匿名 + 即興 nearby」。Mozi(無 host 無 profile)但只限熟人、冇 broadcast;HeyMandi(輕身份)但係 1:1 dating-adjacent。→ **enoki 嘅三軸組合係空白。**
+**睇表就明**:除咗 **Flock**(見 §3,佢正正做緊你三軸),其餘 12 個冇一個做到「無 host + 匿名 + 即興 nearby」。Mozi(無 host 無 profile)但只限熟人、冇 broadcast;HeyMandi(輕身份)但係 1:1 dating-adjacent。→ **三軸組合基本上係空白位,但唔係無人 —— Flock 已經入緊嚟,個窗口開緊但有得追。**
 
 ---
 
-## 3. Flock —— 最重要嘅一個(near-twin,同你一樣 Vancouver)
+## 3. Flock —— 最直接嘅 LIVE 競爭對手(⚠️ 已更正)
 
-Flock: Hangout & Meetup **試過幾乎一模一樣嘅 spec**(無正式 host、group 唔係 1:1、spontaneous + nearby)。研究結論:**唔係因為 model 錯,係 nobody solved cold-start(空 feed / liquidity),然後疑似棄坑。**
+**Flock**(App Store id 6749288988,開發者 Bryan Nguyen,「Your new favourite IRL communities and social meetups app… helping people gather serendipitously」)係一個 **生勾勾、啱啱起步嘅直接競爭對手**,做緊同 enoki 幾乎一樣嘅 space。App Store source of truth(2026-07-16 查):
 
-> **對 enoki 嘅意思**:你個 model 有一個 real-world precedent 驗證咗(唔係得你自己覺得得)。**你要贏嘅唯一嘢就係 cold-start** —— 呢個正正係你已 build 嘅「附近有人開咗活動 broadcast push」想解嘅嘢。呢個 push feature 唔係 nice-to-have,係**生死線 feature**。建議之後 deep-dive Flock(裝返、睇佢點死、有咩殘留 user)。
+- 首次上架 **2026-02-28**(先 5 個月大),版本 **1.1.20**,**最後更新 2026-07-09**(即係每週都 iterate)。
+- 類別 Social Networking;**評分數 0**(traction 未起,cold-start 佢自己都未 crack)。
+- 三軸:❌ 無正式 host、group 唔係 1:1、✅ spontaneous + nearby —— **同 enoki 三軸幾乎重疊**。
+
+> **對 enoki 嘅意思**(重寫):①你個 model 有一個 live precedent —— 有第二隊人睇到同一個 gap 兼且執行緊,證明機會係真,但**你唔係一個人喺度,有得追**。②佢仲好早(0 評分),即係**冷啟動邊個都未贏,個窗口仲開住**。③你已 build 嘅「附近開咗活動 broadcast push」係搶呢個窗口嘅主武器,唔係 nice-to-have。④**下一步(task #10):裝 Flock、hands-on 拆佢點 onboard、點解決(或者解唔到)cold-start、佢有咩弱點你可以贏**。
+
+> _更正紀錄:初版話「Flock 死於 cold-start / 棄坑」係錯。research agent 撈亂咗兩個同名 app(攞咗 Google Play 一個舊嘅「Flock: Hangout & Meetup」當真身),又用咗 stale data。Nicole 即場 flag「Flock 未死」,去 App Store 一 check 即打面。教訓 = 唔好信 agent 個 narrative,去 authoritative source 對證。_
 
 ---
 
@@ -103,13 +111,13 @@ Flock: Hangout & Meetup **試過幾乎一模一樣嘅 spec**(無正式 host、gr
 
 **風險排序:**
 
-1. 🔴 **Cold-start / liquidity** —— 殺死 Flock + Highlight 嘅嘢。**你已 build 嘅 broadcast push 係主武器**,要 nail 佢(地域密度、seeding 策略)。這是 #1 仗。
+1. 🔴 **Cold-start / liquidity** —— 殺死 Highlight 嗰批、連 live 對手 Flock 都仲未 crack 嘅嘢(佢 0 評分)。**你已 build 嘅 broadcast push 係主武器**,要 nail 佢(地域密度、seeding 策略)。這是 #1 仗,而且係同 Flock 賽緊時間。
 2. 🔴 **匿名濫用 / 安全落架** —— Yik Yak/Secret/Wizz 嘅死法。你嘅 phone-tied + moderation + verify badge 要**launch 前 ready**(呼應 SECURITY_AUDIT 嘅 pre-launch 決定)。
 3. 🟡 **No-show / flakiness** —— 即興 low-commitment 天然易 no-show(Meetup/BFF 都中),未有對策,要諗 RSVP 信號 / 出席機制 / reputation。
 
 **建議下一步:**
 
-- Flock **deep-dive**(裝返、拆佢點死、有冇殘留 user 可撈)—— 佢係你最直接嘅 case study(task #10)。
+- Flock **deep-dive**(裝返隻 LIVE app、hands-on 拆佢點 onboard、cold-start 解到未、弱點喺邊、佢有咩你冇 / 你有咩佢冇)—— 佢係你最直接嘅**在生對手**(task #10)。
 - 補 **raw post-level demand**(authenticated Reddit/RED API 或人手)升信心到 HIGH。
 - 將 cold-start 當**產品第一優先**,唔係 feature backlog 一項。
 
