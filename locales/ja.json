@@ -594,6 +594,8 @@
     "empty": "まだルームがありません。",
     "empty_cta": "アクティビティを見る",
     "loadErrorTitle": "ルームの読み込みに失敗しました",
-    "refreshErrorTitle": "更新に失敗しました"
+    "refreshErrorTitle": "更新に失敗しました",
+    "show_past": "過去を表示 ({{count}})",
+    "hide_past": "過去を隠す"
   }
 }

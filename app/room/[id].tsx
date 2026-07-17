@@ -46,6 +46,7 @@ import {
   BButton,
   BCard,
   BChip,
+  BIconButton,
   BText,
   PaperTexture,
 } from "../../src/ui/components/brutal";
@@ -845,6 +846,14 @@ export default function RoomScreen() {
                 onPress={confirmLeave}
               />
             )}
+            {isCreator ? (
+              <BIconButton
+                c={c}
+                icon="pencil"
+                accessibilityLabel={t("rootNav.editInvite")}
+                onPress={() => router.push(`/edit/${activityId}`)}
+              />
+            ) : null}
             {isCreator ? (
               <BButton
                 c={c}

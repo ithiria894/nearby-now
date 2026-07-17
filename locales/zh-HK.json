@@ -594,6 +594,8 @@
     "empty": "仲未有房間。",
     "empty_cta": "睇下活動",
     "loadErrorTitle": "載入房間失敗",
-    "refreshErrorTitle": "重新整理失敗"
+    "refreshErrorTitle": "重新整理失敗",
+    "show_past": "顯示過往 ({{count}})",
+    "hide_past": "收起過往"
   }
 }

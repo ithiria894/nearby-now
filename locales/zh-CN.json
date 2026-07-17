@@ -594,6 +594,8 @@
     "empty": "还没有房间。",
     "empty_cta": "看看活动",
     "loadErrorTitle": "加载房间失败",
-    "refreshErrorTitle": "刷新失败"
+    "refreshErrorTitle": "刷新失败",
+    "show_past": "显示过往 ({{count}})",
+    "hide_past": "收起过往"
   }
 }

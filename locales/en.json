@@ -594,6 +594,8 @@
     "empty": "No rooms here yet.",
     "empty_cta": "Browse activities",
     "loadErrorTitle": "Couldn’t load rooms",
-    "refreshErrorTitle": "Couldn’t refresh"
+    "refreshErrorTitle": "Couldn’t refresh",
+    "show_past": "Show past ({{count}})",
+    "hide_past": "Hide past"
   }
 }

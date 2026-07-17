@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -38,7 +38,6 @@ import { handleError } from "../../lib/ui/handleError";
 // carry a gold crown; a Role filter (All / Hosting / Joined) and a Status filter
 // (Active / Past) narrow it down. Replaces the separate Lobby + Created tabs.
 type Role = "all" | "hosting" | "joined";
-type Status = "active" | "past";
 type Row = { activity: ActivityCardActivity; isHost: boolean; left: boolean };
 
 const PAGE = 50;
@@ -58,7 +57,7 @@ export default function RoomsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [role, setRole] = useState<Role>("all");
-  const [status, setStatus] = useState<Status>("active");
+  const [showPast, setShowPast] = useState(false);
   const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadInitial = useCallback(async () => {
@@ -198,17 +197,21 @@ export default function RoomsScreen() {
     [summaries]
   );
 
-  // Role + Status filter, then sort by most recent activity.
-  const shown = useMemo(() => {
+  // Filter by Role, sort by most recent activity. Active rooms show by default;
+  // "past" (expired / closed / left) fold under a "Show past" link.
+  const { shown, pastCount } = useMemo(() => {
     let rows = allRows;
     if (role === "hosting") rows = rows.filter((r) => r.isHost);
     else if (role === "joined") rows = rows.filter((r) => !r.isHost);
-    rows = rows.filter((r) => {
-      const active = isActiveActivity(r.activity) && !r.left;
-      return status === "active" ? active : !active;
-    });
-    return [...rows].sort((a, b) => lastTs(b) - lastTs(a));
-  }, [allRows, role, status, lastTs]);
+    const isLive = (r: Row) => isActiveActivity(r.activity) && !r.left;
+    const byRecent = (a: Row, b: Row) => lastTs(b) - lastTs(a);
+    const active = rows.filter(isLive).sort(byRecent);
+    const past = rows.filter((r) => !isLive(r)).sort(byRecent);
+    return {
+      shown: showPast ? [...active, ...past] : active,
+      pastCount: past.length,
+    };
+  }, [allRows, role, showPast, lastTs]);
 
   if (loading) {
     return (
@@ -231,19 +234,6 @@ export default function RoomsScreen() {
         c={c}
         title={t("rooms.headerTitle")}
         right={
-          <BToggle<Status>
-            c={c}
-            value={status}
-            onChange={setStatus}
-            options={[
-              { value: "active", label: t("rooms.status_active") },
-              { value: "past", label: t("rooms.status_past") },
-            ]}
-          />
-        }
-      />
-      <SafeAreaView style={{ flex: 1 }} edges={["left", "right"]}>
-        <View style={{ paddingHorizontal: space.lg, paddingTop: space.md }}>
           <BToggle<Role>
             c={c}
             value={role}
@@ -254,7 +244,9 @@ export default function RoomsScreen() {
               { value: "joined", label: t("rooms.role_joined") },
             ]}
           />
-        </View>
+        }
+      />
+      <SafeAreaView style={{ flex: 1 }} edges={["left", "right"]}>
         <Animated.FlatList
           data={shown}
           keyExtractor={(r: Row) => r.activity.id}
@@ -309,6 +301,20 @@ export default function RoomsScreen() {
                 onPress={() => router.push("/(tabs)/browse")}
               />
             </View>
+          }
+          ListFooterComponent={
+            pastCount > 0 ? (
+              <Pressable
+                onPress={() => setShowPast((v) => !v)}
+                style={{ paddingVertical: space.lg, alignItems: "center" }}
+              >
+                <BText c={c} v="label" color={c.subtext}>
+                  {showPast
+                    ? t("rooms.hide_past")
+                    : t("rooms.show_past", { count: pastCount })}
+                </BText>
+              </Pressable>
+            ) : null
           }
         />
       </SafeAreaView>
