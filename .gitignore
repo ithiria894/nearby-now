@@ -68,3 +68,6 @@ thoughts/
 # Android signing (local credentials for EAS)
 credentials/
 credentials.json
+
+# TruthGuard local config (personal tooling)
+.truthguard.yml
