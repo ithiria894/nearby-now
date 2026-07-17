@@ -826,43 +826,42 @@ export default function RoomScreen() {
           </>
         }
         right={
-          <>
-            {!joined ? (
-              <BButton
-                c={c}
-                tone="primary"
-                label={
-                  myMembershipState === "left"
-                    ? t("common.rejoin")
-                    : t("common.join")
-                }
-                onPress={roomState.isReadOnly ? undefined : join}
-              />
-            ) : (
-              <BButton
-                c={c}
-                tone="secondary"
-                label={t("common.leave")}
-                onPress={confirmLeave}
-              />
-            )}
-            {isCreator ? (
+          // Host manages (Edit + Close); guests join / leave. A creator doesn't
+          // "leave" their own room, so it's not shown for them.
+          isCreator ? (
+            <>
               <BIconButton
                 c={c}
                 icon="pencil"
                 accessibilityLabel={t("rootNav.editInvite")}
                 onPress={() => router.push(`/edit/${activityId}`)}
               />
-            ) : null}
-            {isCreator ? (
               <BButton
                 c={c}
                 tone="danger"
                 label={t("common.close")}
                 onPress={roomState.isReadOnly ? undefined : closeInvite}
               />
-            ) : null}
-          </>
+            </>
+          ) : !joined ? (
+            <BButton
+              c={c}
+              tone="primary"
+              label={
+                myMembershipState === "left"
+                  ? t("common.rejoin")
+                  : t("common.join")
+              }
+              onPress={roomState.isReadOnly ? undefined : join}
+            />
+          ) : (
+            <BButton
+              c={c}
+              tone="secondary"
+              label={t("common.leave")}
+              onPress={confirmLeave}
+            />
+          )
         }
       />
       <View style={{ flex: 1, padding: space.lg, gap: space.md }}>

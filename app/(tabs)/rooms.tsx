@@ -279,6 +279,11 @@ export default function RoomsScreen() {
                 summary={summaries[item.activity.id]}
                 userId={userId}
                 isHost={item.isHost}
+                onEditPress={
+                  item.isHost
+                    ? () => router.push(`/edit/${item.activity.id}`)
+                    : undefined
+                }
                 onPress={() => router.push(`/room/${item.activity.id}`)}
               />
             </Animated.View>
