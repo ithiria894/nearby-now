@@ -97,6 +97,7 @@ export default function CreateScreen() {
           place_id: payload.place_id,
           location_source: payload.location_source,
           gender_pref: payload.gender_pref,
+          vibe: payload.vibe,
           capacity: payload.capacity,
           start_time: payload.start_time,
           end_time: payload.end_time,
@@ -130,7 +131,7 @@ export default function CreateScreen() {
 
       // :zap: CHANGE 2: Create -> go back to Created tab
       createdActivityIdRef.current = null;
-      router.replace("/(tabs)/created");
+      router.replace("/(tabs)/rooms");
     } catch (_e: any) {
       console.error(_e);
       alertAsync(t("create.errorTitle"), _e?.message ?? "Unknown error");

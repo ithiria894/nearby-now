@@ -3,7 +3,7 @@
 // Rendered live in /uidocs; these are what screens will adopt on rollout.
 // Each takes `c: UIColors` so it works with the UIDocs local scheme toggle.
 // =============================================================================
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 import {
   Keyboard,
   Platform,
@@ -23,31 +23,68 @@ import Svg, {
   Filter,
   FeColorMatrix,
   FeTurbulence,
+  Path,
+  Pattern,
   Rect,
 } from "react-native-svg";
 import Animated, {
+  Easing,
+  FadeIn,
+  FadeOut,
+  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
+  withSequence,
+  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import {
   borders,
   controls,
+  fonts,
   hardShadow,
   layout,
+  mixHex,
+  motion,
   radius,
   space,
   typeScale,
   type TypeStyle,
   type UIColors,
 } from "../theme/uikit";
+import { useUIKit } from "../theme/useUIKit";
+import i18n from "../../../lib/i18n/i18n";
 
 /* ---------- text ---------- */
+// Per-language Noto CJK fallback order, so Chinese/Japanese glyphs render in the
+// regionally-correct Noto face (SC vs TC vs JP forms differ).
+function notoCjkStack(): string {
+  switch (i18n.language) {
+    case "ja":
+      return '"Noto Sans JP", "Noto Sans SC", "Noto Sans TC"';
+    case "zh-CN":
+      return '"Noto Sans SC", "Noto Sans TC", "Noto Sans JP"';
+    case "zh-HK":
+      return '"Noto Sans TC", "Noto Sans SC", "Noto Sans JP"';
+    default:
+      return '"Noto Sans SC", "Noto Sans TC", "Noto Sans JP"';
+  }
+}
+
 export function txt(style: TypeStyle, color: string) {
+  // New direction: Noto for all UI text, loaded from Google Fonts on web (see
+  // app/_layout.tsx). Latin uses Noto Sans, CJK falls through to the matching
+  // Noto CJK face. The handwritten wordmark keeps its accent font. Native is
+  // untouched — we deliberately don't bundle Noto (esp. the heavy CJK) there.
+  let fontFamily: string = style.font;
+  if (Platform.OS === "web") {
+    const base = style.font === fonts.accent ? style.font : "Noto Sans";
+    fontFamily = `${base}, ${notoCjkStack()}, sans-serif`;
+  }
   return {
-    fontFamily: style.font,
+    fontFamily,
     fontSize: style.size,
     lineHeight: style.lineHeight,
     fontWeight: style.weight as any,
@@ -81,8 +118,34 @@ export function BText({
   );
 }
 
-/* ---------- paper texture (subtle grain) ---------- */
-export function PaperTexture({ opacity = 0.06 }: { opacity?: number }) {
+/* ---------- paper texture (subtle grain + faint graph grid) ---------- */
+// Grain gives the paper its tooth; a barely-there graph grid on top reads as
+// "engineering paper". The grid tints to the theme (brand hue) and sits so low
+// you only notice it if you look for it. Pass `c` to override the theme colors
+// (uidocs uses its local scheme); tune `gridOpacity`/`gridCell` per surface.
+export function PaperTexture({
+  opacity = 0.06,
+  c,
+  grid = true,
+  gridCell = 24,
+  gridOpacity = 0.05,
+  gridColor,
+}: {
+  opacity?: number;
+  c?: UIColors;
+  grid?: boolean;
+  gridCell?: number;
+  gridOpacity?: number;
+  gridColor?: string;
+}) {
+  const themeColors = useUIKit();
+  const colors = c ?? themeColors;
+  // Unique per-instance ids so overlapping backdrops (e.g. mid page transition)
+  // never reference each other's <defs> on web.
+  const uid = useId().replace(/:/g, "");
+  const grainId = `grain-${uid}`;
+  const gridId = `grid-${uid}`;
+  const stroke = gridColor ?? colors.brand;
   return (
     <View
       pointerEvents="none"
@@ -90,7 +153,7 @@ export function PaperTexture({ opacity = 0.06 }: { opacity?: number }) {
     >
       <Svg width="100%" height="100%">
         <Defs>
-          <Filter id="paperGrain">
+          <Filter id={grainId}>
             <FeTurbulence
               type="fractalNoise"
               baseFrequency="0.85"
@@ -100,13 +163,39 @@ export function PaperTexture({ opacity = 0.06 }: { opacity?: number }) {
             />
             <FeColorMatrix in="n" type="saturate" values="0" />
           </Filter>
+          {grid ? (
+            <Pattern
+              id={gridId}
+              width={gridCell}
+              height={gridCell}
+              patternUnits="userSpaceOnUse"
+            >
+              {/* top + left edge of each cell → a seamless grid when tiled */}
+              <Path
+                d={`M ${gridCell} 0 L 0 0 L 0 ${gridCell}`}
+                stroke={stroke}
+                strokeWidth={1}
+                fill="none"
+              />
+            </Pattern>
+          ) : null}
         </Defs>
+        {grid ? (
+          <Rect
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill={`url(#${gridId})`}
+            opacity={gridOpacity}
+          />
+        ) : null}
         <Rect
           x="0"
           y="0"
           width="100%"
           height="100%"
-          filter="url(#paperGrain)"
+          filter={`url(#${grainId})`}
           opacity={opacity}
         />
       </Svg>
@@ -303,6 +392,7 @@ export function BButton({
   icon,
   onPress,
   full,
+  disabled,
   shadowColor,
   highlight,
 }: {
@@ -312,6 +402,7 @@ export function BButton({
   icon?: string;
   onPress?: () => void;
   full?: boolean;
+  disabled?: boolean; // dims to 40% and ignores taps (e.g. Post before a title exists)
   shadowColor?: string; // explicit colored shadow
   highlight?: boolean; // shadow matches the button's OWN fill (yellow button → yellow shadow)
 }) {
@@ -327,8 +418,13 @@ export function BButton({
   const shadow = shadowColor ?? (highlight ? face.bg : c.shadow); // highlight → match fill
   return (
     <Pressable
-      onPress={onPress}
-      style={{ alignSelf: full ? "stretch" : "flex-start" }}
+      onPress={disabled ? undefined : onPress}
+      disabled={disabled}
+      accessibilityState={{ disabled: !!disabled }}
+      style={{
+        alignSelf: full ? "stretch" : "flex-start",
+        opacity: disabled ? 0.4 : 1,
+      }}
     >
       {({ pressed }) => (
         <View style={{ position: "relative" }}>
@@ -386,39 +482,148 @@ export function BChip({
   label,
   selected,
   tone = "neutral",
+  accent,
+  onPress,
 }: {
   c: UIColors;
   label: string;
   selected?: boolean;
   tone?: ChipTone;
+  // Custom selected color for the neutral tone (e.g. a vibe's own tint), so a
+  // selected chip reads in its own hue instead of the generic brand.
+  accent?: string;
+  // Makes the chip pressable with a spring press-scale. Prefer this over
+  // wrapping BChip in your own Pressable — you get the tap animation for free.
+  onPress?: () => void;
 }) {
-  const t: Record<ChipTone, { bg: string; fg: string }> = {
+  // Selected neutral chip = soft tint + colored outline + ink text (a calm
+  // "tonal" selection) instead of a loud full fill. `accent` overrides the hue.
+  const sel = accent ?? c.brand;
+  const t: Record<ChipTone, { bg: string; fg: string; border: string }> = {
     neutral: {
-      bg: selected ? c.brand : c.surface,
-      fg: selected ? c.onBrand : c.text,
+      bg: selected ? mixHex(sel, c.surface, 0.72) : c.surface,
+      fg: selected ? c.ink : c.text,
+      border: selected ? sel : c.border,
     },
-    brand: { bg: c.brand, fg: c.onBrand },
-    success: { bg: c.mint, fg: c.onBright },
-    danger: { bg: c.coral, fg: c.onBright },
-    warn: { bg: c.yellow, fg: c.onBright },
+    brand: { bg: c.brand, fg: c.onBrand, border: c.border },
+    success: { bg: c.mint, fg: c.onBright, border: c.border },
+    danger: { bg: c.coral, fg: c.onBright, border: c.border },
+    warn: { bg: c.yellow, fg: c.onBright, border: c.border },
   };
-  return (
-    <View
-      style={{
-        paddingVertical: controls.pillPaddingY,
-        paddingHorizontal: controls.pillPaddingX,
-        borderRadius: controls.pillRadius,
-        borderWidth: 2,
-        borderColor: c.border,
-        backgroundColor: t[tone].bg,
-      }}
+  // Selection "pop" (on flip to selected) + a press-scale while held.
+  const pop = useSharedValue(0);
+  const press = useSharedValue(1);
+  const wasSelected = useRef(!!selected);
+  useEffect(() => {
+    if (!!selected !== wasSelected.current) {
+      wasSelected.current = !!selected;
+      if (selected) {
+        pop.value = withSequence(
+          withTiming(1, { duration: motion.duration.fast / 2 }),
+          withTiming(0, { duration: motion.duration.fast / 2 })
+        );
+      }
+    }
+  }, [selected, pop]);
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: (1 + pop.value * 0.07) * press.value }],
+  }));
+  const chip = (
+    <Animated.View
+      style={[
+        {
+          paddingVertical: controls.pillPaddingY,
+          paddingHorizontal: controls.pillPaddingX,
+          borderRadius: controls.pillRadius,
+          borderWidth: 2,
+          borderColor: t[tone].border,
+          backgroundColor: t[tone].bg,
+        },
+        animStyle,
+      ]}
     >
       <Text style={txt(typeScale.label, t[tone].fg)}>{label}</Text>
-    </View>
+    </Animated.View>
+  );
+  if (!onPress) return chip;
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => {
+        press.value = withTiming(0.93, { duration: 90 });
+      }}
+      onPressOut={() => {
+        press.value = withSpring(1, motion.springSpatial);
+      }}
+    >
+      {chip}
+    </Pressable>
   );
 }
 
 /* ---------- toggle (segmented switch) ---------- */
+// One segment: the "raised" fill springs in/out behind the label instead of
+// hard-cutting when the active segment changes.
+function BToggleSegment({
+  c,
+  on,
+  icon,
+  label,
+  onPress,
+}: {
+  c: UIColors;
+  on: boolean;
+  icon?: string;
+  label: string;
+  onPress: () => void;
+}) {
+  const p = useSharedValue(on ? 1 : 0);
+  useEffect(() => {
+    p.value = withSpring(on ? 1 : 0, motion.springSpatial);
+  }, [on, p]);
+  const bgStyle = useAnimatedStyle(() => ({
+    opacity: p.value,
+    transform: [{ scale: 0.85 + 0.15 * p.value }],
+  }));
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingVertical: 7,
+        paddingHorizontal: space.md,
+        borderRadius: radius.pill,
+      }}
+    >
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            borderRadius: radius.pill,
+            backgroundColor: c.surfaceAlt,
+          },
+          bgStyle,
+        ]}
+      />
+      {icon ? (
+        <MaterialCommunityIcons
+          name={icon as any}
+          size={16}
+          color={on ? c.ink : c.subtext}
+        />
+      ) : null}
+      <Text style={txt(typeScale.label, on ? c.ink : c.subtext)}>{label}</Text>
+    </Pressable>
+  );
+}
+
 // A single pill container with 2+ segments; the active one is brand-filled.
 // Use for view switches like List / Map. NO per-segment borders.
 export function BToggle<T extends string>({
@@ -444,36 +649,16 @@ export function BToggle<T extends string>({
         padding: 3,
       }}
     >
-      {options.map((o) => {
-        const on = o.value === value;
-        return (
-          <Pressable
-            key={o.value}
-            onPress={() => onChange(o.value)}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 6,
-              paddingVertical: 7,
-              paddingHorizontal: space.md,
-              borderRadius: radius.pill,
-              // subtle "raised" fill for the active segment — no color pop
-              backgroundColor: on ? c.surfaceAlt : "transparent",
-            }}
-          >
-            {o.icon ? (
-              <MaterialCommunityIcons
-                name={o.icon as any}
-                size={16}
-                color={on ? c.ink : c.subtext}
-              />
-            ) : null}
-            <Text style={txt(typeScale.label, on ? c.ink : c.subtext)}>
-              {o.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+      {options.map((o) => (
+        <BToggleSegment
+          key={o.value}
+          c={c}
+          on={o.value === value}
+          icon={o.icon}
+          label={o.label}
+          onPress={() => onChange(o.value)}
+        />
+      ))}
     </View>
   );
 }
@@ -539,12 +724,16 @@ export function BBadge({
   c,
   label,
   fill,
+  bleed,
 }: {
   c: UIColors;
   label: string;
   fill: string;
+  // Same-color hard offset shadow — the fill "bleeds" out behind the badge
+  // (a red badge casts a red shadow). Experimental accent for the feed tags.
+  bleed?: boolean;
 }) {
-  return (
+  const badge = (
     <View
       style={{
         paddingVertical: 3,
@@ -557,6 +746,12 @@ export function BBadge({
     >
       <Text style={txt(typeScale.label, c.onBright)}>{label}</Text>
     </View>
+  );
+  if (!bleed) return badge;
+  return (
+    <HardShadow c={c} color={fill} radius={radius.sm} offset={hardShadow.md}>
+      {badge}
+    </HardShadow>
   );
 }
 
@@ -595,10 +790,31 @@ export function BList({
   );
 }
 
+// Short, centered separator between list rows — ~half the width and the faint
+// `hairline` tint (not the structural ink border), so the list reads light.
+// The row has symmetric paddingVertical, but each list item also carries a
+// marginBottom (space.sm) below it — so without a matching marginTop the line
+// sits closer to the row above than the one below. This marginTop re-centers it.
+function RowDivider({ c }: { c: UIColors }) {
+  return (
+    <View
+      style={{
+        height: 2,
+        width: "50%",
+        alignSelf: "center",
+        borderRadius: 1,
+        backgroundColor: c.hairline,
+        marginTop: space.sm,
+      }}
+    />
+  );
+}
+
 export function BActivityRow({
   c,
   icon,
   iconBg,
+  iconColor,
   title,
   meta,
   preview,
@@ -608,11 +824,15 @@ export function BActivityRow({
   unread,
   last,
   accent,
+  stacked,
+  iconBadge,
   onPress,
 }: {
   c: UIColors;
   icon: string; // MaterialCommunityIcons name (NO emoji)
   iconBg: string;
+  iconColor?: string; // glyph color; defaults to onBright (for bold fills)
+  iconBadge?: React.ReactNode; // small overlay on the icon tile corner (e.g. a host crown)
   title: string;
   meta: React.ReactNode; // string, or inline nodes (e.g. an icon + count)
   preview?: string; // conversation preview line, e.g. "Alex: see you there"
@@ -622,115 +842,239 @@ export function BActivityRow({
   unread?: number; // unread count bubble at the right edge (hidden when 0)
   last?: boolean;
   accent?: string; // optional left accent bar to flag an important row
+  // Feed layout: title spans the FULL width on top, then [icon] + meta, then
+  // [tags ............ trailing] — so long titles show more and the distance
+  // sits bottom-right. (Conversation rows keep the default inline layout.)
+  stacked?: boolean;
   onPress?: () => void;
 }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: pressed ? c.surfaceAlt : "transparent",
-      })}
-    >
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: space.md,
-          paddingVertical: space.md,
-          paddingHorizontal: space.md,
-          borderBottomWidth: last ? 0 : borders.base,
-          borderBottomColor: c.border,
-          borderLeftWidth: accent ? 5 : 0,
-          borderLeftColor: accent,
-        }}
-      >
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.sm,
-            borderWidth: borders.base,
-            borderColor: c.border,
-            backgroundColor: iconBg,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
+  if (stacked) {
+    return (
+      <>
+        <Pressable
+          onPress={onPress}
+          style={({ pressed }) => ({
+            backgroundColor: pressed ? c.surfaceAlt : "transparent",
+          })}
         >
-          <MaterialCommunityIcons
-            name={icon as any}
-            size={22}
-            color={c.onBright}
-          />
-        </View>
-        <View style={{ flex: 1, gap: 2 }}>
           <View
             style={{
               flexDirection: "row",
-              alignItems: "baseline",
+              alignItems: "center",
               gap: space.sm,
+              paddingVertical: space.md,
+              paddingHorizontal: space.md,
+              borderLeftWidth: accent ? 5 : 0,
+              borderLeftColor: accent,
             }}
           >
-            <Text
-              style={[txt(typeScale.title, c.ink), { flex: 1 }]}
-              numberOfLines={1}
-            >
-              {title}
-            </Text>
-            {trailing ? (
-              <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
-                {trailing}
+            <View style={{ flex: 1, gap: space.sm }}>
+              {/* Title — full width (up to the chevron), up to two lines. */}
+              <Text style={txt(typeScale.title, c.ink)} numberOfLines={2}>
+                {title}
               </Text>
-            ) : null}
-          </View>
-          {preview ? (
-            <Text
-              style={
-                previewMuted
-                  ? txt(typeScale.caption, c.faint)
-                  : [txt(typeScale.caption, c.text), { fontWeight: "600" }]
-              }
-              numberOfLines={1}
-            >
-              {preview}
-            </Text>
-          ) : null}
-          <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
-            {meta}
-          </Text>
-          {badges ? (
-            <View
-              style={{
-                flexDirection: "row",
-                gap: space.sm,
-                marginTop: 2,
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              {badges}
+              <View style={{ flexDirection: "row", gap: space.md }}>
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: radius.sm,
+                    borderWidth: borders.base,
+                    borderColor: c.border,
+                    backgroundColor: iconBg,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name={icon as any}
+                    size={22}
+                    color={iconColor ?? c.onBright}
+                  />
+                  {iconBadge ? (
+                    <View style={{ position: "absolute", top: -6, right: -6 }}>
+                      {iconBadge}
+                    </View>
+                  ) : null}
+                </View>
+                <View style={{ flex: 1, justifyContent: "center", gap: 4 }}>
+                  <Text
+                    style={txt(typeScale.caption, c.subtext)}
+                    numberOfLines={1}
+                  >
+                    {meta}
+                  </Text>
+                  {badges || trailing ? (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: space.sm,
+                      }}
+                    >
+                      <View
+                        style={{
+                          flex: 1,
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: space.sm,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        {badges}
+                      </View>
+                      {trailing ? (
+                        <Text
+                          style={txt(typeScale.caption, c.subtext)}
+                          numberOfLines={1}
+                        >
+                          {trailing}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
+              </View>
             </View>
-          ) : null}
-        </View>
-        {unread && unread > 0 ? (
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={24}
+              color={c.ink}
+            />
+          </View>
+        </Pressable>
+        {!last ? <RowDivider c={c} /> : null}
+      </>
+    );
+  }
+  return (
+    <>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({
+          backgroundColor: pressed ? c.surfaceAlt : "transparent",
+        })}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: space.md,
+            paddingVertical: space.md,
+            paddingHorizontal: space.md,
+            borderLeftWidth: accent ? 5 : 0,
+            borderLeftColor: accent,
+          }}
+        >
           <View
             style={{
-              minWidth: 22,
-              height: 22,
-              borderRadius: 11,
-              paddingHorizontal: 6,
-              backgroundColor: c.brand,
+              width: 44,
+              height: 44,
+              borderRadius: radius.sm,
+              borderWidth: borders.base,
+              borderColor: c.border,
+              backgroundColor: iconBg,
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Text style={{ color: c.onBrand, fontSize: 11, fontWeight: "800" }}>
-              {unread > 99 ? "99+" : String(unread)}
-            </Text>
+            <MaterialCommunityIcons
+              name={icon as any}
+              size={22}
+              color={iconColor ?? c.onBright}
+            />
+            {iconBadge ? (
+              <View style={{ position: "absolute", top: -6, right: -6 }}>
+                {iconBadge}
+              </View>
+            ) : null}
           </View>
-        ) : null}
-        <MaterialCommunityIcons name="chevron-right" size={24} color={c.ink} />
-      </View>
-    </Pressable>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={txt(typeScale.title, c.ink)} numberOfLines={1}>
+              {title}
+            </Text>
+            {preview ? (
+              <Text
+                style={
+                  previewMuted
+                    ? txt(typeScale.caption, c.faint)
+                    : [txt(typeScale.caption, c.text), { fontWeight: "600" }]
+                }
+                numberOfLines={1}
+              >
+                {preview}
+              </Text>
+            ) : null}
+            <Text style={txt(typeScale.caption, c.subtext)} numberOfLines={1}>
+              {meta}
+            </Text>
+            {badges ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: space.sm,
+                  marginTop: 2,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                {badges}
+              </View>
+            ) : null}
+          </View>
+          {trailing || (unread && unread > 0) ? (
+            // Time on top, unread badge beneath — one right-aligned column so the
+            // time lines up across rows whether or not there's a badge.
+            <View
+              style={{
+                alignSelf: "stretch",
+                alignItems: "flex-end",
+                justifyContent: "flex-start",
+                gap: 6,
+              }}
+            >
+              {trailing ? (
+                <Text
+                  style={txt(typeScale.caption, c.subtext)}
+                  numberOfLines={1}
+                >
+                  {trailing}
+                </Text>
+              ) : null}
+              {unread && unread > 0 ? (
+                <View
+                  style={{
+                    minWidth: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    paddingHorizontal: 6,
+                    backgroundColor: c.brand,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: c.onBrand,
+                      fontSize: 11,
+                      fontWeight: "800",
+                    }}
+                  >
+                    {unread > 99 ? "99+" : String(unread)}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color={c.ink}
+          />
+        </View>
+      </Pressable>
+      {!last ? <RowDivider c={c} /> : null}
+    </>
   );
 }
 
@@ -1103,5 +1447,198 @@ export function BAppBar({
         </View>
       </SafeAreaView>
     </View>
+  );
+}
+
+/* ---------- stepper (multi-step flows) ---------- */
+// Numbered circles joined by hairlines: the active step is brand-filled,
+// completed steps show a check, upcoming steps are muted. Optional steps read
+// lighter. Tapping a step calls onStepPress (parent decides where you can go).
+export function BStepper({
+  c,
+  steps,
+  current,
+  onStepPress,
+}: {
+  c: UIColors;
+  steps: { label: string; optional?: boolean }[];
+  current: number;
+  onStepPress?: (index: number) => void;
+}) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+      {steps.map((s, i) => {
+        const done = i < current;
+        const active = i === current;
+        const filled = done || active;
+        return (
+          <React.Fragment key={i}>
+            {i > 0 ? (
+              <View
+                style={{
+                  flex: 1,
+                  height: 2,
+                  marginTop: 13,
+                  backgroundColor: i <= current ? c.brand : c.border,
+                }}
+              />
+            ) : null}
+            <Pressable
+              onPress={onStepPress ? () => onStepPress(i) : undefined}
+              disabled={!onStepPress}
+              style={{ alignItems: "center", gap: 4, maxWidth: 96 }}
+              accessibilityRole="button"
+              accessibilityLabel={s.label}
+            >
+              <View
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: radius.pill,
+                  borderWidth: borders.thick,
+                  borderColor: c.border,
+                  backgroundColor: filled ? c.brand : c.surface,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {done ? (
+                  <MaterialCommunityIcons
+                    name="check"
+                    size={16}
+                    color={c.onBrand}
+                  />
+                ) : (
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "800",
+                      color: active ? c.onBrand : c.subtext,
+                    }}
+                  >
+                    {i + 1}
+                  </Text>
+                )}
+              </View>
+              <Text
+                style={[
+                  txt(typeScale.label, active ? c.ink : c.subtext),
+                  { textAlign: "center" },
+                ]}
+                numberOfLines={1}
+              >
+                {s.label}
+              </Text>
+              {s.optional ? (
+                <Text style={txt(typeScale.caption, c.faint)}>optional</Text>
+              ) : null}
+            </Pressable>
+          </React.Fragment>
+        );
+      })}
+    </View>
+  );
+}
+
+/* ---------- accordion (collapsible optional section) ---------- */
+// M3 easing curves (see .docs/M3_ADOPTION_GUIDE.md §B1). Emphasized-decelerate
+// is the crisp "container expansion" curve — fast out of the gate, firm settle,
+// no overshoot; standard is the symmetric resize/spin curve.
+const M3_EMPHASIZED = Easing.bezier(0.05, 0.7, 0.1, 1);
+const M3_STANDARD = Easing.bezier(0.2, 0, 0, 1);
+
+// A bordered section with a tappable header (label + a summary of what's set +
+// a chevron). Collapsed by default to keep forms compact; expands in place.
+// The summary reads brand when the section holds a value, muted otherwise.
+export function BAccordion({
+  c,
+  label,
+  summary,
+  filled,
+  open,
+  onToggle,
+  children,
+}: {
+  c: UIColors;
+  label: string;
+  summary?: string; // shown on the right when collapsed
+  filled?: boolean; // has a value → summary reads in brand
+  open: boolean;
+  onToggle: () => void;
+  children?: React.ReactNode;
+}) {
+  // Crisp M3 motion (not a mushy spring): the card's height animates on the
+  // emphasized-decelerate curve, the chevron spins on the standard curve in
+  // lock-step, and the content fades in over the same beat.
+  const spin = useSharedValue(open ? 1 : 0);
+  useEffect(() => {
+    spin.value = withTiming(open ? 1 : 0, {
+      duration: motion.duration.base,
+      easing: M3_STANDARD,
+    });
+  }, [open, spin]);
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.value * 180}deg` }],
+  }));
+  return (
+    <Animated.View
+      layout={LinearTransition.duration(motion.duration.base).easing(
+        M3_EMPHASIZED
+      )}
+      style={{
+        borderWidth: borders.thick,
+        borderColor: c.border,
+        borderRadius: radius.md,
+        backgroundColor: c.surface,
+        overflow: "hidden",
+      }}
+    >
+      <Pressable
+        onPress={onToggle}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: space.sm,
+          paddingHorizontal: space.md,
+          paddingVertical: space.md,
+        }}
+      >
+        <Text style={txt(typeScale.label, c.ink)}>{label}</Text>
+        <View style={{ flex: 1 }} />
+        {!open && summary ? (
+          <Text
+            style={[
+              txt(typeScale.caption, filled ? c.brand : c.faint),
+              { maxWidth: 180 },
+            ]}
+            numberOfLines={1}
+          >
+            {summary}
+          </Text>
+        ) : null}
+        <Animated.View style={chevronStyle}>
+          <MaterialCommunityIcons
+            name="chevron-down"
+            size={20}
+            color={c.subtext}
+          />
+        </Animated.View>
+      </Pressable>
+      {open ? (
+        <Animated.View
+          entering={FadeIn.duration(motion.duration.base).easing(M3_EMPHASIZED)}
+          exiting={FadeOut.duration(motion.duration.fast).easing(M3_STANDARD)}
+          style={{
+            paddingHorizontal: space.md,
+            paddingBottom: space.md,
+            gap: space.sm,
+          }}
+        >
+          {children}
+        </Animated.View>
+      ) : null}
+    </Animated.View>
   );
 }

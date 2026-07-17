@@ -24,6 +24,7 @@ type ActivityRow = {
   place_id: string | null;
   location_source: string | null;
   gender_pref: string;
+  vibe: string | null;
   capacity: number | null;
   expires_at: string | null;
   start_time: string | null;
@@ -71,7 +72,7 @@ export default function EditActivityScreen() {
         const { data, error } =
           await backend.activities.getActivityById<ActivityRow>(
             activityId,
-            "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, place_id, location_source, gender_pref, capacity, expires_at, start_time, end_time"
+            "id, creator_id, title_text, place_text, place_name, place_address, lat, lng, place_id, location_source, gender_pref, vibe, capacity, expires_at, start_time, end_time"
           );
 
         if (error) throw error;
@@ -113,6 +114,7 @@ export default function EditActivityScreen() {
       place_id: payload.place_id,
       location_source: payload.location_source,
       gender_pref: payload.gender_pref,
+      vibe: payload.vibe,
       capacity: payload.capacity,
       start_time: payload.start_time,
       end_time: payload.end_time,
@@ -187,7 +189,7 @@ export default function EditActivityScreen() {
     }
 
     if (changes.length === 0) {
-      router.replace("/(tabs)/created");
+      router.replace("/(tabs)/rooms");
       return;
     }
 
@@ -225,7 +227,7 @@ export default function EditActivityScreen() {
         }
       }
 
-      router.replace("/(tabs)/created");
+      router.replace("/(tabs)/rooms");
     } catch (e: any) {
       console.error(e);
       alertAsync(t("edit.saveErrorTitle"), e?.message ?? "Unknown error");
@@ -235,7 +237,7 @@ export default function EditActivityScreen() {
   }
 
   const backToCreated = () =>
-    router.canGoBack() ? router.back() : router.replace("/(tabs)/created");
+    router.canGoBack() ? router.back() : router.replace("/(tabs)/rooms");
 
   if (loading) {
     return (
@@ -290,6 +292,7 @@ export default function EditActivityScreen() {
           place_id: activity.place_id ?? null,
           location_source: activity.location_source ?? null,
           gender_pref: (activity.gender_pref as any) ?? "any",
+          vibe: activity.vibe ?? null,
           capacity: activity.capacity ?? null,
           expires_at: activity.expires_at,
           start_time: activity.start_time ?? null,

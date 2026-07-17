@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, { FadeInLeft, FadeInRight } from "react-native-reanimated";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { backend } from "../../lib/backend";
 import { isAuthMissingError, requireUserId } from "../../lib/domain/auth";
@@ -35,6 +36,7 @@ import { useUIKit } from "../../src/ui/theme/useUIKit";
 import {
   space,
   radius,
+  motion,
   typeScale,
   type UIColors,
 } from "../../src/ui/theme/uikit";
@@ -44,9 +46,11 @@ import {
   BButton,
   BCard,
   BChip,
+  BIconButton,
   BText,
   PaperTexture,
 } from "../../src/ui/components/brutal";
+import { BottomNav } from "../../components/BottomNav";
 
 type ActivityRow = {
   id: string;
@@ -139,6 +143,12 @@ export default function RoomScreen() {
 
   const listRef = useRef<FlatList<ChatItem> | null>(null);
   const inputRef = useRef<TextInput | null>(null);
+  // Only animate messages that arrive AFTER the first render — the initial
+  // batch and older (paged-in) messages should appear instantly. We seed this
+  // set with whatever's on screen at first paint; anything new after that slides
+  // in from the sender's side.
+  const seenMsgIds = useRef<Set<string>>(new Set());
+  const chatHydrated = useRef(false);
 
   function scrollToBottom(animated = true) {
     requestAnimationFrame(() => {
@@ -586,6 +596,16 @@ export default function RoomScreen() {
     return items;
   }, [events, i18n.language, t, unreadSince, userId]);
 
+  // Seed the "already seen" set once, from the first non-empty render, so the
+  // initial conversation doesn't animate — only later arrivals do.
+  useEffect(() => {
+    if (chatHydrated.current || chatItems.length === 0) return;
+    for (const it of chatItems) {
+      if (it.kind === "event") seenMsgIds.current.add(it.e.id);
+    }
+    chatHydrated.current = true;
+  }, [chatItems]);
+
   // :zap: CHANGE 2: Long-press handler for message
   function openMessageMenu(e: RoomEventRow) {
     setMenuTarget(e);
@@ -697,55 +717,69 @@ export default function RoomScreen() {
       : getEventDisplayName(t, e);
     const content = renderEventContent(t, i18n.language, e);
 
+    // Slide a brand-new message in from the sender's side (right = mine, left =
+    // theirs). Older/initial messages render instantly (see chatHydrated).
+    const isNewMsg = chatHydrated.current && !seenMsgIds.current.has(e.id);
+    if (chatHydrated.current) seenMsgIds.current.add(e.id);
+    const entering = isNewMsg
+      ? (isMine ? FadeInRight : FadeInLeft)
+          .springify()
+          .damping(motion.springSpatial.damping)
+          .stiffness(motion.springSpatial.stiffness)
+          .mass(motion.springSpatial.mass)
+      : undefined;
+
     // :zap: CHANGE 4: IG-ish layout: name closer + smaller gap, time near bubble
     return (
-      <Pressable
-        onLongPress={() => openMessageMenu(e)}
-        delayLongPress={250}
-        style={{
-          alignSelf: isMine ? "flex-end" : "flex-start",
-          maxWidth: "88%",
-          gap: 4,
-        }}
-      >
-        <View
+      <Animated.View entering={entering}>
+        <Pressable
+          onLongPress={() => openMessageMenu(e)}
+          delayLongPress={250}
           style={{
-            flexDirection: isMine ? "row-reverse" : "row",
-            alignItems: "baseline",
-            gap: 6,
+            alignSelf: isMine ? "flex-end" : "flex-start",
+            maxWidth: "88%",
+            gap: 4,
           }}
         >
-          <BText
-            c={c}
-            v="label"
-            color={c.subtext}
-            numberOfLines={1}
-            style={{ maxWidth: 180 }}
+          <View
+            style={{
+              flexDirection: isMine ? "row-reverse" : "row",
+              alignItems: "baseline",
+              gap: 6,
+            }}
           >
-            {name}
-          </BText>
-          <BText c={c} v="caption" color={c.subtext}>
-            {hhmm(e.created_at)}
-          </BText>
-        </View>
+            <BText
+              c={c}
+              v="label"
+              color={c.subtext}
+              numberOfLines={1}
+              style={{ maxWidth: 180 }}
+            >
+              {name}
+            </BText>
+            <BText c={c} v="caption" color={c.subtext}>
+              {hhmm(e.created_at)}
+            </BText>
+          </View>
 
-        <View
-          style={{
-            paddingVertical: space.sm + 2,
-            paddingHorizontal: space.md,
-            borderRadius: radius.lg,
-            borderTopRightRadius: isMine ? radius.sm : radius.lg,
-            borderTopLeftRadius: isMine ? radius.lg : radius.sm,
-            borderWidth: 2,
-            borderColor: c.border,
-            backgroundColor: isMine ? c.brand : c.surface,
-          }}
-        >
-          <BText c={c} v="body" color={isMine ? c.onBrand : c.text}>
-            {content}
-          </BText>
-        </View>
-      </Pressable>
+          <View
+            style={{
+              paddingVertical: space.sm + 2,
+              paddingHorizontal: space.md,
+              borderRadius: radius.lg,
+              borderTopRightRadius: isMine ? radius.sm : radius.lg,
+              borderTopLeftRadius: isMine ? radius.lg : radius.sm,
+              borderWidth: 2,
+              borderColor: c.border,
+              backgroundColor: isMine ? c.brand : c.surface,
+            }}
+          >
+            <BText c={c} v="body" color={isMine ? c.onBrand : c.text}>
+              {content}
+            </BText>
+          </View>
+        </Pressable>
+      </Animated.View>
     );
   }
 
@@ -792,35 +826,42 @@ export default function RoomScreen() {
           </>
         }
         right={
-          <>
-            {!joined ? (
-              <BButton
+          // Host manages (Edit + Close); guests join / leave. A creator doesn't
+          // "leave" their own room, so it's not shown for them.
+          isCreator ? (
+            <>
+              <BIconButton
                 c={c}
-                tone="primary"
-                label={
-                  myMembershipState === "left"
-                    ? t("common.rejoin")
-                    : t("common.join")
-                }
-                onPress={roomState.isReadOnly ? undefined : join}
+                icon="pencil"
+                accessibilityLabel={t("rootNav.editInvite")}
+                onPress={() => router.push(`/edit/${activityId}`)}
               />
-            ) : (
-              <BButton
-                c={c}
-                tone="secondary"
-                label={t("common.leave")}
-                onPress={confirmLeave}
-              />
-            )}
-            {isCreator ? (
               <BButton
                 c={c}
                 tone="danger"
                 label={t("common.close")}
                 onPress={roomState.isReadOnly ? undefined : closeInvite}
               />
-            ) : null}
-          </>
+            </>
+          ) : !joined ? (
+            <BButton
+              c={c}
+              tone="primary"
+              label={
+                myMembershipState === "left"
+                  ? t("common.rejoin")
+                  : t("common.join")
+              }
+              onPress={roomState.isReadOnly ? undefined : join}
+            />
+          ) : (
+            <BButton
+              c={c}
+              tone="secondary"
+              label={t("common.leave")}
+              onPress={confirmLeave}
+            />
+          )
         }
       />
       <View style={{ flex: 1, padding: space.lg, gap: space.md }}>
@@ -1004,6 +1045,10 @@ export default function RoomScreen() {
           </View>
         </View>
       </View>
+
+      {/* Keep the bottom nav visible even though the room lives outside the
+          Tabs navigator. */}
+      <BottomNav />
 
       {/* :zap: CHANGE 6: Long-press message menu (Copy/Report placeholders) */}
       <Modal

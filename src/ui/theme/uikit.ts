@@ -9,6 +9,8 @@
 // and centered so cards never over-stretch on wide / tablet / web screens.
 // =============================================================================
 
+import { Platform } from "react-native";
+
 export type UIScheme = "light" | "dark";
 
 export type UIColors = {
@@ -98,6 +100,34 @@ export const uiColors: Record<UIScheme, UIColors> = {
   dark: darkColors,
 };
 
+// Blend two hex colors. t=0 → a, t=1 → b. Handy for softening a bold accent
+// toward the paper surface (a paler "container" tint) — theme-aware because
+// you pass the current surface as `b`.
+function hexToRgb(hex: string) {
+  let h = hex.replace("#", "");
+  if (h.length === 3)
+    h = h
+      .split("")
+      .map((x) => x + x)
+      .join("");
+  const n = parseInt(h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+export function mixHex(a: string, b: string, t: number): string {
+  const pa = hexToRgb(a);
+  const pb = hexToRgb(b);
+  const ch = (x: number, y: number) =>
+    Math.round(x + (y - x) * t)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${ch(pa.r, pb.r)}${ch(pa.g, pb.g)}${ch(pa.b, pb.b)}`;
+}
+
+// Brand wordmark / text-logo font: "Madimi One" (Google Fonts). Web loads it
+// via the <link> in app/_layout.tsx (family name has a space); native bundles
+// the TTF under a no-space alias (see useFonts in app/_layout.tsx).
+export const wordmarkFont = Platform.OS === "web" ? "Madimi One" : "MadimiOne";
+
 // --- Typography (bold, confident) -------------------------------------------
 // Fonts loaded in app/_layout.tsx. Display/headings = Poppins; body = Inter;
 // accent/personality = Caveat (sparingly). Labels are UPPERCASE + tracked.
@@ -180,8 +210,22 @@ export const layout = {
 // entrance; controls press INTO their shadow. Reanimated consumes these.
 export const motion = {
   duration: { fast: 150, base: 260, slow: 420 },
-  // springy, slightly bouncy — "lively"
+  // Legacy single spring — still used for list/entrance pops. Bouncy, "lively"
+  // (damping ratio ≈ 0.56).
   spring: { damping: 13, stiffness: 150, mass: 0.9 },
+  // M3-split springs (see .docs/M3_ADOPTION_GUIDE.md §B1): spatial = position /
+  // size / shape (crisp, may slightly overshoot); effects = opacity / color
+  // (critically damped, never bounces).
+  springSpatial: { damping: 26, stiffness: 300, mass: 1 },
+  springEffects: { damping: 60, stiffness: 900, mass: 1 },
+  // M3 easing (cubic-bezier control points). Emphasized-decelerate for
+  // entrances / expansions, emphasized-accelerate for exits, standard for
+  // symmetric resize / move. Crisp, no overshoot.
+  easing: {
+    emphasizedDecelerate: [0.05, 0.7, 0.1, 1],
+    emphasizedAccelerate: [0.3, 0, 0.8, 0.15],
+    standard: [0.2, 0, 0, 1],
+  },
   // stagger between list items on first appear
   stagger: 45,
   // how far a control shifts when pressed (matches its hard-shadow offset)

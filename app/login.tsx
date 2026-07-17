@@ -8,7 +8,7 @@ import { backend } from "../lib/backend";
 import { ensureProfile } from "../lib/domain/auth";
 import { useT } from "../lib/i18n/useT";
 import { useUIKit } from "../src/ui/theme/useUIKit";
-import { hardShadow, radius, space } from "../src/ui/theme/uikit";
+import { hardShadow, radius, space, wordmarkFont } from "../src/ui/theme/uikit";
 import {
   BButton,
   BCard,
@@ -84,7 +84,11 @@ export default function LoginScreen() {
           v="display"
           c={c}
           color={c.ink}
-          style={{ marginTop: space.sm, fontFamily: "ShortStack" }}
+          style={{
+            marginTop: space.sm,
+            fontFamily: wordmarkFont,
+            fontWeight: "400",
+          }}
         >
           {t("app.name")}
         </BText>

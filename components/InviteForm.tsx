@@ -1,19 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
 import { searchPlacesNominatim, type PlaceCandidate } from "../lib/api/places";
+import { VIBES, VIBE_META } from "../lib/ui/vibe";
 import { useT } from "../lib/i18n/useT";
 import { formatExpiryLabel } from "../lib/i18n/i18n_format";
 import { useUIKit } from "../src/ui/theme/useUIKit";
 import { space } from "../src/ui/theme/uikit";
 import {
+  BAccordion,
   BButton,
   BCard,
   BChip,
   BInput,
   BText,
 } from "../src/ui/components/brutal";
+import {
+  EXPIRY_PRESETS,
+  buildQuickTimes,
+  formatDateTimeLocal,
+  formatDateTimeLocalFromDate,
+  parseDateTimeInput,
+} from "../lib/ui/form_time";
 
 type GenderPref = "any" | "female" | "male";
+type Section = "where" | "when" | "who" | "expires";
 
 export type InviteFormPayload = {
   title_text: string;
@@ -25,6 +35,7 @@ export type InviteFormPayload = {
   place_id: string | null;
   location_source: string | null;
   gender_pref: GenderPref;
+  vibe: string | null;
   capacity: number | null;
   start_time?: string | null;
   end_time?: string | null;
@@ -41,6 +52,7 @@ type InviteFormInitialValues = {
   place_id?: string | null;
   location_source?: string | null;
   gender_pref?: GenderPref | null;
+  vibe?: string | null;
   capacity?: number | null;
   start_time?: string | null;
   end_time?: string | null;
@@ -64,47 +76,6 @@ type SelectedPlace = {
   lng: number | null;
   source: string | null;
 };
-
-const EXPIRY_PRESETS = [
-  { label: "30m", minutes: 30 },
-  { label: "1h", minutes: 60 },
-  { label: "2h", minutes: 120 },
-  { label: "4h", minutes: 240 },
-  { label: "8h", minutes: 480 },
-];
-
-const pad2 = (value: number) => String(value).padStart(2, "0");
-
-function formatDateTimeLocalFromDate(d: Date): string {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
-    d.getDate()
-  )} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-}
-
-function formatDateTimeLocal(value?: string | null): string {
-  if (!value) return "";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(
-    d.getDate()
-  )} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-}
-
-function parseDateTimeInput(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return { iso: null, error: null, date: null as Date | null };
-  let normalized = trimmed;
-  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}$/.test(trimmed)) {
-    normalized = `${trimmed.replace(" ", "T")}:00`;
-  } else if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}$/.test(trimmed)) {
-    normalized = trimmed.replace(" ", "T");
-  }
-  const parsed = new Date(normalized);
-  if (Number.isNaN(parsed.getTime())) {
-    return { iso: null, error: "format", date: null as Date | null };
-  }
-  return { iso: parsed.toISOString(), error: null, date: parsed };
-}
 
 function buildInitialPlace(
   initialValues: InviteFormInitialValues | undefined,
@@ -153,6 +124,8 @@ export default function InviteForm(props: Props) {
   );
   const [candidates, setCandidates] = useState<PlaceCandidate[]>([]);
   const [searching, setSearching] = useState(false);
+  const [openSection, setOpenSection] = useState<Section | null>(null);
+  const [vibe, setVibe] = useState<string | null>(initialValues?.vibe ?? null);
   const [genderPref, setGenderPref] = useState<GenderPref>(
     (initialValues?.gender_pref as GenderPref) ?? "any"
   );
@@ -170,9 +143,12 @@ export default function InviteForm(props: Props) {
   );
   const [expiryMinutes, setExpiryMinutes] = useState<number | null>(null);
   const [didSubmit, setDidSubmit] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
+  const quickTimes = useMemo(() => buildQuickTimes(t), [t]);
   const searchIdRef = useRef(0);
+
+  const toggleSection = (s: Section) =>
+    setOpenSection((v) => (v === s ? null : s));
 
   useEffect(() => {
     const q = placeQuery.trim();
@@ -216,16 +192,16 @@ export default function InviteForm(props: Props) {
     }
   };
 
-  const onSelectCandidate = (c: PlaceCandidate) => {
+  const onSelectCandidate = (cand: PlaceCandidate) => {
     setSelectedPlace({
-      placeId: c.placeId || null,
-      name: c.name,
-      address: c.address,
-      lat: c.lat,
-      lng: c.lng,
+      placeId: cand.placeId || null,
+      name: cand.name,
+      address: cand.address,
+      lat: cand.lat,
+      lng: cand.lng,
       source: "nominatim",
     });
-    setPlaceQuery(c.name);
+    setPlaceQuery(cand.name);
     setManualPlace("");
     setCandidates([]);
     setSearching(false);
@@ -277,6 +253,18 @@ export default function InviteForm(props: Props) {
   const timeRangeDisplayError = didSubmit ? timeRangeError : null;
   const startPastDisplayError = didSubmit ? startPastError : null;
 
+  // Surface a validation problem in a collapsed section by auto-opening it.
+  const openSectionWithError = () => {
+    if (
+      startParsed.error ||
+      endParsed.error ||
+      timeRangeError ||
+      startPastError
+    )
+      setOpenSection("when");
+    else if (parsedCapacity.error) setOpenSection("who");
+  };
+
   const handleSubmit = async () => {
     setDidSubmit(true);
     if (
@@ -287,6 +275,7 @@ export default function InviteForm(props: Props) {
       timeRangeError ||
       startPastError
     ) {
+      openSectionWithError();
       return;
     }
 
@@ -330,6 +319,7 @@ export default function InviteForm(props: Props) {
       place_id: placeId,
       location_source: locationSource,
       gender_pref: genderPref,
+      vibe,
       capacity: parsedCapacity.value,
       start_time: startParsed.iso,
       end_time: endParsed.iso,
@@ -352,102 +342,40 @@ export default function InviteForm(props: Props) {
           ? t("inviteForm.expiry_hint_edit")
           : t("inviteForm.expiry_hint_default");
 
-  const quickTimes = [
-    {
-      key: "tonight",
-      label: t("inviteForm.time_quick_tonight"),
-      getDate: () => {
-        const d = new Date();
-        d.setHours(20, 0, 0, 0);
-        return d;
-      },
-    },
-    {
-      key: "later",
-      label: t("inviteForm.time_quick_later"),
-      getDate: () => {
-        const d = new Date(Date.now() + 2 * 60 * 60 * 1000);
-        d.setMinutes(0, 0, 0);
-        return d;
-      },
-    },
-    {
-      key: "week",
-      label: t("inviteForm.time_quick_week"),
-      getDate: () => {
-        const d = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
-        d.setHours(19, 0, 0, 0);
-        return d;
-      },
-    },
-    {
-      key: "next",
-      label: t("inviteForm.time_quick_next"),
-      getDate: () => {
-        const d = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000);
-        d.setHours(19, 0, 0, 0);
-        return d;
-      },
-    },
-  ];
+  // ---- collapsed-row summaries (brand when a value is set) ----
+  const placeLabel = selectedPlace?.name || manualPlace.trim();
+  const whereSummary = placeLabel || t("compose.where_add");
+  const whenSummary = startTime.trim() || t("compose.when_add");
+  const whoSummary = useMemo(() => {
+    const parts: string[] = [];
+    if (genderPref !== "any")
+      parts.push(
+        t(genderPref === "female" ? "compose.g_women" : "compose.g_men")
+      );
+    if (capacity != null) parts.push(t("compose.people_n", { n: capacity }));
+    return parts.length ? parts.join(" · ") : t("compose.who_anyone");
+  }, [genderPref, capacity, t]);
+  const whoFilled = genderPref !== "any" || capacity != null;
+  const expiresSummary =
+    expiryMode === "never"
+      ? t("inviteForm.expiry_never")
+      : expiryMode === "preset" && expiryMinutes != null
+        ? formatExpiryLabel(
+            new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString(),
+            Date.now(),
+            t
+          )
+        : t("inviteForm.expiry_default");
 
-  const capacityPresets = [
-    { key: "2-3", label: t("inviteForm.cap_quick_2_3"), value: 3 },
-    { key: "3-4", label: t("inviteForm.cap_quick_3_4"), value: 4 },
-    { key: "5+", label: t("inviteForm.cap_quick_5_plus"), value: 6 },
-    { key: "any", label: t("inviteForm.cap_quick_any"), value: null },
-  ];
-
-  const summaryItems = useMemo(() => {
-    const items: Array<{ key: string; label: string }> = [];
-    if (selectedPlace || manualPlace.trim()) {
-      items.push({ key: "place", label: t("inviteForm.summary_place") });
-    }
-    if (startTime.trim()) {
-      items.push({ key: "time", label: t("inviteForm.summary_time") });
-    }
-    if (capacity != null) {
-      items.push({ key: "cap", label: t("inviteForm.summary_capacity") });
-    }
-    if (genderPref !== "any") {
-      items.push({ key: "gender", label: t("inviteForm.summary_gender") });
-    }
-    if (expiryMode !== "default") {
-      items.push({ key: "expiry", label: t("inviteForm.summary_expiry") });
-    }
-    return items;
-  }, [
-    capacity,
-    expiryMode,
-    genderPref,
-    manualPlace,
-    placeQuery,
-    selectedPlace,
-    startTime,
-    t,
-  ]);
+  const rowChips = (children: React.ReactNode) => (
+    <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
+      {children}
+    </View>
+  );
 
   return (
     <View style={{ gap: space.md }}>
-      <BCard c={c}>
-        <BText c={c} v="label" color={c.subtext}>
-          {summaryItems.length === 0
-            ? t("inviteForm.summary_empty")
-            : t("inviteForm.summary_filled")}
-        </BText>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.sm }}>
-          {summaryItems.length === 0 ? (
-            <BText c={c} v="caption" color={c.subtext}>
-              {t("inviteForm.summary_hint")}
-            </BText>
-          ) : (
-            summaryItems.map((it) => (
-              <BChip key={it.key} c={c} label={it.label} />
-            ))
-          )}
-        </View>
-      </BCard>
-
+      {/* Title — required; the only thing needed to save. */}
       <BInput
         c={c}
         label={t("inviteForm.titleLabel")}
@@ -457,10 +385,37 @@ export default function InviteForm(props: Props) {
         error={titleError ?? undefined}
       />
 
-      <BCard c={c}>
+      {/* Compact vibe row directly under the title. */}
+      <View style={{ gap: space.sm }}>
         <BText c={c} v="label" color={c.subtext}>
-          {t("inviteForm.placeLabel")}
+          {t("vibe.pick")}
         </BText>
+        {rowChips(
+          VIBES.map((v) => {
+            const tint = VIBE_META[v].tint;
+            return (
+              <BChip
+                key={v}
+                c={c}
+                label={t(VIBE_META[v].labelKey)}
+                selected={vibe === v}
+                accent={tint ? c[tint] : undefined}
+                onPress={() => setVibe(vibe === v ? null : v)}
+              />
+            );
+          })
+        )}
+      </View>
+
+      {/* Optional details — collapsed until you need them. */}
+      <BAccordion
+        c={c}
+        label={t("compose.sec_where")}
+        summary={whereSummary}
+        filled={!!placeLabel}
+        open={openSection === "where"}
+        onToggle={() => toggleSection("where")}
+      >
         <BText c={c} v="caption" color={c.subtext}>
           {t("inviteForm.placeBlurb")}
         </BText>
@@ -471,13 +426,6 @@ export default function InviteForm(props: Props) {
           value={placeQuery}
           onChangeText={onChangePlaceQuery}
           hint={t("inviteForm.placeHint")}
-        />
-
-        <BButton
-          c={c}
-          tone="secondary"
-          label={t("inviteForm.place_skip")}
-          onPress={onClearSelection}
         />
 
         {selectedPlace ? (
@@ -531,12 +479,7 @@ export default function InviteForm(props: Props) {
             {t("inviteForm.noResults")}
           </BText>
         ) : null}
-      </BCard>
 
-      <BCard c={c}>
-        <BText c={c} v="label" color={c.subtext}>
-          {t("inviteForm.customPlaceLabel")}
-        </BText>
         <BInput
           c={c}
           label={t("inviteForm.customPlaceLabel")}
@@ -545,30 +488,34 @@ export default function InviteForm(props: Props) {
           onChangeText={setManualPlace}
           hint={t("inviteForm.customPlaceHint")}
         />
-      </BCard>
+      </BAccordion>
 
-      <BCard c={c}>
-        <BText c={c} v="label" color={c.subtext}>
-          {t("inviteForm.timeLabel")}
-        </BText>
+      <BAccordion
+        c={c}
+        label={t("compose.sec_when")}
+        summary={whenSummary}
+        filled={!!startTime.trim()}
+        open={openSection === "when"}
+        onToggle={() => toggleSection("when")}
+      >
         <BText c={c} v="caption" color={c.subtext}>
           {t("inviteForm.timeBlurb")}
         </BText>
-        <View style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}>
-          {quickTimes.map((q) => (
-            <Pressable
+        {rowChips(
+          quickTimes.map((q) => (
+            <BChip
               key={q.key}
+              c={c}
+              label={q.label}
               onPress={() =>
                 setStartTime(formatDateTimeLocalFromDate(q.getDate()))
               }
-            >
-              <BChip c={c} label={q.label} />
-            </Pressable>
-          ))}
-        </View>
+            />
+          ))
+        )}
         <BInput
           c={c}
-          label={t("inviteForm.timeLabel")}
+          label={t("inviteForm.startTimePlaceholder")}
           placeholder={t("inviteForm.startTimePlaceholder")}
           value={startTime}
           onChangeText={setStartTime}
@@ -576,134 +523,107 @@ export default function InviteForm(props: Props) {
         />
         <BInput
           c={c}
-          label={t("inviteForm.timeLabel")}
+          label={t("inviteForm.endTimePlaceholder")}
           placeholder={t("inviteForm.endTimePlaceholder")}
           value={endTime}
           onChangeText={setEndTime}
           error={endTimeError ?? timeRangeDisplayError ?? undefined}
         />
-      </BCard>
+      </BAccordion>
 
-      <Pressable onPress={() => setShowAdvanced((prev) => !prev)}>
-        <BChip
-          c={c}
-          label={
-            showAdvanced ? t("inviteForm.more_hide") : t("inviteForm.more_show")
-          }
-        />
-      </Pressable>
+      <BAccordion
+        c={c}
+        label={t("compose.sec_who")}
+        summary={whoSummary}
+        filled={whoFilled}
+        open={openSection === "who"}
+        onToggle={() => toggleSection("who")}
+      >
+        <BText c={c} v="caption" color={c.subtext}>
+          {t("inviteForm.capacityLabel")}
+        </BText>
+        {rowChips(
+          [null, 2, 3, 4, 6, 8].map((n) => (
+            <BChip
+              key={String(n)}
+              c={c}
+              selected={capacity === n}
+              label={n == null ? t("capacity.unlimited") : String(n)}
+              onPress={() => setCapacity(n)}
+            />
+          ))
+        )}
+        {capacityError ? (
+          <BText c={c} v="caption" color={c.danger}>
+            {capacityError}
+          </BText>
+        ) : null}
+        <BText c={c} v="caption" color={c.subtext}>
+          {t("inviteForm.genderLabel")}
+        </BText>
+        {rowChips(
+          (["any", "female", "male"] as const).map((g) => (
+            <BChip
+              key={g}
+              c={c}
+              label={t(`inviteForm.gender_${g}`)}
+              selected={genderPref === g}
+              onPress={() => setGenderPref(g)}
+            />
+          ))
+        )}
+      </BAccordion>
 
-      {showAdvanced ? (
-        <>
-          <BCard c={c}>
-            <BText c={c} v="label" color={c.subtext}>
-              {t("inviteForm.capacityLabel")}
-            </BText>
-            <BText c={c} v="caption" color={c.subtext}>
-              {t("inviteForm.capacityBlurb")}
-            </BText>
-            <View
-              style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
-            >
-              {capacityPresets.map((p) => (
-                <Pressable key={p.key} onPress={() => setCapacity(p.value)}>
-                  <BChip
-                    c={c}
-                    label={p.label}
-                    selected={capacity === p.value}
-                  />
-                </Pressable>
-              ))}
-            </View>
-            <BText c={c} v="caption" color={c.subtext}>
-              {t("inviteForm.capacityHint")}
-            </BText>
-            {capacityError ? (
-              <BText c={c} v="caption" color={c.danger}>
-                {capacityError}
-              </BText>
-            ) : null}
-          </BCard>
+      <BAccordion
+        c={c}
+        label={t("compose.sec_expires")}
+        summary={expiresSummary}
+        filled={expiryMode !== "default"}
+        open={openSection === "expires"}
+        onToggle={() => toggleSection("expires")}
+      >
+        {rowChips(
+          <>
+            <BChip
+              c={c}
+              label={t("inviteForm.expiry_default")}
+              selected={expiryMode === "default"}
+              onPress={() => {
+                setExpiryMode("default");
+                setExpiryMinutes(null);
+              }}
+            />
 
-          <BCard c={c}>
-            <BText c={c} v="label" color={c.subtext}>
-              {t("inviteForm.genderLabel")}
-            </BText>
-            <BText c={c} v="caption" color={c.subtext}>
-              {t("inviteForm.genderBlurb")}
-            </BText>
-            <View
-              style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
-            >
-              {(["any", "female", "male"] as const).map((v) => (
-                <Pressable key={v} onPress={() => setGenderPref(v)}>
-                  <BChip
-                    c={c}
-                    label={t(`inviteForm.gender_${v}`)}
-                    selected={genderPref === v}
-                  />
-                </Pressable>
-              ))}
-            </View>
-          </BCard>
-
-          <BCard c={c}>
-            <BText c={c} v="label" color={c.subtext}>
-              {t("inviteForm.expiryTitle")}
-            </BText>
-            <View
-              style={{ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }}
-            >
-              <Pressable
+            {EXPIRY_PRESETS.map((p) => (
+              <BChip
+                key={p.label}
+                c={c}
+                label={p.label}
+                selected={
+                  expiryMode === "preset" && expiryMinutes === p.minutes
+                }
                 onPress={() => {
-                  setExpiryMode("default");
-                  setExpiryMinutes(null);
+                  setExpiryMode("preset");
+                  setExpiryMinutes(p.minutes);
                 }}
-              >
-                <BChip
-                  c={c}
-                  label={t("inviteForm.expiry_default")}
-                  selected={expiryMode === "default"}
-                />
-              </Pressable>
+              />
+            ))}
 
-              {EXPIRY_PRESETS.map((p) => (
-                <Pressable
-                  key={p.label}
-                  onPress={() => {
-                    setExpiryMode("preset");
-                    setExpiryMinutes(p.minutes);
-                  }}
-                >
-                  <BChip
-                    c={c}
-                    label={p.label}
-                    selected={
-                      expiryMode === "preset" && expiryMinutes === p.minutes
-                    }
-                  />
-                </Pressable>
-              ))}
-
-              <Pressable
-                onPress={() => {
-                  setExpiryMode("never");
-                  setExpiryMinutes(null);
-                }}
-              >
-                <BChip
-                  c={c}
-                  label={t("inviteForm.expiry_never")}
-                  selected={expiryMode === "never"}
-                />
-              </Pressable>
-            </View>
-            <BText c={c} v="body" color={c.subtext}>
-              {expiryHint}
-            </BText>
-          </BCard>
-        </>
-      ) : null}
+            <BChip
+              c={c}
+              label={t("inviteForm.expiry_never")}
+              selected={expiryMode === "never"}
+              onPress={() => {
+                setExpiryMode("never");
+                setExpiryMinutes(null);
+              }}
+            />
+          </>
+        )}
+        <BText c={c} v="body" color={c.subtext}>
+          {expiryHint}
+        </BText>
+      </BAccordion>
 
       <BButton
         c={c}

@@ -1,13 +1,14 @@
 {
   "app": {
-    "name": "Nearby Now"
+    "name": "enoki"
   },
   "tabs": {
     "browse": "フィード",
     "joined": "ロビー",
     "created": "作成済み",
     "settings": "設定",
-    "notifications": "通知"
+    "notifications": "通知",
+    "rooms": "ルーム"
   },
   "common": {
     "loading": "読み込み中...",
@@ -24,11 +25,13 @@
     "unknown": "不明",
     "never": "なし",
     "noMore": "これ以上ありません",
-    "clear": "クリア"
+    "clear": "クリア",
+    "next": "次へ",
+    "save": "保存"
   },
   "auth": {
     "login": {
-      "title": "Nearby Now",
+      "title": "enoki",
       "emailLabel": "メール",
       "emailPlaceholder": "メール",
       "passwordLabel": "パスワード",
@@ -100,14 +103,71 @@
     "subtitle": "一言だけでOK。詳細は後で部屋で編集できます。",
     "area_label": "この投稿の対象エリア",
     "placeholder": "例：今夜カラオケ行ける人？",
-    "template_label": "クイック例文",
-    "template_hint": "タップして入力欄に入れ、あとで編集・追記できます。",
-    "template_1": "今夜ボードゲームどう？",
-    "template_2": "一杯だけ飲みに行ける人？",
-    "template_3": "スキー行こうと思ってる、誰か一緒に？",
-    "template_4": "近くで軽く散歩しない？",
-    "template_5": "カラオケ行きたい！誰か来れる？",
-    "template_6": "急にご飯行きたくなった、あと数人募集。",
+    "title_label": "何する？",
+    "post": "投稿",
+    "post_now": "今すぐ投稿",
+    "add_details": "詳細を追加 ›",
+    "sec_where": "場所",
+    "sec_when": "日時",
+    "sec_who": "対象",
+    "sec_expires": "有効期限",
+    "where_add": "場所を追加",
+    "when_add": "日時を追加",
+    "who_anyone": "誰でも",
+    "g_women": "女性",
+    "g_men": "男性",
+    "people_n": "{{n}}人",
+    "step_say": "内容",
+    "step_where": "場所",
+    "step_details": "詳細",
+    "where_hint": "どこで？（任意）",
+    "details_hint": "追加情報（すべて任意）。",
+    "topic_label": "書き出しに迷ったら",
+    "topic_hint": "トピックをタップで下書き。もう一度押すと別の言い回しに。",
+    "topic_boardgame": "ボドゲ",
+    "topic_drink": "一杯",
+    "topic_ski": "スキー",
+    "topic_walk": "散歩",
+    "topic_karaoke": "カラオケ",
+    "topic_dinner": "ディナー",
+    "gen": {
+      "boardgame": [
+        "今夜ボードゲームやる人いる？",
+        "ボドゲ会、誰か参加しない？",
+        "ボードゲーム、あと1〜2人募集。",
+        "あとでボードゲームどう？"
+      ],
+      "drink": [
+        "一杯飲みながら話さない？",
+        "これから一杯行くけど、一緒にどう？",
+        "今夜さくっと一杯いける人？",
+        "気軽に一杯、誰か空いてる？"
+      ],
+      "ski": [
+        "スキー行こうと思ってる、誰か一緒に？",
+        "ゲレンデ行くけど、来ない？",
+        "近いうちにスキー、人募集中。",
+        "スキー行ける人いる？"
+      ],
+      "walk": [
+        "近くで軽く散歩したい。",
+        "一緒に散歩しない？",
+        "これから散歩、来ない？",
+        "この辺をぶらっと、誰か興味ある？"
+      ],
+      "karaoke": [
+        "カラオケ行きたい気分、誰か興味ある？",
+        "今夜カラオケ行く人？",
+        "カラオケ一緒に行く人募集。",
+        "歌いたい気分、カラオケどう？"
+      ],
+      "dinner": [
+        "急にご飯行きたい、あと数人募集。",
+        "これからご飯、一緒にどう？",
+        "お腹すいた人いる？今夜ご飯？",
+        "夕飯、一緒に行く人募集。"
+      ]
+    },
     "success_title": "ロビーに投稿しました",
     "success_line_1": "投稿完了！近くの人が見られるようになりました。",
     "success_line_2": "いい感じ。いまフィードに出ています。",
@@ -215,6 +275,28 @@
     "area_radius_value": "{{km}}km 以内を表示",
     "mapButton_map": "地図",
     "mapButton_list": "リスト"
+  },
+  "vibe": {
+    "label": "雰囲気",
+    "all": "すべての雰囲気",
+    "chill": "まったり",
+    "hype": "ワイワイ",
+    "deep": "じっくり",
+    "playful": "たのしい",
+    "open": "おまかせ",
+    "pick": "雰囲気",
+    "pick_hint": "どんな雰囲気？（任意）"
+  },
+  "sort": {
+    "label": "並び替え",
+    "newest": "新着",
+    "closing": "締切間近",
+    "nearest": "近い順",
+    "people": "人数順"
+  },
+  "filter": {
+    "category": "カテゴリ",
+    "all": "すべて"
   },
   "created": {
     "headerTitle": "作成済み",
@@ -396,6 +478,9 @@
     "notImplementedBody": "未実装です。"
   },
   "inviteForm": {
+    "step_basics": "基本",
+    "step_where": "場所",
+    "step_details": "詳細",
     "titleLabel": "タイトル",
     "titlePlaceholder": "タイトル（必須）",
     "titleRequired": "タイトルは必須です。",
@@ -498,5 +583,19 @@
   },
   "expires": {
     "never": "なし"
+  },
+  "rooms": {
+    "headerTitle": "ルーム",
+    "role_all": "すべて",
+    "role_hosting": "主催",
+    "role_joined": "参加中",
+    "status_active": "進行中",
+    "status_past": "過去",
+    "empty": "まだルームがありません。",
+    "empty_cta": "アクティビティを見る",
+    "loadErrorTitle": "ルームの読み込みに失敗しました",
+    "refreshErrorTitle": "更新に失敗しました",
+    "show_past": "過去を表示 ({{count}})",
+    "hide_past": "過去を隠す"
   }
 }

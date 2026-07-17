@@ -1,13 +1,14 @@
 {
   "app": {
-    "name": "Nearby Now"
+    "name": "enoki"
   },
   "tabs": {
     "browse": "動態",
     "joined": "房間",
     "created": "我建立",
     "settings": "設定",
-    "notifications": "通知"
+    "notifications": "通知",
+    "rooms": "房間"
   },
   "common": {
     "loading": "載入中…",
@@ -24,11 +25,13 @@
     "unknown": "未知",
     "never": "永不",
     "noMore": "冇更多",
-    "clear": "清除"
+    "clear": "清除",
+    "next": "下一步",
+    "save": "儲存"
   },
   "auth": {
     "login": {
-      "title": "Nearby Now",
+      "title": "enoki",
       "emailLabel": "電郵",
       "emailPlaceholder": "電郵",
       "passwordLabel": "密碼",
@@ -100,14 +103,71 @@
     "subtitle": "打一段簡短文字就得，詳細之後再改。",
     "area_label": "呢個 post 會發去",
     "placeholder": "例如：今晚有冇人想去唱K？",
-    "template_label": "快速範本",
-    "template_hint": "撳範本自動填入，之後可以再改或補充。",
-    "template_1": "今晚有人想玩桌遊／狼人殺？",
-    "template_2": "想飲杯再傾下，有冇人？",
-    "template_3": "諗住去滑雪，有冇人想 join？",
-    "template_4": "想搵人附近行下、chill 下。",
-    "template_5": "好想唱K，有冇人有興趣？",
-    "template_6": "即興食飯，想再搵幾個人。",
+    "title_label": "想做啲咩？",
+    "post": "發佈",
+    "post_now": "即刻發佈",
+    "add_details": "加詳情 ›",
+    "sec_where": "地點",
+    "sec_when": "時間",
+    "sec_who": "對象",
+    "sec_expires": "有效期",
+    "where_add": "加地點",
+    "when_add": "加時間",
+    "who_anyone": "任何人",
+    "g_women": "女生",
+    "g_men": "男生",
+    "people_n": "{{n}} 人",
+    "step_say": "內容",
+    "step_where": "地點",
+    "step_details": "詳情",
+    "where_hint": "喺邊度搞？（可選）",
+    "details_hint": "額外資料 — 全部可選。",
+    "topic_label": "唔知點寫？",
+    "topic_hint": "撳一個主題幫你起稿，再撳一次會換個講法。",
+    "topic_boardgame": "桌遊",
+    "topic_drink": "飲嘢",
+    "topic_ski": "滑雪",
+    "topic_walk": "散步",
+    "topic_karaoke": "唱K",
+    "topic_dinner": "晚餐",
+    "gen": {
+      "boardgame": [
+        "今晚有冇人想玩桌遊？",
+        "桌遊之夜，邊個有興趣？",
+        "想搵多一兩個玩桌遊。",
+        "遲啲一齊玩桌遊好唔好？"
+      ],
+      "drink": [
+        "想搵人飲嘢傾計？",
+        "等陣去飲杯嘢，一齊嚟？",
+        "今晚有冇人想飲返杯？",
+        "隨意飲返杯，邊個得閒？"
+      ],
+      "ski": [
+        "諗緊去滑雪，有冇人想一齊？",
+        "打算去滑雪，一齊嚟？",
+        "近排想去滑雪，搵緊人。",
+        "有冇人得閒去滑雪？"
+      ],
+      "walk": [
+        "想附近輕鬆散下步。",
+        "有冇人想一齊散步？",
+        "等陣去散步，一齊嚟？",
+        "喺附近行下，邊個有興趣？"
+      ],
+      "karaoke": [
+        "好想唱K，有冇人有興趣？",
+        "今晚邊個想去唱K？",
+        "搵人一齊唱K。",
+        "想唱歌，有冇人一齊K歌？"
+      ],
+      "dinner": [
+        "臨時想食飯，爭一兩個人。",
+        "等陣去食飯，一齊嚟？",
+        "有冇人肚餓？今晚一齊食飯？",
+        "搵人一齊食晚餐。"
+      ]
+    },
     "success_title": "已經 post 出去啦",
     "success_line_1": "搞掂！你嘅活動而家喺附近公開咗。",
     "success_line_2": "好快就會有人見到你個 post 👀",
@@ -215,6 +275,28 @@
     "area_radius_value": "顯示 {{km}}km 以內結果",
     "mapButton_map": "地圖",
     "mapButton_list": "列表"
+  },
+  "vibe": {
+    "label": "氛圍",
+    "all": "任何氛圍",
+    "chill": "輕鬆",
+    "hype": "熱鬧",
+    "deep": "深入",
+    "playful": "好玩",
+    "open": "隨意",
+    "pick": "氛圍",
+    "pick_hint": "會係咩感覺？（可選）"
+  },
+  "sort": {
+    "label": "排序",
+    "newest": "最新",
+    "closing": "快結束",
+    "nearest": "最近",
+    "people": "最多人"
+  },
+  "filter": {
+    "category": "分類",
+    "all": "全部"
   },
   "created": {
     "headerTitle": "我建立",
@@ -396,6 +478,9 @@
     "notImplementedBody": "暫未支援。"
   },
   "inviteForm": {
+    "step_basics": "基本",
+    "step_where": "地點",
+    "step_details": "詳情",
     "titleLabel": "標題",
     "titlePlaceholder": "標題（必填）",
     "titleRequired": "請輸入標題。",
@@ -498,5 +583,19 @@
   },
   "expires": {
     "never": "永不"
+  },
+  "rooms": {
+    "headerTitle": "房間",
+    "role_all": "全部",
+    "role_hosting": "主辦",
+    "role_joined": "已加入",
+    "status_active": "進行中",
+    "status_past": "過往",
+    "empty": "仲未有房間。",
+    "empty_cta": "睇下活動",
+    "loadErrorTitle": "載入房間失敗",
+    "refreshErrorTitle": "重新整理失敗",
+    "show_past": "顯示過往 ({{count}})",
+    "hide_past": "收起過往"
   }
 }

@@ -1,13 +1,14 @@
 {
   "app": {
-    "name": "Nearby Now"
+    "name": "enoki"
   },
   "tabs": {
     "browse": "动态",
     "joined": "大厅",
     "created": "我创建",
     "settings": "设置",
-    "notifications": "通知"
+    "notifications": "通知",
+    "rooms": "房间"
   },
   "common": {
     "loading": "加载中…",
@@ -24,11 +25,13 @@
     "unknown": "未知",
     "never": "从不",
     "noMore": "没有更多",
-    "clear": "清除"
+    "clear": "清除",
+    "next": "下一步",
+    "save": "保存"
   },
   "auth": {
     "login": {
-      "title": "Nearby Now",
+      "title": "enoki",
       "emailLabel": "邮箱",
       "emailPlaceholder": "邮箱",
       "passwordLabel": "密码",
@@ -100,14 +103,71 @@
     "subtitle": "写一句简短邀请即可，细节之后再改。",
     "area_label": "这条帖子将发布到",
     "placeholder": "例如：今晚有没有人想去唱K？",
-    "template_label": "快速模板",
-    "template_hint": "点击模板自动填入，之后可以再修改或补充。",
-    "template_1": "今晚有人想玩桌游/狼人杀吗？",
-    "template_2": "想喝一杯顺便聊聊，有人吗？",
-    "template_3": "想去滑雪，有人一起吗？",
-    "template_4": "想找人附近散步、放松一下。",
-    "template_5": "想唱K，有人感兴趣吗？",
-    "template_6": "临时吃饭，想再找几个人。",
+    "title_label": "想做什么？",
+    "post": "发布",
+    "post_now": "立即发布",
+    "add_details": "添加详情 ›",
+    "sec_where": "地点",
+    "sec_when": "时间",
+    "sec_who": "对象",
+    "sec_expires": "有效期",
+    "where_add": "添加地点",
+    "when_add": "添加时间",
+    "who_anyone": "任何人",
+    "g_women": "女生",
+    "g_men": "男生",
+    "people_n": "{{n}} 人",
+    "step_say": "内容",
+    "step_where": "地点",
+    "step_details": "详情",
+    "where_hint": "在哪里？（可选）",
+    "details_hint": "额外信息 — 全部可选。",
+    "topic_label": "不知道怎么写？",
+    "topic_hint": "点一个主题帮你起草，再点一次会换个说法。",
+    "topic_boardgame": "桌游",
+    "topic_drink": "喝一杯",
+    "topic_ski": "滑雪",
+    "topic_walk": "散步",
+    "topic_karaoke": "唱K",
+    "topic_dinner": "晚餐",
+    "gen": {
+      "boardgame": [
+        "今晚有人想玩桌游吗？",
+        "桌游之夜，谁有兴趣？",
+        "想再找一两个人玩桌游。",
+        "待会儿一起玩桌游怎么样？"
+      ],
+      "drink": [
+        "想找人喝一杯聊聊天？",
+        "等下去喝一杯，一起来？",
+        "今晚有人想喝一杯吗？",
+        "随便喝一杯，谁有空？"
+      ],
+      "ski": [
+        "在想去滑雪，有人想一起吗？",
+        "打算去滑雪，一起来？",
+        "最近想去滑雪，找人中。",
+        "有人有空去滑雪吗？"
+      ],
+      "walk": [
+        "想在附近轻松散个步。",
+        "有人想一起散步吗？",
+        "等下去散步，一起来？",
+        "在附近走走，谁有兴趣？"
+      ],
+      "karaoke": [
+        "想唱K，有人有兴趣吗？",
+        "今晚谁想去唱K？",
+        "找人一起唱K。",
+        "想唱歌，有人一起K歌吗？"
+      ],
+      "dinner": [
+        "临时想吃饭，差一两个人。",
+        "等下去吃饭，一起来？",
+        "有人饿了吗？今晚一起吃饭？",
+        "找人一起吃晚餐。"
+      ]
+    },
     "success_title": "已发布到大厅",
     "success_line_1": "搞定！你的帖子已在附近公开。",
     "success_line_2": "很快就会有人看到你的帖子 👀",
@@ -215,6 +275,28 @@
     "area_radius_value": "显示 {{km}}km 以内结果",
     "mapButton_map": "地图",
     "mapButton_list": "列表"
+  },
+  "vibe": {
+    "label": "氛围",
+    "all": "任何氛围",
+    "chill": "轻松",
+    "hype": "热闹",
+    "deep": "深入",
+    "playful": "好玩",
+    "open": "随意",
+    "pick": "氛围",
+    "pick_hint": "会是什么感觉？（可选）"
+  },
+  "sort": {
+    "label": "排序",
+    "newest": "最新",
+    "closing": "快结束",
+    "nearest": "最近",
+    "people": "最多人"
+  },
+  "filter": {
+    "category": "分类",
+    "all": "全部"
   },
   "created": {
     "headerTitle": "我创建",
@@ -396,6 +478,9 @@
     "notImplementedBody": "暂未支持。"
   },
   "inviteForm": {
+    "step_basics": "基本",
+    "step_where": "地点",
+    "step_details": "详情",
     "titleLabel": "标题",
     "titlePlaceholder": "标题（必填）",
     "titleRequired": "请输入标题。",
@@ -498,5 +583,19 @@
   },
   "expires": {
     "never": "永不"
+  },
+  "rooms": {
+    "headerTitle": "房间",
+    "role_all": "全部",
+    "role_hosting": "主办",
+    "role_joined": "已加入",
+    "status_active": "进行中",
+    "status_past": "过往",
+    "empty": "还没有房间。",
+    "empty_cta": "看看活动",
+    "loadErrorTitle": "加载房间失败",
+    "refreshErrorTitle": "刷新失败",
+    "show_past": "显示过往 ({{count}})",
+    "hide_past": "收起过往"
   }
 }

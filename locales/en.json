@@ -1,13 +1,14 @@
 {
   "app": {
-    "name": "Nearby Now"
+    "name": "enoki"
   },
   "tabs": {
     "browse": "Feed",
     "joined": "Lobby",
     "created": "Created",
     "settings": "Settings",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "rooms": "Rooms"
   },
   "common": {
     "loading": "Loading...",
@@ -24,11 +25,13 @@
     "unknown": "Unknown",
     "never": "Never",
     "noMore": "No more",
-    "clear": "Clear"
+    "clear": "Clear",
+    "next": "Next",
+    "save": "Save"
   },
   "auth": {
     "login": {
-      "title": "Nearby Now",
+      "title": "enoki",
       "emailLabel": "Email",
       "emailPlaceholder": "Email",
       "passwordLabel": "Password",
@@ -100,14 +103,71 @@
     "subtitle": "Write one short line. You can edit details later in the room.",
     "area_label": "This post will go to",
     "placeholder": "Type a short invite…",
-    "template_label": "Quick templates",
-    "template_hint": "Tap a template to fill the box, then tweak or add details.",
-    "template_1": "Anyone up for a board game tonight?",
-    "template_2": "Down for a drink and a quick chat?",
-    "template_3": "I’m thinking about a ski day — anyone want to join?",
-    "template_4": "Looking for a chill walk nearby.",
-    "template_5": "Karaoke mood — anyone interested?",
-    "template_6": "Spontaneous dinner — need a couple people.",
+    "title_label": "What's the plan?",
+    "post": "Post",
+    "post_now": "Post now",
+    "add_details": "Add details ›",
+    "sec_where": "Where",
+    "sec_when": "When",
+    "sec_who": "Who's it for",
+    "sec_expires": "Expires",
+    "where_add": "Add a place",
+    "when_add": "Add a time",
+    "who_anyone": "Anyone",
+    "g_women": "Women",
+    "g_men": "Men",
+    "people_n": "{{n}} people",
+    "step_say": "Say it",
+    "step_where": "Where",
+    "step_details": "Details",
+    "where_hint": "Where's it happening? (optional)",
+    "details_hint": "Extra details — all optional.",
+    "topic_label": "Need a starting point?",
+    "topic_hint": "Tap a topic to draft a line — tap again for a different wording.",
+    "topic_boardgame": "Boardgame",
+    "topic_drink": "Drink",
+    "topic_ski": "Ski",
+    "topic_walk": "Walk",
+    "topic_karaoke": "Karaoke",
+    "topic_dinner": "Dinner",
+    "gen": {
+      "boardgame": [
+        "Anyone up for board games tonight?",
+        "Board game night — who's in?",
+        "Looking for a couple more for boardgames.",
+        "Down for some board games later?"
+      ],
+      "drink": [
+        "Down for a drink and a chat?",
+        "Grabbing a drink soon — join me?",
+        "Anyone up for a quick drink tonight?",
+        "Casual drinks later, who's in?"
+      ],
+      "ski": [
+        "Thinking about a ski day — anyone want to join?",
+        "Planning to hit the slopes, come along?",
+        "Ski trip soon — looking for people.",
+        "Anyone free for a ski day?"
+      ],
+      "walk": [
+        "Looking for a chill walk nearby.",
+        "Anyone up for a relaxed walk?",
+        "Going for a walk soon — join me?",
+        "Easy walk around here, who's in?"
+      ],
+      "karaoke": [
+        "Karaoke mood — anyone interested?",
+        "Who's up for karaoke tonight?",
+        "Looking for people for karaoke.",
+        "Feeling like singing — karaoke, anyone?"
+      ],
+      "dinner": [
+        "Spontaneous dinner — need a couple people.",
+        "Grabbing dinner soon, want to join?",
+        "Anyone hungry? Dinner tonight?",
+        "Looking for company for dinner."
+      ]
+    },
     "success_title": "Posted to the lobby",
     "success_line_1": "Nice! Your post is live nearby.",
     "success_line_2": "All set — people around you can see it now.",
@@ -215,6 +275,28 @@
     "area_radius_value": "Showing results within {{km}}km",
     "mapButton_map": "MAP",
     "mapButton_list": "LIST"
+  },
+  "vibe": {
+    "label": "Vibe",
+    "all": "Any vibe",
+    "chill": "Chill",
+    "hype": "Hype",
+    "deep": "Deep",
+    "playful": "Playful",
+    "open": "Open",
+    "pick": "Vibe",
+    "pick_hint": "How will it feel? (optional)"
+  },
+  "sort": {
+    "label": "Sort",
+    "newest": "Newest",
+    "closing": "Closing soon",
+    "nearest": "Nearest",
+    "people": "Most people"
+  },
+  "filter": {
+    "category": "Category",
+    "all": "All"
   },
   "created": {
     "headerTitle": "Created",
@@ -396,6 +478,9 @@
     "notImplementedBody": "Not implemented yet."
   },
   "inviteForm": {
+    "step_basics": "Basics",
+    "step_where": "Where",
+    "step_details": "Details",
     "titleLabel": "Title",
     "titlePlaceholder": "Title (required)",
     "titleRequired": "Title is required.",
@@ -498,5 +583,19 @@
   },
   "expires": {
     "never": "Never"
+  },
+  "rooms": {
+    "headerTitle": "Rooms",
+    "role_all": "All",
+    "role_hosting": "Hosting",
+    "role_joined": "Joined",
+    "status_active": "Active",
+    "status_past": "Past",
+    "empty": "No rooms here yet.",
+    "empty_cta": "Browse activities",
+    "loadErrorTitle": "Couldn’t load rooms",
+    "refreshErrorTitle": "Couldn’t refresh",
+    "show_past": "Show past ({{count}})",
+    "hide_past": "Hide past"
   }
 }

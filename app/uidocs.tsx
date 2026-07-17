@@ -21,6 +21,7 @@ import {
   space,
   typeScale,
   uiColors,
+  wordmarkFont,
   type UIColors,
   type UIScheme,
 } from "../src/ui/theme/uikit";
@@ -37,6 +38,8 @@ import {
   BList,
   BSkeleton,
   BSkeletonList,
+  BAccordion,
+  BStepper,
   BTabBar,
   BText,
   BToggle,
@@ -219,7 +222,7 @@ function NavDemo({ c }: { c: UIColors }) {
             style={{ flex: 1 }}
             numberOfLines={1}
           >
-            {page === "feed" ? "Nearby now" : "Karaoke tonight?"}
+            {page === "feed" ? "enoki" : "Karaoke tonight?"}
           </BText>
           <BIconButton
             c={c}
@@ -303,6 +306,8 @@ export default function UIDocs() {
   const [scheme, setScheme] = useState<UIScheme>("light");
   const [view, setView] = useState<"list" | "map">("list");
   const [tag, setTag] = useState<string | null>(null);
+  const [step, setStep] = useState(1);
+  const [accOpen, setAccOpen] = useState<string | null>("when");
   const c = uiColors[scheme];
 
   // Animation demo state — "a new activity arrives"
@@ -369,7 +374,7 @@ export default function UIDocs() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <Stack.Screen options={{ title: "UIDocs — Design System" }} />
-      <PaperTexture opacity={scheme === "light" ? 0.06 : 0.1} />
+      <PaperTexture c={c} opacity={scheme === "light" ? 0.06 : 0.1} />
       <ScrollView
         style={{ backgroundColor: "transparent" }}
         contentContainerStyle={{
@@ -429,9 +434,13 @@ export default function UIDocs() {
               v="display"
               c={c}
               color={c.ink}
-              style={{ marginTop: space.md, fontFamily: "ShortStack" }}
+              style={{
+                marginTop: space.md,
+                fontFamily: wordmarkFont,
+                fontWeight: "400",
+              }}
             >
-              nearby now
+              enoki
             </BText>
             <BText
               v="body"
@@ -860,6 +869,116 @@ export default function UIDocs() {
                 "Don't use for a single on/off",
                 "Don't brand-fill the active segment (too loud)",
                 "Don't border each segment",
+              ]}
+            />
+          </Section>
+
+          {/* Stepper */}
+          <Section
+            c={c}
+            title="Stepper"
+            note="For multi-step flows (create / edit an invite). Numbered circles joined by hairlines: active step is brand-filled, completed steps show a check, upcoming steps are muted. Optional steps read lighter. Steps are tappable so you can jump back. Keep it a map, not a gate — let people finish early when later steps are optional."
+          >
+            <BCard c={c}>
+              <BStepper
+                c={c}
+                current={step}
+                onStepPress={setStep}
+                steps={[
+                  { label: "Say it" },
+                  { label: "Where", optional: true },
+                  { label: "Details", optional: true },
+                ]}
+              />
+              <View style={{ flexDirection: "row", gap: space.sm }}>
+                <BButton
+                  c={c}
+                  tone="secondary"
+                  label="‹ Back"
+                  onPress={() => setStep((s) => Math.max(0, s - 1))}
+                />
+                <BButton
+                  c={c}
+                  tone="primary"
+                  label="Next ›"
+                  onPress={() => setStep((s) => Math.min(2, s + 1))}
+                />
+              </View>
+            </BCard>
+            <Rules
+              c={c}
+              dos={[
+                "2–4 steps with short labels",
+                "Brand-fill the active step; check the done ones",
+                "Mark optional steps + allow finishing early",
+              ]}
+              donts={[
+                "Don't use for a single form",
+                "Don't block posting behind optional steps",
+                "Don't hide where the user is in the flow",
+              ]}
+            />
+          </Section>
+
+          {/* Accordion */}
+          <Section
+            c={c}
+            title="Accordion"
+            note="For optional fields on a compact form (Quick Post / Create). Everything the user needs to post lives above; the rest collapses into tappable rows. A collapsed row shows a summary of its value — brand-colored when set, muted when empty — so the form reads at a glance without expanding. One page, no stepper, no sheets: post the moment a title exists, open a section only when you have something to add."
+          >
+            <BCard c={c}>
+              <BAccordion
+                c={c}
+                label="Where"
+                summary="Add a place"
+                open={accOpen === "where"}
+                onToggle={() =>
+                  setAccOpen((v) => (v === "where" ? null : "where"))
+                }
+              >
+                <BText c={c} v="body" color={c.subtext}>
+                  Location picker lives here.
+                </BText>
+              </BAccordion>
+              <BAccordion
+                c={c}
+                label="When"
+                summary="Tonight · 8:00 PM"
+                filled
+                open={accOpen === "when"}
+                onToggle={() =>
+                  setAccOpen((v) => (v === "when" ? null : "when"))
+                }
+              >
+                <View style={{ flexDirection: "row", gap: space.sm }}>
+                  <BChip c={c} label="Tonight" selected />
+                  <BChip c={c} label="Later" />
+                  <BChip c={c} label="Weekend" />
+                </View>
+              </BAccordion>
+              <BAccordion
+                c={c}
+                label="Who's it for"
+                summary="Anyone"
+                open={accOpen === "who"}
+                onToggle={() => setAccOpen((v) => (v === "who" ? null : "who"))}
+              >
+                <BText c={c} v="body" color={c.subtext}>
+                  Capacity + gender preference here.
+                </BText>
+              </BAccordion>
+            </BCard>
+            <Rules
+              c={c}
+              dos={[
+                "Keep the required field (title) outside — above the accordions",
+                "Show a value summary on the collapsed row (brand when set)",
+                "Collapse by default; open in place on tap",
+              ]}
+              donts={[
+                "Don't gate posting behind an accordion",
+                "Don't nest accordions inside accordions",
+                "Don't hide a required field in a collapsed section",
               ]}
             />
           </Section>

@@ -8,7 +8,7 @@ import { useT } from "../lib/i18n/useT";
 import { ThemeProvider } from "../src/ui/theme/ThemeProvider";
 import { useAuthGuard } from "../lib/hooks/useAuthGuard";
 import { useRecoveryLink } from "../lib/hooks/useRecoveryLink";
-import { Pressable, Text } from "react-native";
+import { Platform, Pressable, Text } from "react-native";
 import { useTheme } from "../src/ui/theme/ThemeProvider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
@@ -95,7 +95,25 @@ export default function RootLayout() {
     Caveat: Caveat_400Regular,
     CaveatSemi: Caveat_600SemiBold,
     CaveatBold: Caveat_700Bold,
+
+    // Brand wordmark/logo — Madimi One (bundled TTF on native; web loads it
+    // from Google Fonts, see the <link> below).
+    MadimiOne: require("../assets/fonts/MadimiOne-Regular.ttf"),
   });
+
+  // Load Noto (Latin + CJK) from Google Fonts on web — our UI typeface. Native
+  // keeps its bundled fonts; we don't ship Noto (esp. the heavy CJK) to devices.
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
+    const id = "noto-fonts";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Madimi+One:wght@400&family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap";
+    document.head.appendChild(link);
+  }, []);
 
   // :zap: CHANGE 4: Init i18n before rendering
   useEffect(() => {
@@ -139,10 +157,21 @@ export default function RootLayout() {
         <ThemeProvider>
           {/* Every screen renders its own soft-brutalist <BAppBar/> instead of
               the plain native header. */}
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              // Drill-in screens slide from the right; "post" flows (compose,
+              // create) slide up like a sheet — set per screen below.
+              animation: "slide_from_right",
+            }}
+          >
             <Stack.Screen
               name="login"
-              options={{ title: t("rootNav.login"), headerShown: false }}
+              options={{
+                title: t("rootNav.login"),
+                headerShown: false,
+                animation: "fade",
+              }}
             />
             <Stack.Screen
               name="register"
@@ -157,6 +186,7 @@ export default function RootLayout() {
               options={{
                 title: t("rootNav.create"),
                 headerLeft: () => <StackBackButton />,
+                animation: "slide_from_bottom",
               }}
             />
             <Stack.Screen
@@ -164,6 +194,7 @@ export default function RootLayout() {
               options={{
                 title: t("compose.navTitle"),
                 headerLeft: () => <StackBackButton />,
+                animation: "slide_from_bottom",
               }}
             />
             <Stack.Screen

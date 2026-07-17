@@ -1,3 +1,4 @@
+import { Pressable, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import { useT } from "../lib/i18n/useT";
@@ -31,12 +32,16 @@ export function ConversationRow({
   activity,
   summary,
   userId,
+  isHost,
+  onEditPress,
   onPress,
 }: {
   c: UIColors;
   activity: ActivityCardActivity;
   summary?: RoomSummary;
   userId: string | null;
+  isHost?: boolean; // you created this room → show a gold host crown on the tile
+  onEditPress?: () => void; // host only: tapping the crown edits the room
   onPress: () => void;
 }) {
   const { t, i18n } = useT();
@@ -82,11 +87,44 @@ export function ConversationRow({
     </>
   );
 
+  // Gold crown pip on the icon tile when you're the host. When `onEditPress` is
+  // given it's tappable — a quick edit shortcut straight from the list.
+  const crownStyle = {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: c.yellow,
+    borderWidth: 1.5,
+    borderColor: c.border,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  };
+  const crownIcon = (
+    <MaterialCommunityIcons name="crown" size={11} color={c.onBright} />
+  );
+  const hostBadge = !isHost ? undefined : onEditPress ? (
+    <Pressable
+      onPress={(e) => {
+        (e as any)?.stopPropagation?.();
+        onEditPress();
+      }}
+      hitSlop={12}
+      accessibilityRole="button"
+      accessibilityLabel={t("rootNav.editInvite")}
+      style={crownStyle}
+    >
+      {crownIcon}
+    </Pressable>
+  ) : (
+    <View style={crownStyle}>{crownIcon}</View>
+  );
+
   return (
     <BActivityRow
       c={c}
       icon={activityIcon(activity.title_text)}
       iconBg={activityTileColor(activity.id, tilePalette(c))}
+      iconBadge={hostBadge}
       title={activity.title_text}
       trailing={trailing}
       preview={preview}
