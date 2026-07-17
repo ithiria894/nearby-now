@@ -129,20 +129,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="joined"
+        name="rooms"
         options={{
-          title: t("tabs.joined"),
+          title: t("tabs.rooms"),
           tabBarIcon: ({ focused }) => (
-            <TabIcon lib="ion" name="people" focused={focused} c={c} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="created"
-        options={{
-          title: t("tabs.created"),
-          tabBarIcon: ({ focused }) => (
-            <TabIcon lib="mci" name="pencil-box" focused={focused} c={c} />
+            <TabIcon lib="ion" name="chatbubbles" focused={focused} c={c} />
           ),
         }}
       />

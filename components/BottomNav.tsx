@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { usePathname, useRouter } from "expo-router";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useT } from "../lib/i18n/useT";
@@ -19,18 +19,11 @@ const ITEMS = [
     labelKey: "tabs.browse",
   },
   {
-    route: "/(tabs)/joined",
-    match: "/joined",
+    route: "/(tabs)/rooms",
+    match: "/rooms",
     lib: "ion",
-    name: "people",
-    labelKey: "tabs.joined",
-  },
-  {
-    route: "/(tabs)/created",
-    match: "/created",
-    lib: "mci",
-    name: "pencil-box",
-    labelKey: "tabs.created",
+    name: "chatbubbles",
+    labelKey: "tabs.rooms",
   },
   {
     route: "/(tabs)/notifications",
@@ -66,7 +59,7 @@ export function BottomNav() {
     >
       {ITEMS.map((item) => {
         const focused = pathname.startsWith(item.match);
-        const Cmp = item.lib === "mci" ? MaterialCommunityIcons : Ionicons;
+        const Cmp = Ionicons;
         return (
           <Pressable
             key={item.route}

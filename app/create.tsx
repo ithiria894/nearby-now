@@ -131,7 +131,7 @@ export default function CreateScreen() {
 
       // :zap: CHANGE 2: Create -> go back to Created tab
       createdActivityIdRef.current = null;
-      router.replace("/(tabs)/created");
+      router.replace("/(tabs)/rooms");
     } catch (_e: any) {
       console.error(_e);
       alertAsync(t("create.errorTitle"), _e?.message ?? "Unknown error");

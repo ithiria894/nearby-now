@@ -825,12 +825,14 @@ export function BActivityRow({
   last,
   accent,
   stacked,
+  iconBadge,
   onPress,
 }: {
   c: UIColors;
   icon: string; // MaterialCommunityIcons name (NO emoji)
   iconBg: string;
   iconColor?: string; // glyph color; defaults to onBright (for bold fills)
+  iconBadge?: React.ReactNode; // small overlay on the icon tile corner (e.g. a host crown)
   title: string;
   meta: React.ReactNode; // string, or inline nodes (e.g. an icon + count)
   preview?: string; // conversation preview line, e.g. "Alex: see you there"
@@ -889,6 +891,11 @@ export function BActivityRow({
                     size={22}
                     color={iconColor ?? c.onBright}
                   />
+                  {iconBadge ? (
+                    <View style={{ position: "absolute", top: -6, right: -6 }}>
+                      {iconBadge}
+                    </View>
+                  ) : null}
                 </View>
                 <View style={{ flex: 1, justifyContent: "center", gap: 4 }}>
                   <Text
@@ -976,6 +983,11 @@ export function BActivityRow({
               size={22}
               color={iconColor ?? c.onBright}
             />
+            {iconBadge ? (
+              <View style={{ position: "absolute", top: -6, right: -6 }}>
+                {iconBadge}
+              </View>
+            ) : null}
           </View>
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={txt(typeScale.title, c.ink)} numberOfLines={1}>

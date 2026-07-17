@@ -7,7 +7,8 @@
     "joined": "Lobby",
     "created": "Created",
     "settings": "Settings",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "rooms": "Rooms"
   },
   "common": {
     "loading": "Loading...",
@@ -582,5 +583,17 @@
   },
   "expires": {
     "never": "Never"
+  },
+  "rooms": {
+    "headerTitle": "Rooms",
+    "role_all": "All",
+    "role_hosting": "Hosting",
+    "role_joined": "Joined",
+    "status_active": "Active",
+    "status_past": "Past",
+    "empty": "No rooms here yet.",
+    "empty_cta": "Browse activities",
+    "loadErrorTitle": "Couldn’t load rooms",
+    "refreshErrorTitle": "Couldn’t refresh"
   }
 }

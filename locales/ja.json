@@ -7,7 +7,8 @@
     "joined": "ロビー",
     "created": "作成済み",
     "settings": "設定",
-    "notifications": "通知"
+    "notifications": "通知",
+    "rooms": "ルーム"
   },
   "common": {
     "loading": "読み込み中...",
@@ -582,5 +583,17 @@
   },
   "expires": {
     "never": "なし"
+  },
+  "rooms": {
+    "headerTitle": "ルーム",
+    "role_all": "すべて",
+    "role_hosting": "主催",
+    "role_joined": "参加中",
+    "status_active": "進行中",
+    "status_past": "過去",
+    "empty": "まだルームがありません。",
+    "empty_cta": "アクティビティを見る",
+    "loadErrorTitle": "ルームの読み込みに失敗しました",
+    "refreshErrorTitle": "更新に失敗しました"
   }
 }

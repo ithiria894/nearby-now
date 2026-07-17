@@ -189,7 +189,7 @@ export default function EditActivityScreen() {
     }
 
     if (changes.length === 0) {
-      router.replace("/(tabs)/created");
+      router.replace("/(tabs)/rooms");
       return;
     }
 
@@ -227,7 +227,7 @@ export default function EditActivityScreen() {
         }
       }
 
-      router.replace("/(tabs)/created");
+      router.replace("/(tabs)/rooms");
     } catch (e: any) {
       console.error(e);
       alertAsync(t("edit.saveErrorTitle"), e?.message ?? "Unknown error");
@@ -237,7 +237,7 @@ export default function EditActivityScreen() {
   }
 
   const backToCreated = () =>
-    router.canGoBack() ? router.back() : router.replace("/(tabs)/created");
+    router.canGoBack() ? router.back() : router.replace("/(tabs)/rooms");
 
   if (loading) {
     return (
