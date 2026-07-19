@@ -189,6 +189,41 @@ export async function closeRoom(db: DB, activityId: string) {
   if (error) throw error;
 }
 
+export type FeedItem = {
+  share_slug: string;
+  title_text: string;
+  vibe: string | null;
+  start_time: string | null;
+  place_name: string | null;
+  capacity: number | null;
+  status: string;
+  expires_at: string | null;
+  created_at: string;
+  joined_count: number;
+  host_display_name: string | null;
+  distance_km: number | null;
+};
+
+export async function getFeedPublic(
+  db: DB,
+  scope: "open" | "past",
+  filter: "all" | "nearby" | "online",
+  coords?: { lat: number; lng: number },
+  radiusKm = 15,
+  limit = 30
+): Promise<FeedItem[]> {
+  const { data, error } = await db.rpc("get_feed_public", {
+    p_scope: scope,
+    p_filter: filter,
+    p_lat: coords?.lat ?? null,
+    p_lng: coords?.lng ?? null,
+    p_radius_km: radiusKm,
+    p_limit: limit,
+  });
+  if (error) throw error;
+  return (data ?? []) as FeedItem[];
+}
+
 export type MyRoom = {
   id: string;
   share_slug: string;

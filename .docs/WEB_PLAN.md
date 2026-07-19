@@ -153,16 +153,35 @@ cousin of mobile `/compose`, not the full `/create` form.
 **Acceptance.** Stopwatch test: cold browser → link copied ≤ 20s typing only
 title + nickname. Errors (rate-limit, offline) leave the form intact.
 
-### 3.3 `/` — Landing
+### 3.3 `/` — Feed (revised 2026-07-19; supersedes the static landing)
 
-**Purpose.** Explain enoki in one breath; route organizers to `/new`. It is NOT
-a feed and NOT the funnel entrance — keep it tiny and static.
+**Purpose.** The front page is a **public feed** of hangouts — open ones first,
+then recently-finished ones — so a direct visitor never sees a dead town
+(COLD_START §1-④) and finished events create FOMO that converts into creates
+(VISION §9). Still the only indexable page; still carries the one-breath pitch.
 
-Wordmark (Madimi One) + mascot, one-liner ("揪人一齊玩，唔使做主辦人" / "get
-people together — without being The Host"), primary CTA **Start a hangout** →
-`/new`, three-step how-it-works (post it → drop the link → they tap in), footer
-(privacy · terms · language). If a session with rooms exists → "My rooms" card.
-Indexable (the only page that should be).
+**Structure (top → bottom):**
+
+1. **Compact hero strip** — wordmark + one-liner + (desktop) "Start a hangout"
+   CTA. Small; the feed is the point.
+2. **Filter chips** — **All · Nearby · Online**. Nearby = browser geolocation
+   (permission denied → toast + fall back to All), sorted by distance. Online =
+   rooms with no place (VISION §4.4: location is a signal, not a gate). Vibe
+   soft-filter chips are a fast-follow, not v1.
+3. **Open hangouts** — RoomCards (title, vibe, time, place/distance, spots) →
+   `/r/[slug]`. Mobile: list. Desktop: auto-fill grid (no stranded column).
+4. **Recently happened** — dimmed cards for expired/closed rooms; tapping one
+   lands on the room's dead-end state, whose CTA is "Start your own" (the FOMO
+   → create loop).
+5. How-it-works 3-step strip + footer (privacy · terms).
+
+**Create stays one tap away:** floating **"+"** button bottom-right on mobile
+(VISION §9's "big floating +"), header CTA on desktop.
+
+**Data:** `get_feed_public` RPC (§6.6) — the second and only other anonymous
+read. Same field whitelist as `get_room_public`, plus a computed `distance_km`;
+**raw coordinates are never returned**. Empty state: mascot + "quiet right now
+— start one".
 
 ### 3.4 `/rooms` — My rooms
 
@@ -304,6 +323,13 @@ anon, authenticated`. Returns exactly the §3.1 public field whitelist +
 5. _(M4)_ **`funnel_events` table** — insert-only (anon+authenticated), no
    select policy; columns: event, slug, referrer-ish context, created_at. Feeds
    the COLD_START §3 metrics via plain SQL.
+6. **`get_feed_public(scope, filter, lat, lng, radius, limit)` RPC** — the
+   anonymous _list_ read for the §3.3 feed. `SECURITY DEFINER`, granted to
+   anon+authenticated. scope = open (status open, unexpired, newest/nearest
+   first) or past (expired/closed, small limit, for FOMO). filter = all |
+   nearby (haversine distance, sorted, `distance_km` returned — coordinates
+   never leave the server) | online (no location). Same field whitelist as
+   `get_room_public`.
 
 Realtime needs nothing: `room_events` is already in the publication
 (`20260714000000_realtime_publication.sql`) and RLS-filtered subscriptions work

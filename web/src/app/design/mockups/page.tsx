@@ -6,6 +6,11 @@ import s from "../design.module.css";
 
 const MOCKUPS = [
   {
+    href: "/design/mockups/feed",
+    title: "/ feed (#65)",
+    desc: "Front page: open + recently-happened hangouts, All/Nearby/Online, floating +.",
+  },
+  {
     href: "/design/mockups/room",
     title: "Room · visitor view (#44)",
     desc: "The front door. 6 states: open, full, expired, closed, 404, join-race.",

@@ -2,11 +2,13 @@ import Link from "next/link";
 import { TopBar } from "@/components/TopBar";
 import { Button } from "@/components/Button";
 import { Chip } from "@/components/Chip";
-import { Avatar } from "@/components/Avatar";
+import { FeedClient } from "./FeedClient";
 import s from "./page.module.css";
 
-// Landing (#56). The only indexable page. Explains enoki in one breath and
-// routes to /new. Static server component.
+// / — the FEED (#67, WEB_PLAN §3.3 revised): open hangouts + recently-happened
+// (FOMO), All/Nearby/Online. The hero + shell render server-side (indexable);
+// the list hydrates client-side. Create is one tap away: floating + on mobile,
+// header CTA on desktop.
 
 const STEPS = [
   "Post what you feel like doing",
@@ -26,17 +28,18 @@ export default function Home() {
       />
       <main className={s.main}>
         <div className={s.hero}>
-          <div className={s.mascot}>
-            <Avatar size={72} />
+          <div>
+            <h1 className={`t-wordmark ${s.wordmark}`}>enoki</h1>
+            <p className={`t-caption ${s.tagline}`}>
+              Spontaneous hangouts — tap in, no signup.
+            </p>
           </div>
-          <h1 className={`t-wordmark ${s.wordmark}`}>enoki</h1>
-          <p className={`t-body ${s.tagline}`}>
-            Get people together — without being the host.
-          </p>
-          <Link href="/new" className={s.cta}>
-            <Button full>Start a hangout</Button>
+          <Link href="/new" className={s.heroCta}>
+            <Button>Start a hangout</Button>
           </Link>
         </div>
+
+        <FeedClient />
 
         <ol className={s.steps}>
           {STEPS.map((t, i) => (
