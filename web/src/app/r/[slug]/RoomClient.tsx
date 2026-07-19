@@ -8,7 +8,7 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Badge } from "@/components/Badge";
 import { Avatar, AvatarCluster } from "@/components/Avatar";
-import { VibeIcon, IconArrowUpRight, IconCrown } from "@/components/icons";
+import { IconArrowUpRight, IconCrown } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { Toast } from "@/components/Toast";
 import { ShareSheet } from "@/components/ShareSheet";
@@ -213,11 +213,7 @@ function Visitor({
   const card = (
     <div className={s.card}>
       {vibe !== "open" ? (
-        <Chip
-          accent={VIBE_TINT[vibe] ?? undefined}
-          selected
-          leading={<VibeIcon vibe={vibe} />}
-        >
+        <Chip accent={VIBE_TINT[vibe] ?? undefined} selected>
           {VIBE_LABEL_EN[vibe]}
         </Chip>
       ) : null}
@@ -413,11 +409,7 @@ function MemberRoom({
       <div className={s.page}>
         <div className={s.head}>
           {vibe !== "open" ? (
-            <Chip
-              accent={VIBE_TINT[vibe] ?? undefined}
-              selected
-              leading={<VibeIcon vibe={vibe} />}
-            >
+            <Chip accent={VIBE_TINT[vibe] ?? undefined} selected>
               {VIBE_LABEL_EN[vibe]}
             </Chip>
           ) : null}

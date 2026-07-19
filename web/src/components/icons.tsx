@@ -121,9 +121,11 @@ export const IconCoffee = (p: IconProps) => (
 );
 
 export const IconBall = (p: IconProps) => (
+  // soccer ball: center pentagon + spokes (NOT meridians — that reads as a globe)
   <Svg {...p}>
     <circle cx="12" cy="12" r="9" />
-    <path d="M3 12h18M12 3a13 13 0 0 1 0 18M12 3a13 13 0 0 0 0 18" />
+    <path d="M12 8.8l3 2.2-1.1 3.6h-3.8L9 11z" />
+    <path d="M12 8.8V3.2M15 11l5.3-1.5M13.9 14.6l3.5 4.7M10.1 14.6l-3.5 4.7M9 11L3.7 9.5" />
   </Svg>
 );
 

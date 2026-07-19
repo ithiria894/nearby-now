@@ -45,6 +45,16 @@ export function categoryByKey(key?: string | null): Category {
 // Keyword auto-detect — ported subset of mobile's activityCategory(). Default
 // banner when the creator doesn't pick: detect first, RANDOM fallback when
 // nothing matches (LLM best-fit is the future upgrade).
+// Platform-assigned banner: keyword detect first; deterministic slug-hash
+// fallback so a card never flickers between loads. LLM best-fit later.
+export function bannerCategory(title: string, slug: string): CategoryKey {
+  const detected = detectCategory(title);
+  if (detected) return detected;
+  let h = 0;
+  for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
+  return CATEGORIES[h % (CATEGORIES.length - 1)].key; // excludes trailing "other"
+}
+
 export function detectCategory(title?: string | null): CategoryKey | null {
   const t = (title ?? "").toLowerCase();
   if (/karaoke|唱k|sing|music|音樂|band|concert|演唱/.test(t)) return "music";

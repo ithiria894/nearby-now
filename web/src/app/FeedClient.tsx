@@ -9,16 +9,11 @@ import { RoomCard } from "@/components/RoomCard";
 import { Banner } from "@/components/Banner";
 import { Avatar, AvatarCluster } from "@/components/Avatar";
 import { Toast } from "@/components/Toast";
-import {
-  VibeIcon,
-  IconPin,
-  IconGlobe,
-  IconChevronDown,
-} from "@/components/icons";
+import { IconPin, IconGlobe, IconChevronDown } from "@/components/icons";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { getFeedPublic, type FeedItem } from "@/lib/backend";
 import { normalizeVibe, VIBE_TINT, VIBE_LABEL_EN } from "@/lib/vibes";
-import { detectCategory, CATEGORIES, type CategoryKey } from "@/lib/categories";
+import { bannerCategory } from "@/lib/categories";
 import { AREAS } from "@/lib/areas";
 import { track } from "@/lib/track";
 import s from "./page.module.css";
@@ -38,17 +33,6 @@ function scopeLabel(sc: Scope): string {
   if (sc.kind === "near") return "Near you";
   if (sc.kind === "online") return "Online";
   return AREAS.find((a) => a.key === sc.key)?.label ?? "Anywhere";
-}
-
-// Stable platform-assigned banner: keyword detect first; deterministic
-// pseudo-random (slug hash) fallback so a card never flickers between loads.
-// LLM best-fit is the future upgrade (WEB_PLAN §3.3).
-export function bannerCategory(title: string, slug: string): CategoryKey {
-  const detected = detectCategory(title);
-  if (detected) return detected;
-  let h = 0;
-  for (let i = 0; i < slug.length; i++) h = (h * 31 + slug.charCodeAt(i)) >>> 0;
-  return CATEGORIES[h % (CATEGORIES.length - 1)].key; // excludes trailing "other"
 }
 
 function timeLabel(iso: string | null): string | null {
@@ -76,6 +60,13 @@ function FeaturedCard({ r }: { r: FeedItem }) {
         category={bannerCategory(r.title_text, r.share_slug)}
         height={92}
         radius="24px 24px 0 0"
+        corner={
+          vibe !== "open" ? (
+            <Chip accent={VIBE_TINT[vibe] ?? undefined} selected>
+              {VIBE_LABEL_EN[vibe]}
+            </Chip>
+          ) : undefined
+        }
       />
       <div className={s.fcardBody}>
         <div>
@@ -89,26 +80,21 @@ function FeaturedCard({ r }: { r: FeedItem }) {
               .filter(Boolean)
               .join(" · ")}
           </div>
-          <div className={s.fcardTop} style={{ marginTop: 10 }}>
-            {vibe !== "open" ? (
-              <Chip
-                accent={VIBE_TINT[vibe] ?? undefined}
-                selected
-                leading={<VibeIcon vibe={vibe} />}
-              >
-                {VIBE_LABEL_EN[vibe]}
-              </Chip>
-            ) : (
-              <span />
-            )}
-            {spotsLeft != null && spotsLeft > 0 ? (
-              <Badge fill="var(--yellow)">{spotsLeft} left</Badge>
-            ) : null}
-          </div>
         </div>
         <div className={s.fcardBottom}>
           <AvatarCluster count={r.joined_count} />
-          <span className="t-caption" style={{ color: "var(--subtext)" }}>
+          <span
+            className="t-caption"
+            style={{
+              color: "var(--subtext)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            {spotsLeft != null && spotsLeft > 0 ? (
+              <Badge fill="var(--yellow)">{spotsLeft} left</Badge>
+            ) : null}
             {r.joined_count}
             {r.capacity ? `/${r.capacity}` : ""}
             {r.host_display_name ? ` · by ${r.host_display_name}` : ""}

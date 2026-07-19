@@ -4,7 +4,7 @@
   border: var(--border-thick) solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--hard-shadow-md);
-  padding: var(--space-lg);
+  overflow: hidden;
   color: var(--text);
   transition:
     transform var(--dur-fast) var(--ease-standard),
@@ -22,16 +22,23 @@
   opacity: 0.55;
 }
 
-.top {
+.body {
+  padding: 12px 16px 14px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  min-height: 26px;
+  flex-direction: column;
+  gap: 4px;
 }
+
 .crown {
-  font-size: 18px;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--surface);
+  border: var(--border-base) solid var(--border);
+  border-radius: 999px;
+  color: var(--ink);
 }
 
 .bottom {
@@ -39,7 +46,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-md);
-  margin-top: var(--space-md);
+  margin-top: var(--space-sm);
 }
 .spots {
   display: flex;

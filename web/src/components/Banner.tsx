@@ -1,30 +1,29 @@
+import type { ReactNode } from "react";
 import { CategoryIcon } from "./icons";
 import { categoryByKey, type CategoryKey } from "@/lib/categories";
 import s from "./Banner.module.css";
 
 // Category banner (WEB_PLAN §3.3 v2) — the visual identity of an event.
-// Layers, bottom → top:
-//   1. category tint (always)
-//   2. icon watermark (the asset-free look)
-//   3. photo — the curated AI set at /banners/<key>.jpg (see
-//      public/banners/README.md). Rendered as a CSS background so a missing
-//      file fails SILENTLY and layers 1–2 show through. Phase-2 creator
-//      uploads pass `src` and flow through the same layer.
-//   4. label chip on paper (readable on any photo).
+// Layers, bottom → top: category tint → icon watermark → photo
+// (/banners/<key>.jpg|png, missing files fail silently) → label chip
+// (bottom-left) + optional overlay slots: `corner` (bottom-right — the vibe
+// pill lives here) and `topRight` (host crown etc.).
 export function Banner({
   category,
   src,
   height = 84,
   radius = "var(--radius-lg) var(--radius-lg) 0 0",
+  corner,
+  topRight,
 }: {
   category: CategoryKey | string;
-  src?: string; // override photo (phase-2 `img:` banners)
+  src?: string;
   height?: number;
   radius?: string;
+  corner?: ReactNode;
+  topRight?: ReactNode;
 }) {
   const cat = categoryByKey(category);
-  // CSS multi-background = a free fallback chain: first existing layer wins
-  // (jpg preferred, then png), missing files fail silently to the tint/icon.
   const photo = src
     ? `url(${src})`
     : `url(/banners/${cat.key}.jpg), url(/banners/${cat.key}.png)`;
@@ -42,6 +41,8 @@ export function Banner({
       </span>
       <div className={s.photo} style={{ backgroundImage: photo }} aria-hidden />
       <span className={`t-label ${s.label}`}>{cat.label}</span>
+      {corner ? <span className={s.corner}>{corner}</span> : null}
+      {topRight ? <span className={s.topRight}>{topRight}</span> : null}
     </div>
   );
 }

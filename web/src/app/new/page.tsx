@@ -9,7 +9,6 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Stepper } from "@/components/Stepper";
 import { Accordion } from "@/components/Accordion";
-import { VibeIcon } from "@/components/icons";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { ensureGuestSession } from "@/lib/guest";
 import { createActivity, addSelfMembership } from "@/lib/backend";
@@ -107,7 +106,6 @@ export default function NewPage() {
                 key={v}
                 selected={vibe === v}
                 accent={VIBE_TINT[v] ?? undefined}
-                leading={<VibeIcon vibe={v} />}
                 onClick={() => setVibe(v)}
               >
                 {VIBE_LABEL_EN[v]}

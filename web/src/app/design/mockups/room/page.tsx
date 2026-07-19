@@ -7,7 +7,6 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Badge } from "@/components/Badge";
 import { Avatar, AvatarCluster } from "@/components/Avatar";
-import { VibeIcon } from "@/components/icons";
 import { VIBE_TINT, VIBE_LABEL_EN } from "@/lib/vibes";
 import s from "../../design.module.css";
 import { MockFrame, DesktopFrame, FAKE_ROOM } from "../parts";
@@ -88,11 +87,7 @@ function OpenView({ race, wide }: { race?: boolean; wide?: boolean }) {
           padding: 20,
         }}
       >
-        <Chip
-          accent={VIBE_TINT[r.vibe] ?? undefined}
-          selected
-          leading={<VibeIcon vibe={r.vibe} />}
-        >
+        <Chip accent={VIBE_TINT[r.vibe] ?? undefined} selected>
           {VIBE_LABEL_EN[r.vibe]}
         </Chip>
         <h1 className="t-h1" style={{ marginTop: 10 }}>

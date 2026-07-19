@@ -29,3 +29,15 @@
   padding: 3px 8px;
   color: var(--ink);
 }
+.corner {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 1;
+}
+.topRight {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 1;
+}

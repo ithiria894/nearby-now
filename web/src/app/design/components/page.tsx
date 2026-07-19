@@ -14,7 +14,7 @@ import { Avatar, AvatarCluster } from "@/components/Avatar";
 import { Toast } from "@/components/Toast";
 import { Dialog } from "@/components/Dialog";
 import { ShareSheet } from "@/components/ShareSheet";
-import { VibeIcon, IconFlame } from "@/components/icons";
+import { IconFlame } from "@/components/icons";
 import { VIBES, VIBE_TINT, VIBE_LABEL_EN } from "@/lib/vibes";
 import s from "../design.module.css";
 
@@ -87,7 +87,6 @@ export default function ComponentsPage() {
             key={v}
             selected={vibe === v}
             accent={VIBE_TINT[v] ?? undefined}
-            leading={<VibeIcon vibe={v} />}
             onClick={() => setVibe(v)}
           >
             {VIBE_LABEL_EN[v]}

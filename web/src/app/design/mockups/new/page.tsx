@@ -8,7 +8,6 @@ import { Input } from "@/components/Input";
 import { Stepper } from "@/components/Stepper";
 import { Accordion } from "@/components/Accordion";
 import { ShareSheet } from "@/components/ShareSheet";
-import { VibeIcon } from "@/components/icons";
 import { VIBES, VIBE_TINT, VIBE_LABEL_EN } from "@/lib/vibes";
 import s from "../../design.module.css";
 import { MockFrame } from "../parts";
@@ -62,7 +61,6 @@ export default function NewMockup() {
                     key={v}
                     selected={vibe === v}
                     accent={VIBE_TINT[v] ?? undefined}
-                    leading={<VibeIcon vibe={v} />}
                     onClick={() => setVibe(v)}
                   >
                     {VIBE_LABEL_EN[v]}

@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { Chip } from "./Chip";
 import { Badge } from "./Badge";
+import { Banner } from "./Banner";
 import { AvatarCluster } from "./Avatar";
-import { VibeIcon, IconCrown } from "./icons";
+import { IconCrown } from "./icons";
 import { VIBE_TINT, VIBE_LABEL_EN, type VibeKey } from "@/lib/vibes";
+import { bannerCategory } from "@/lib/categories";
 import s from "./RoomCard.module.css";
 
-// RoomCard — compact list card for /rooms (BActivityRow). Whole card is the
-// link; presses into its shadow. Closed/expired rooms render dimmed.
+// RoomCard — compact list card. Every event carries a category banner; the
+// vibe pill (label only, no icon) sits bottom-right ON the banner; host crown
+// top-right on the banner. Whole card is the link; presses into its shadow.
 export function RoomCard({
   href,
   title,
@@ -34,58 +37,59 @@ export function RoomCard({
       ? Math.max(0, capacity - going)
       : undefined;
   const meta = [timeText, placeText].filter(Boolean).join(" · ");
+  const slug = href.split("/").pop() ?? title;
   return (
     <Link
       href={href}
       className={`${s.card} ${closed ? s.closed : ""}`}
       aria-label={title}
     >
-      <div className={s.top}>
-        {vibe && vibe !== "open" ? (
-          <Chip
-            accent={VIBE_TINT[vibe] ?? undefined}
-            selected
-            leading={<VibeIcon vibe={vibe} />}
-          >
-            {VIBE_LABEL_EN[vibe]}
-          </Chip>
-        ) : (
-          <span />
-        )}
-        {host ? (
-          <span className={s.crown} aria-label="You host this">
-            <IconCrown size={18} />
-          </span>
-        ) : null}
-      </div>
-
-      <div className="t-h2" style={{ marginTop: 4 }}>
-        {title}
-      </div>
-      {meta ? (
-        <div className="t-body" style={{ color: "var(--subtext)" }}>
-          {meta}
-        </div>
-      ) : null}
-
-      <div className={s.bottom}>
-        {going != null ? <AvatarCluster count={going} /> : <span />}
-        <div className={s.spots}>
-          {going != null ? (
-            <span className="t-body-strong">
-              {going}
-              {capacity ? ` / ${capacity}` : ""} going
+      <Banner
+        category={bannerCategory(title, slug)}
+        height={64}
+        radius="18px 18px 0 0"
+        corner={
+          vibe && vibe !== "open" ? (
+            <Chip accent={VIBE_TINT[vibe] ?? undefined} selected>
+              {VIBE_LABEL_EN[vibe]}
+            </Chip>
+          ) : undefined
+        }
+        topRight={
+          host ? (
+            <span className={s.crown} aria-label="You host this">
+              <IconCrown size={16} />
             </span>
-          ) : null}
-          {closed ? (
-            <Badge fill="var(--surface-alt)" color="var(--subtext)">
-              Closed
-            </Badge>
-          ) : spotsLeft === 0 ? (
-            <Badge fill="var(--coral)">Full</Badge>
-          ) : spotsLeft !== undefined && spotsLeft <= 2 ? (
-            <Badge fill="var(--yellow)">{spotsLeft} left</Badge>
-          ) : null}
+          ) : undefined
+        }
+      />
+      <div className={s.body}>
+        <div className="t-h2">{title}</div>
+        {meta ? (
+          <div className="t-body" style={{ color: "var(--subtext)" }}>
+            {meta}
+          </div>
+        ) : null}
+
+        <div className={s.bottom}>
+          {going != null ? <AvatarCluster count={going} /> : <span />}
+          <div className={s.spots}>
+            {going != null ? (
+              <span className="t-body-strong">
+                {going}
+                {capacity ? ` / ${capacity}` : ""} going
+              </span>
+            ) : null}
+            {closed ? (
+              <Badge fill="var(--surface-alt)" color="var(--subtext)">
+                Closed
+              </Badge>
+            ) : spotsLeft === 0 ? (
+              <Badge fill="var(--coral)">Full</Badge>
+            ) : spotsLeft !== undefined && spotsLeft <= 2 ? (
+              <Badge fill="var(--yellow)">{spotsLeft} left</Badge>
+            ) : null}
+          </div>
         </div>
       </div>
     </Link>

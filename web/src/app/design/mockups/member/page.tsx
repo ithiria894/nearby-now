@@ -5,7 +5,7 @@ import { TopBar } from "@/components/TopBar";
 import { Chip } from "@/components/Chip";
 import { Button } from "@/components/Button";
 import { Avatar } from "@/components/Avatar";
-import { VibeIcon, IconArrowUpRight, IconCrown } from "@/components/icons";
+import { IconArrowUpRight, IconCrown } from "@/components/icons";
 import { VIBE_TINT, VIBE_LABEL_EN } from "@/lib/vibes";
 import s from "../../design.module.css";
 import {
@@ -27,11 +27,7 @@ const r = FAKE_ROOM;
 function VibeTitle() {
   return (
     <div className={c.head}>
-      <Chip
-        accent={VIBE_TINT[r.vibe] ?? undefined}
-        selected
-        leading={<VibeIcon vibe={r.vibe} />}
-      >
+      <Chip accent={VIBE_TINT[r.vibe] ?? undefined} selected>
         {VIBE_LABEL_EN[r.vibe]}
       </Chip>
       <h1 className="t-h2" style={{ marginTop: 8 }}>

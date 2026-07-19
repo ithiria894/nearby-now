@@ -10,7 +10,6 @@ import { RoomCard } from "@/components/RoomCard";
 import { Banner } from "@/components/Banner";
 import { Avatar, AvatarCluster } from "@/components/Avatar";
 import {
-  VibeIcon,
   IconPin,
   IconChevronDown,
   IconCrown,
@@ -182,11 +181,7 @@ function FeaturedCard(r: (typeof FEATURED)[number]) {
           </div>
           <div className={f.fcardTop} style={{ marginTop: 10 }}>
             {r.vibe !== "open" ? (
-              <Chip
-                accent={VIBE_TINT[r.vibe] ?? undefined}
-                selected
-                leading={<VibeIcon vibe={r.vibe} />}
-              >
+              <Chip accent={VIBE_TINT[r.vibe] ?? undefined} selected>
                 {VIBE_LABEL_EN[r.vibe]}
               </Chip>
             ) : (
