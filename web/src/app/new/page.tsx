@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/TopBar";
+import { ProfileSlot } from "@/components/ProfileSlot";
 import { Chip } from "@/components/Chip";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
@@ -82,7 +83,7 @@ export default function NewPage() {
 
   return (
     <>
-      <TopBar />
+      <TopBar right={<ProfileSlot />} />
       <div className={s.page}>
         <div>
           <h1 className="t-h1">Start a hangout</h1>

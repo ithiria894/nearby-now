@@ -1,50 +1,142 @@
+/* / — Discover v2 (approved mockup /design/mockups/feed). */
+
 .main {
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 0 16px calc(env(safe-area-inset-bottom, 0px) + 96px);
 }
 
-.hero {
+/* greeting + location pill (single scope control) */
+.greet {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 20px 0 8px;
+  padding: 14px 0 6px;
 }
-.wordmark {
-  font-size: 36px;
-  line-height: 1;
-  color: var(--ink);
+.pillWrap {
+  position: relative;
+  flex: none;
 }
-.tagline {
-  color: var(--subtext);
-  margin-top: 4px;
+.locPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  min-height: 40px;
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body-strong);
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: var(--hard-shadow-sm);
 }
-.heroCta {
+.locPill:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+/* desktop dropdown (mobile uses the bottom sheet) */
+.dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: var(--surface);
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--hard-shadow-lg);
+  padding: 6px 14px;
+  z-index: 30;
+}
+
+/* featured carousel */
+.carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 12px 0 16px;
+  scrollbar-width: none;
+}
+.carousel::-webkit-scrollbar {
   display: none;
 }
-
-.filters {
+.fcard {
+  flex: none;
+  width: min(280px, 82%);
+  min-height: 300px;
+  scroll-snap-align: start;
   display: flex;
+  flex-direction: column;
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--hard-shadow-lg);
+  background: var(--surface);
+  color: var(--text);
+  overflow: hidden;
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard);
+}
+.fcard:active {
+  transform: translate(var(--press-shift), var(--press-shift));
+  box-shadow: 0 0 0 0 var(--shadow);
+}
+.fcardBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+.fcardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  padding: 10px 0;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 5;
+}
+.fcardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-.section {
-  padding-bottom: 8px;
-}
+/* browse + past */
 .sectionLabel {
   color: var(--subtext);
-  margin: 14px 0 10px;
+  margin: 12px 0 10px;
   display: block;
 }
 .grid {
   display: grid;
   gap: 14px;
+}
+.pastStrip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 0 12px;
+  scrollbar-width: none;
+}
+.pastStrip::-webkit-scrollbar {
+  display: none;
+}
+.pastCard {
+  flex: none;
+  width: 200px;
+  border: var(--border-base) solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 10px 12px;
+  opacity: 0.6;
+  color: var(--text);
+  display: block;
 }
 
 .empty {
@@ -52,6 +144,7 @@
   padding: 32px 16px;
 }
 
+/* floating create */
 .fab {
   position: fixed;
   right: 16px;
@@ -78,45 +171,95 @@
   box-shadow: 0 0 0 0 var(--shadow);
 }
 
-.steps {
-  list-style: none;
-  margin: 28px 0 0;
-  padding: 16px 0 0;
+/* footer line */
+.newHere {
+  margin-top: 24px;
+  padding-top: 14px;
   border-top: var(--border-base) solid var(--hairline);
-  display: grid;
-  gap: 12px;
-}
-.step {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.footer {
-  margin-top: 28px;
-  text-align: center;
   color: var(--subtext);
   font-family: var(--font-body);
   font-size: 13px;
 }
 
-/* desktop: grid feed, header CTA instead of the floating + */
+/* mobile bottom sheet for the area picker */
+.sheetOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+}
+.sheet {
+  width: 100%;
+  background: var(--surface);
+  border: var(--border-thick) solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  animation: area-up var(--dur-base) var(--ease-emphasized-decelerate);
+}
+@keyframes area-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.grabber {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--hairline);
+  margin: 0 auto 10px;
+}
+.sheetRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 4px;
+  min-height: 48px;
+  border: none;
+  border-bottom: var(--border-hair) solid var(--hairline);
+  background: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+.sheetRowActive {
+  font-family: var(--font-body-strong);
+  color: var(--brand);
+}
+
 @media (min-width: 860px) {
+  .carousel {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    overflow: visible;
+  }
+  .fcard {
+    width: auto;
+  }
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
-  .heroCta {
+  .dropdown {
     display: block;
   }
-  .fab {
+  .sheetOverlay {
     display: none;
-  }
-  .main {
-    padding-bottom: 64px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fab {
+  .fab,
+  .fcard {
     transition: none;
+  }
+  .sheet {
+    animation: none;
   }
 }

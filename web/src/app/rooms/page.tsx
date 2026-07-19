@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { TopBar } from "@/components/TopBar";
+import { ProfileSlot } from "@/components/ProfileSlot";
 import { Button } from "@/components/Button";
 import { RoomCard } from "@/components/RoomCard";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
@@ -49,13 +50,7 @@ export default function RoomsPage() {
 
   return (
     <>
-      <TopBar
-        right={
-          <Link href="/rooms" className="t-label">
-            My rooms
-          </Link>
-        }
-      />
+      <TopBar right={<ProfileSlot />} />
       <main className={s.main}>
         <h1 className="t-h1" style={{ marginBottom: 16 }}>
           My rooms

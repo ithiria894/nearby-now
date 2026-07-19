@@ -1,0 +1,86 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 4px;
+  min-height: 36px;
+  border: var(--border-base) solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  cursor: pointer;
+}
+.name {
+  font-family: var(--font-body-strong);
+  font-size: 13px;
+  color: var(--text);
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheet {
+  padding: 0;
+  border: none;
+  background: transparent;
+  width: 100vw;
+  max-width: 480px;
+  margin: auto auto 0;
+}
+.sheet::backdrop {
+  background: var(--overlay);
+}
+.body {
+  background: var(--surface);
+  border: var(--border-thick) solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.grabber {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--hairline);
+  align-self: center;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.actions {
+  display: grid;
+  gap: 8px;
+}
+
+.sheet[open] {
+  animation: profile-up var(--dur-base) var(--ease-emphasized-decelerate);
+}
+@keyframes profile-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open] {
+    animation: none;
+  }
+}
+/* desktop: centered small dialog instead of a bottom sheet */
+@media (min-width: 860px) {
+  .sheet {
+    margin: auto;
+    width: 400px;
+  }
+  .body {
+    border-bottom: var(--border-thick) solid var(--border);
+    border-radius: var(--radius-lg);
+  }
+}
