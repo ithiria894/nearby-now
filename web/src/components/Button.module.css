@@ -1,0 +1,102 @@
+/* Button — presses INTO its shadow (ported from brutal.tsx BButton). */
+
+.btn {
+  --btn-bg: var(--brand);
+  --btn-fg: var(--on-brand);
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+
+  min-height: 50px; /* ≥48 a11y target */
+  padding: 0 var(--space-lg);
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-md);
+
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-family: var(--font-heading);
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+  cursor: pointer;
+
+  box-shadow: var(--hard-shadow-md);
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    box-shadow var(--dur-fast) var(--ease-standard),
+    opacity var(--dur-fast) var(--ease-standard);
+}
+
+/* press INTO the shadow: move by the offset, collapse the shadow */
+.btn:active {
+  transform: translate(var(--press-shift), var(--press-shift));
+  box-shadow: 0 0 0 0 var(--shadow);
+}
+
+.btn:focus-visible {
+  outline: var(--border-thick) solid var(--brand);
+  outline-offset: 3px;
+}
+
+.full {
+  display: flex;
+  width: 100%;
+}
+
+/* ---- tones ---- */
+.primary {
+  --btn-bg: var(--brand);
+  --btn-fg: var(--on-brand);
+}
+.accent {
+  --btn-bg: var(--yellow);
+  --btn-fg: var(--on-bright);
+}
+.danger {
+  --btn-bg: var(--danger);
+  --btn-fg: var(--on-bright);
+}
+
+/* secondary = border only, NO shadow; press dims instead of moving */
+.secondary {
+  --btn-bg: var(--surface);
+  --btn-fg: var(--ink);
+  box-shadow: none;
+}
+.secondary:active {
+  transform: none;
+  opacity: 0.6;
+}
+
+/* ---- disabled / loading ---- */
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: btn-spin 0.7s linear infinite;
+}
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.4s;
+  }
+  .btn {
+    transition: none;
+  }
+}

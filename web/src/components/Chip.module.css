@@ -1,0 +1,82 @@
+/* Chip / pill (BChip). Neutral selected = soft tint of its accent + colored
+   outline + ink text (a calm "tonal" selection, not a loud fill). */
+
+.chip {
+  --chip-accent: var(--brand);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px var(--space-md);
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+
+  font-family: var(--font-body-strong);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  appearance: none;
+}
+
+.glyph {
+  text-transform: none;
+  font-size: 13px;
+  line-height: 1;
+}
+
+/* interactive: press-scale + keyboard focus + extended hit area (≥48) */
+.pressable {
+  position: relative;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-standard),
+    background var(--dur-fast) var(--ease-standard),
+    border-color var(--dur-fast) var(--ease-standard);
+}
+.pressable:active {
+  transform: scale(0.94);
+}
+.pressable:focus-visible {
+  outline: var(--border-thick) solid var(--brand);
+  outline-offset: 3px;
+}
+.pressable::before {
+  content: "";
+  position: absolute;
+  inset: -8px 0; /* extends the tap target vertically to ≥48px */
+}
+@media (prefers-reduced-motion: reduce) {
+  .pressable {
+    transition: none;
+  }
+}
+
+/* neutral selected — tonal tint */
+.selected {
+  background: color-mix(in srgb, var(--chip-accent) 28%, var(--surface));
+  border-color: var(--chip-accent);
+  color: var(--ink);
+}
+
+/* solid tones (loud fills) */
+.brand {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+.success {
+  background: var(--mint);
+  color: var(--on-bright);
+}
+.danger {
+  background: var(--coral);
+  color: var(--on-bright);
+}
+.warn {
+  background: var(--yellow);
+  color: var(--on-bright);
+}

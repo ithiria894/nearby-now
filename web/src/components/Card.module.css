@@ -1,0 +1,11 @@
+/* Card — surface paper + 2px ink border + rounded + hard shadow (BCard). */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  background: var(--surface);
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--hard-shadow-md);
+}

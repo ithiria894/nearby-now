@@ -1,0 +1,18 @@
+/* Badge — small bordered tag on a bright fill (BBadge). */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px var(--space-sm);
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--on-bright);
+
+  font-family: var(--font-body-strong);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
