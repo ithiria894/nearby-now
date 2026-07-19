@@ -124,6 +124,49 @@ const AREAS = [
   "Kwun Tong",
 ];
 
+function AreaOptions({
+  loc,
+  onLoc,
+  onClose,
+}: {
+  loc: string;
+  onLoc: (v: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      {["Near you", "Anywhere", "Online", ...AREAS].map((a) => (
+        <button
+          key={a}
+          className={`${f.sheetRow} ${loc === a ? f.sheetRowActive : ""}`}
+          onClick={() => {
+            onLoc(a);
+            onClose();
+          }}
+        >
+          {a === "Online" ? <IconGlobe size={16} /> : <IconPin size={16} />}
+          {a}
+          {a === "Near you" ? (
+            <span
+              className="t-caption"
+              style={{ color: "var(--faint)", marginLeft: "auto" }}
+            >
+              uses your location
+            </span>
+          ) : a === "Online" ? (
+            <span
+              className="t-caption"
+              style={{ color: "var(--faint)", marginLeft: "auto" }}
+            >
+              no place needed
+            </span>
+          ) : null}
+        </button>
+      ))}
+    </>
+  );
+}
+
 function FeaturedCard(r: (typeof FEATURED)[number]) {
   return (
     <div className={f.fcard}>
@@ -207,11 +250,25 @@ function Discover({
             Spontaneous hangouts — tap in, no signup.
           </div>
         </div>
-        <button className={f.locPill} onClick={() => onSheet("area")}>
-          {online ? <IconGlobe size={15} /> : <IconPin size={15} />}
-          {loc}
-          <IconChevronDown size={14} />
-        </button>
+        <div className={f.pillWrap}>
+          <button
+            className={f.locPill}
+            onClick={() => onSheet(sheet === "area" ? "none" : "area")}
+          >
+            {online ? <IconGlobe size={15} /> : <IconPin size={15} />}
+            {loc}
+            <IconChevronDown size={14} />
+          </button>
+          {wide && sheet === "area" ? (
+            <div className={f.dropdown}>
+              <AreaOptions
+                loc={loc}
+                onLoc={onLoc}
+                onClose={() => onSheet("none")}
+              />
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {/* featured carousel */}
@@ -275,46 +332,19 @@ function Discover({
         </button>
       ) : null}
 
-      {/* --- area sheet --- */}
-      {sheet === "area" ? (
+      {/* --- area picker: bottom sheet on MOBILE only (desktop = dropdown) --- */}
+      {!wide && sheet === "area" ? (
         <div className={f.sheetOverlay} onClick={() => onSheet("none")}>
           <div className={f.sheet} onClick={(e) => e.stopPropagation()}>
             <div className={f.grabber} />
             <div className="t-h2" style={{ marginBottom: 6 }}>
               Where are you looking?
             </div>
-            {["Near you", "Anywhere", "Online", ...AREAS].map((a) => (
-              <button
-                key={a}
-                className={`${f.sheetRow} ${loc === a ? f.sheetRowActive : ""}`}
-                onClick={() => {
-                  onLoc(a);
-                  onSheet("none");
-                }}
-              >
-                {a === "Online" ? (
-                  <IconGlobe size={16} />
-                ) : (
-                  <IconPin size={16} />
-                )}
-                {a}
-                {a === "Near you" ? (
-                  <span
-                    className="t-caption"
-                    style={{ color: "var(--faint)", marginLeft: "auto" }}
-                  >
-                    uses your location
-                  </span>
-                ) : a === "Online" ? (
-                  <span
-                    className="t-caption"
-                    style={{ color: "var(--faint)", marginLeft: "auto" }}
-                  >
-                    no place needed
-                  </span>
-                ) : null}
-              </button>
-            ))}
+            <AreaOptions
+              loc={loc}
+              onLoc={onLoc}
+              onClose={() => onSheet("none")}
+            />
           </div>
         </div>
       ) : null}

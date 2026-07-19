@@ -169,8 +169,13 @@ lives in a **location pill**; the only mode chip left is **Online**.
    (iterated 2026-07-19: a separate Online chip next to the pill was two
    controls answering one question). Pill states: "Anywhere ▾" (default) ·
    "Near you" (geolocation) · **"Online"** (place-less rooms; VISION §4.4) ·
-   a picked district. Tap opens the **area sheet**: Use my location ·
-   Anywhere · Online · district list. Pill goes sticky on scroll.
+   a picked district. Tap opens the area picker — **adaptive** (iterated
+   2026-07-19): a **bottom sheet on mobile** (thumb-reach; consistent with
+   share/profile sheets) and an **anchored dropdown on desktop** (a bottom
+   sheet on a wide window is a phone pattern stretched; a popover under the
+   pill is the web-native one). Same list both ways: Use my location ·
+   Anywhere · Online · districts. Not inline-expanding — that shifts the feed
+   layout mid-pick. Pill goes sticky on scroll.
 3. **Featured carousel — "Happening":** 3–5 tall cards (~300px), horizontal
    scroll-snap with next-card peek on mobile; a 3-up row on desktop. Tall card
    = **category banner band** on top (see below) + big title, time ·

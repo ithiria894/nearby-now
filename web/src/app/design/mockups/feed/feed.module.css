@@ -34,6 +34,29 @@
   transform: translate(2px, 2px);
   box-shadow: none;
 }
+.pillWrap {
+  position: relative;
+  flex: none;
+}
+
+/* desktop: anchored dropdown under the pill (web-native; sheet = mobile) */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  background: var(--surface);
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--hard-shadow-lg);
+  padding: 6px 14px;
+  z-index: 20;
+}
+.clickAway {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+}
 
 /* --- featured carousel --- */
 .carousel {
