@@ -164,11 +164,13 @@ lives in a **location pill**; the only mode chip left is **Online**.
 **Structure (top → bottom):**
 
 1. **TopBar** (wordmark, My rooms) — the ONLY wordmark; no in-page hero.
-2. **Location row (sticky):** pin-icon **location pill** — "Anywhere ▾" →
-   "Near you" (geolocation) → or a picked district; tap opens an **area
-   sheet** (Use my location · Anywhere · district list). Beside it: an
-   **Online** toggle chip (place-less rooms; VISION §4.4). One-line greeting
-   under it ("What's happening" + tagline caption for first-timers).
+2. **Greeting row:** "What's happening" + tagline caption on the left; the
+   pin-icon **location pill** on the right — the SINGLE scope control
+   (iterated 2026-07-19: a separate Online chip next to the pill was two
+   controls answering one question). Pill states: "Anywhere ▾" (default) ·
+   "Near you" (geolocation) · **"Online"** (place-less rooms; VISION §4.4) ·
+   a picked district. Tap opens the **area sheet**: Use my location ·
+   Anywhere · Online · district list. Pill goes sticky on scroll.
 3. **Featured carousel — "Happening":** 3–5 tall cards (~300px), horizontal
    scroll-snap with next-card peek on mobile; a 3-up row on desktop. Tall card
    = **category banner band** on top (see below) + big title, time ·

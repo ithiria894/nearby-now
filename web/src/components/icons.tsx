@@ -154,6 +154,13 @@ export const IconChevronDown = (p: IconProps) => (
   </Svg>
 );
 
+export const IconGlobe = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18M12 3a13.5 13.5 0 0 1 0 18M12 3a13.5 13.5 0 0 0 0 18" />
+  </Svg>
+);
+
 export const IconCopy = (p: IconProps) => (
   <Svg {...p}>
     <rect x="9" y="9" width="11" height="11" rx="2" />

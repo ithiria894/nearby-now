@@ -7,17 +7,13 @@
   padding-bottom: 76px;
 }
 
-/* --- top: location row --- */
-.locRow {
+/* --- top: greeting + location pill (one row; pill = single scope control) --- */
+.greet {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 10px 16px;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 5;
+  gap: 12px;
+  padding: 14px 16px 6px;
 }
 .locPill {
   display: inline-flex;
@@ -37,10 +33,6 @@
 .locPill:active {
   transform: translate(2px, 2px);
   box-shadow: none;
-}
-
-.greet {
-  padding: 6px 16px 2px;
 }
 
 /* --- featured carousel --- */

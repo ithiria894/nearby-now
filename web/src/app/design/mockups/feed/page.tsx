@@ -16,6 +16,7 @@ import {
   IconCrown,
   IconShuffle,
   IconImage,
+  IconGlobe,
   CategoryIcon,
 } from "@/components/icons";
 import { VIBE_TINT, VIBE_LABEL_EN, type VibeKey } from "@/lib/vibes";
@@ -177,7 +178,7 @@ function Discover({
   loc: string;
   onLoc: (v: string) => void;
 }) {
-  const [online, setOnline] = useState(false);
+  const online = loc === "Online";
   const browse = online ? BROWSE.filter((b) => b.place === "Online") : BROWSE;
   const featured = online
     ? FEATURED.filter((b) => b.place === "Online")
@@ -199,22 +200,18 @@ function Discover({
         }
       />
 
-      <div className={f.locRow}>
+      <div className={f.greet}>
+        <div>
+          <div className="t-h1">What&apos;s happening</div>
+          <div className="t-caption" style={{ color: "var(--subtext)" }}>
+            Spontaneous hangouts — tap in, no signup.
+          </div>
+        </div>
         <button className={f.locPill} onClick={() => onSheet("area")}>
-          <IconPin size={15} />
+          {online ? <IconGlobe size={15} /> : <IconPin size={15} />}
           {loc}
           <IconChevronDown size={14} />
         </button>
-        <Chip selected={online} onClick={() => setOnline((v) => !v)}>
-          Online
-        </Chip>
-      </div>
-
-      <div className={f.greet}>
-        <div className="t-h1">What&apos;s happening</div>
-        <div className="t-caption" style={{ color: "var(--subtext)" }}>
-          Spontaneous hangouts — tap in, no signup.
-        </div>
       </div>
 
       {/* featured carousel */}
@@ -286,7 +283,7 @@ function Discover({
             <div className="t-h2" style={{ marginBottom: 6 }}>
               Where are you looking?
             </div>
-            {["Near you", "Anywhere", ...AREAS].map((a) => (
+            {["Near you", "Anywhere", "Online", ...AREAS].map((a) => (
               <button
                 key={a}
                 className={`${f.sheetRow} ${loc === a ? f.sheetRowActive : ""}`}
@@ -295,7 +292,11 @@ function Discover({
                   onSheet("none");
                 }}
               >
-                <IconPin size={16} />
+                {a === "Online" ? (
+                  <IconGlobe size={16} />
+                ) : (
+                  <IconPin size={16} />
+                )}
                 {a}
                 {a === "Near you" ? (
                   <span
@@ -303,6 +304,13 @@ function Discover({
                     style={{ color: "var(--faint)", marginLeft: "auto" }}
                   >
                     uses your location
+                  </span>
+                ) : a === "Online" ? (
+                  <span
+                    className="t-caption"
+                    style={{ color: "var(--faint)", marginLeft: "auto" }}
+                  >
+                    no place needed
                   </span>
                 ) : null}
               </button>
