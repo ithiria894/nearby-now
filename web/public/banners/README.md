@@ -89,3 +89,8 @@ A park bench under a big tree with a folded picnic blanket and a thermos on it, 
 
 Phase-2 creator uploads (`img:` banners) render through the same component;
 these platform assets are the curated default set.
+
+> **Current .jpg files are TEMPORARY placeholders** (random CC photos via
+> loremflickr, fetched 2026-07-19 to demonstrate the design). Replace each with
+> the curated AI set (prompts above) by overwriting the file — same names.
+> Must be replaced before launch.
