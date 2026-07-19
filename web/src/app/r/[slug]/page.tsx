@@ -10,9 +10,14 @@ import { RoomClient } from "./RoomClient";
 // formatted client-side (avoids SSR timezone hydration mismatch).
 export const dynamic = "force-dynamic";
 
-type Params = { params: Promise<{ slug: string }> };
+type Params = {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: Pick<Params, "params">): Promise<Metadata> {
   const { slug } = await params;
   const db = await createSupabaseServer();
   let title = "enoki";
@@ -42,11 +47,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   };
 }
 
-export default async function RoomPage({ params }: Params) {
+export default async function RoomPage({ params, searchParams }: Params) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const justCreated = sp.just_created === "1";
   const db = await createSupabaseServer();
   const room = await getRoomPublic(db, slug).catch(() => null);
   const state = roomState(room);
 
-  return <RoomClient room={room} initialState={state} />;
+  return (
+    <RoomClient room={room} initialState={state} justCreated={justCreated} />
+  );
 }

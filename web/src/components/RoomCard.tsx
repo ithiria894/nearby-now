@@ -24,12 +24,15 @@ export function RoomCard({
   vibe?: VibeKey;
   timeText?: string;
   placeText?: string;
-  going: number;
+  going?: number;
   capacity?: number;
   host?: boolean;
   closed?: boolean;
 }) {
-  const spotsLeft = capacity ? Math.max(0, capacity - going) : undefined;
+  const spotsLeft =
+    capacity != null && going != null
+      ? Math.max(0, capacity - going)
+      : undefined;
   const meta = [timeText, placeText].filter(Boolean).join(" · ");
   return (
     <Link
@@ -66,12 +69,14 @@ export function RoomCard({
       ) : null}
 
       <div className={s.bottom}>
-        <AvatarCluster count={going} />
+        {going != null ? <AvatarCluster count={going} /> : <span />}
         <div className={s.spots}>
-          <span className="t-body-strong">
-            {going}
-            {capacity ? ` / ${capacity}` : ""} going
-          </span>
+          {going != null ? (
+            <span className="t-body-strong">
+              {going}
+              {capacity ? ` / ${capacity}` : ""} going
+            </span>
+          ) : null}
           {closed ? (
             <Badge fill="var(--surface-alt)" color="var(--subtext)">
               Closed

@@ -11,6 +11,7 @@ import { Avatar, AvatarCluster } from "@/components/Avatar";
 import { VibeIcon, IconArrowUpRight, IconCrown } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { Toast } from "@/components/Toast";
+import { ShareSheet } from "@/components/ShareSheet";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { ensureGuestSession, currentUserId } from "@/lib/guest";
 import {
@@ -38,9 +39,11 @@ type Membership = { state: string; role: string; left_at: string | null };
 export function RoomClient({
   room,
   initialState,
+  justCreated,
 }: {
   room: RoomPublic | null;
   initialState: RoomState;
+  justCreated?: boolean;
 }) {
   const [membership, setMembership] = useState<Membership | null>(null);
   const [asMember, setAsMember] = useState(false);
@@ -68,6 +71,7 @@ export function RoomClient({
       <MemberRoom
         room={room}
         membership={membership}
+        justCreated={justCreated}
         onLeave={() => {
           setAsMember(false);
           setMembership(null);
@@ -287,12 +291,15 @@ function TimeAndPlace({ room }: { room: RoomPublic }) {
 function MemberRoom({
   room,
   membership,
+  justCreated,
   onLeave,
 }: {
   room: RoomPublic;
   membership: Membership;
+  justCreated?: boolean;
   onLeave: () => void;
 }) {
+  const [shareOpen, setShareOpen] = useState(!!justCreated);
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [events, setEvents] = useState<RoomEvent[]>([]);
   const [text, setText] = useState("");
@@ -555,6 +562,16 @@ function MemberRoom({
       >
         No one will be able to join or chat after this.
       </Dialog>
+      <ShareSheet
+        open={shareOpen}
+        url={
+          typeof location !== "undefined"
+            ? `${location.origin}/r/${slugFromPath()}`
+            : ""
+        }
+        note="This link is your room — keep it. Drop it in your group chat."
+        onClose={() => setShareOpen(false)}
+      />
       <Toast open={copied} onClose={() => setCopied(false)}>
         Link copied
       </Toast>

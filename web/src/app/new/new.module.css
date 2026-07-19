@@ -1,0 +1,22 @@
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+.fieldLabel {
+  font-family: var(--font-body-strong);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--subtext);
+  margin-bottom: 8px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

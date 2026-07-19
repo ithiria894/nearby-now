@@ -1,0 +1,14 @@
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.empty {
+  padding: 40px 0;
+  text-align: center;
+}

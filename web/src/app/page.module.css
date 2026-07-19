@@ -1,31 +1,49 @@
 .main {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 24px;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+}
+
+.hero {
   text-align: center;
 }
-
+.mascot {
+  display: flex;
+  justify-content: center;
+}
 .wordmark {
-  font-family: var(--font-wordmark);
   font-size: 64px;
-  font-weight: 400;
-  letter-spacing: -0.01em;
   line-height: 1;
   color: var(--ink);
+  margin-top: 8px;
+}
+.tagline {
+  color: var(--subtext);
+  margin-top: 8px;
+}
+.cta {
+  display: block;
+  max-width: 280px;
+  margin: 20px auto 0;
 }
 
-.tagline {
-  font-family: var(--font-body);
-  font-size: 16px;
-  color: var(--subtext);
-  max-width: 30ch;
+.steps {
+  list-style: none;
+  margin: 40px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .footer {
-  margin-top: 8px;
-  font-size: 14px;
+  margin-top: 40px;
+  text-align: center;
+  color: var(--subtext);
+  font-family: var(--font-body);
+  font-size: 13px;
 }

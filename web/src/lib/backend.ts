@@ -156,6 +156,22 @@ export async function createActivity(
   return data as { id: string; share_slug: string };
 }
 
+export async function addSelfMembership(
+  db: DB,
+  activityId: string,
+  userId: string,
+  role: "creator" | "member"
+) {
+  const { error } = await db.from("activity_members").upsert({
+    activity_id: activityId,
+    user_id: userId,
+    role,
+    state: "joined",
+    left_at: null,
+  });
+  if (error) throw error;
+}
+
 export async function leaveRoom(db: DB, activityId: string, userId: string) {
   const { error } = await db
     .from("activity_members")

@@ -1,20 +1,58 @@
 import Link from "next/link";
-import styles from "./page.module.css";
+import { TopBar } from "@/components/TopBar";
+import { Button } from "@/components/Button";
+import { Chip } from "@/components/Chip";
+import { Avatar } from "@/components/Avatar";
+import s from "./page.module.css";
 
-// Placeholder landing (issue #40 scaffold). The real landing — wordmark in
-// Madimi One, mascot, CTA to /new, how-it-works — is issue #56 (built to the
-// approved /design mockup #47).
+// Landing (#56). The only indexable page. Explains enoki in one breath and
+// routes to /new. Static server component.
+
+const STEPS = [
+  "Post what you feel like doing",
+  "Drop the link in your group chat",
+  "People tap in — no signup",
+];
 
 export default function Home() {
   return (
-    <main className={styles.main}>
-      <h1 className={styles.wordmark}>enoki</h1>
-      <p className={styles.tagline}>
-        get people together — without being the host.
-      </p>
-      <p className={styles.footer}>
-        <Link href="/design">design system →</Link>
-      </p>
-    </main>
+    <>
+      <TopBar
+        right={
+          <Link href="/rooms">
+            <Chip>My rooms</Chip>
+          </Link>
+        }
+      />
+      <main className={s.main}>
+        <div className={s.hero}>
+          <div className={s.mascot}>
+            <Avatar size={72} />
+          </div>
+          <h1 className={`t-wordmark ${s.wordmark}`}>enoki</h1>
+          <p className={`t-body ${s.tagline}`}>
+            Get people together — without being the host.
+          </p>
+          <Link href="/new" className={s.cta}>
+            <Button full>Start a hangout</Button>
+          </Link>
+        </div>
+
+        <ol className={s.steps}>
+          {STEPS.map((t, i) => (
+            <li key={i} className={s.step}>
+              <Chip tone="brand">{String(i + 1)}</Chip>
+              <span className="t-title">{t}</span>
+            </li>
+          ))}
+        </ol>
+
+        <footer className={s.footer}>
+          <Link href="/privacy">Privacy</Link>
+          <span aria-hidden> · </span>
+          <Link href="/terms">Terms</Link>
+        </footer>
+      </main>
+    </>
   );
 }
