@@ -5,6 +5,7 @@
 import type { ReactNode } from "react";
 import type { VibeKey } from "@/lib/vibes";
 
+// Phone-shaped preview (the mobile view).
 export function MockFrame({
   label,
   children,
@@ -25,6 +26,38 @@ export function MockFrame({
           maxWidth: 390,
           border: "var(--border-thick) solid var(--border)",
           borderRadius: 28,
+          overflow: "hidden",
+          background: "var(--bg)",
+          boxShadow: "var(--hard-shadow-md)",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Wider, browser-shaped preview (the desktop view). Full-bleed to the gallery
+// frame so a real desktop layout can be judged (use the "full" width preset).
+export function DesktopFrame({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div
+        className="t-label"
+        style={{ color: "var(--subtext)", marginBottom: 6 }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          border: "var(--border-thick) solid var(--border)",
+          borderRadius: 16,
           overflow: "hidden",
           background: "var(--bg)",
           boxShadow: "var(--hard-shadow-md)",

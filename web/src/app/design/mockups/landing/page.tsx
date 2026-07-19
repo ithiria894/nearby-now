@@ -7,7 +7,7 @@ import { RoomCard } from "@/components/RoomCard";
 import { Avatar } from "@/components/Avatar";
 import { IconFlame } from "@/components/icons";
 import s from "../../design.module.css";
-import { MockFrame } from "../parts";
+import { MockFrame, DesktopFrame } from "../parts";
 
 // #47 — landing (/), /rooms, and the OG link-preview card. Static.
 
@@ -72,7 +72,14 @@ function Rooms() {
         <h1 className="t-h1" style={{ marginBottom: 12 }}>
           My rooms
         </h1>
-        <div style={{ display: "grid", gap: 16 }}>
+        {/* responsive grid: 1 col on a phone, multi-col as width allows */}
+        <div
+          style={{
+            display: "grid",
+            gap: 16,
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          }}
+        >
           <RoomCard
             href="#"
             title="Hotpot Friday, who's in?"
@@ -180,9 +187,13 @@ export default function LandingMockup() {
         <Landing />
       </MockFrame>
 
-      <MockFrame label="/rooms — my rooms">
+      <MockFrame label="/rooms — my rooms (mobile)">
         <Rooms />
       </MockFrame>
+
+      <DesktopFrame label="/rooms — my rooms (desktop, grid fills the width)">
+        <Rooms />
+      </DesktopFrame>
 
       <div
         className="t-label"

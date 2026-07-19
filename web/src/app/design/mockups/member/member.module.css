@@ -127,3 +127,38 @@
   font-family: var(--font-body);
   font-size: 14px;
 }
+
+/* ---- desktop two-pane layout ---- */
+.desktop {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  min-height: 560px;
+}
+.desktopLeft {
+  border-right: var(--border-base) solid var(--hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.desktopRight {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.desktopRight .chat {
+  flex: 1;
+  overflow-y: auto;
+}
+.rsvpCol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: var(--border-base) solid var(--hairline);
+}
+.rsvpColMember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
