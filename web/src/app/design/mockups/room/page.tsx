@@ -10,7 +10,7 @@ import { Avatar, AvatarCluster } from "@/components/Avatar";
 import { VibeIcon } from "@/components/icons";
 import { VIBE_TINT, VIBE_LABEL_EN } from "@/lib/vibes";
 import s from "../../design.module.css";
-import { MockFrame, FAKE_ROOM } from "../parts";
+import { MockFrame, DesktopFrame, FAKE_ROOM } from "../parts";
 
 // #44 — /r/[slug] visitor view, all 6 states. Static fake data.
 
@@ -75,10 +75,10 @@ function DeadEnd({ title, body }: { title: string; body: string }) {
   );
 }
 
-function OpenView({ race }: { race?: boolean }) {
+function OpenView({ race, wide }: { race?: boolean; wide?: boolean }) {
   const r = FAKE_ROOM;
-  return (
-    <div style={pad}>
+  const card = (
+    <div>
       <div
         style={{
           background: "var(--surface)",
@@ -151,17 +151,41 @@ function OpenView({ race }: { race?: boolean }) {
           )}
         </div>
       </div>
+    </div>
+  );
+  if (wide) {
+    return (
+      <div style={{ padding: 24 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) 300px",
+            gap: 24,
+            alignItems: "start",
+            maxWidth: 820,
+            margin: "0 auto",
+          }}
+        >
+          {card}
+          <HowItWorks />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={pad}>
+      {card}
       <HowItWorks />
     </div>
   );
 }
 
-function Screen({ state }: { state: State }) {
+function Screen({ state, wide }: { state: State; wide?: boolean }) {
   return (
     <div style={{ minHeight: 560 }}>
       <TopBar right={<Chip onClick={() => {}}>EN</Chip>} />
-      {state === "open" && <OpenView />}
-      {state === "race" && <OpenView race />}
+      {state === "open" && <OpenView wide={wide} />}
+      {state === "race" && <OpenView race wide={wide} />}
       {state === "full" && (
         <DeadEnd
           title="This one's full"
@@ -204,9 +228,12 @@ export default function RoomMockup() {
           </Chip>
         ))}
       </div>
-      <MockFrame label={`/r/hk8x2md4qp · ${state}`}>
+      <MockFrame label={`mobile · ${state}`}>
         <Screen state={state} />
       </MockFrame>
+      <DesktopFrame label={`desktop · ${state} — card + explainer beside it`}>
+        <Screen state={state} wide />
+      </DesktopFrame>
     </section>
   );
 }
