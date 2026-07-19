@@ -167,9 +167,9 @@ function AreaOptions({
 }
 
 function FeaturedCard(r: (typeof FEATURED)[number]) {
+  // banner at the BOTTOM (decided 2026-07-19) — title-first scanning
   return (
     <div className={f.fcard}>
-      <Banner category={r.cat} height={92} radius="24px 24px 0 0" />
       <div className={f.fcardBody}>
         <div>
           <div className="t-h1">{r.title}</div>
@@ -179,24 +179,36 @@ function FeaturedCard(r: (typeof FEATURED)[number]) {
           >
             {r.time} · {r.place}
           </div>
-          <div className={f.fcardTop} style={{ marginTop: 10 }}>
-            {r.vibe !== "open" ? (
-              <Chip accent={VIBE_TINT[r.vibe] ?? undefined} selected>
-                {VIBE_LABEL_EN[r.vibe]}
-              </Chip>
-            ) : (
-              <span />
-            )}
-            <Badge fill="var(--yellow)">{r.cap - r.going} left</Badge>
-          </div>
         </div>
         <div className={f.fcardBottom}>
           <AvatarCluster count={r.going} />
-          <span className="t-caption" style={{ color: "var(--subtext)" }}>
+          <span
+            className="t-caption"
+            style={{
+              color: "var(--subtext)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <Badge fill="var(--yellow)">{r.cap - r.going} left</Badge>
             {r.going}/{r.cap} · by {r.host}
           </span>
         </div>
       </div>
+      <Banner
+        category={r.cat}
+        height={92}
+        edge="bottom"
+        radius="0 0 24px 24px"
+        corner={
+          r.vibe !== "open" ? (
+            <Chip accent={VIBE_TINT[r.vibe] ?? undefined} selected>
+              {VIBE_LABEL_EN[r.vibe]}
+            </Chip>
+          ) : undefined
+        }
+      />
     </div>
   );
 }

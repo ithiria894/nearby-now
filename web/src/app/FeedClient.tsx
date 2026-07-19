@@ -56,18 +56,7 @@ function FeaturedCard({ r }: { r: FeedItem }) {
   const spotsLeft = r.capacity != null ? r.capacity - r.joined_count : null;
   return (
     <Link href={`/r/${r.share_slug}`} className={s.fcard}>
-      <Banner
-        category={bannerCategory(r.title_text, r.share_slug)}
-        height={92}
-        radius="24px 24px 0 0"
-        corner={
-          vibe !== "open" ? (
-            <Chip accent={VIBE_TINT[vibe] ?? undefined} selected>
-              {VIBE_LABEL_EN[vibe]}
-            </Chip>
-          ) : undefined
-        }
-      />
+      {/* banner at the BOTTOM (decided 2026-07-19): title-first scanning */}
       <div className={s.fcardBody}>
         <div>
           <div className="t-h2">{r.title_text}</div>
@@ -101,6 +90,19 @@ function FeaturedCard({ r }: { r: FeedItem }) {
           </span>
         </div>
       </div>
+      <Banner
+        category={bannerCategory(r.title_text, r.share_slug)}
+        height={92}
+        edge="bottom"
+        radius="0 0 24px 24px"
+        corner={
+          vibe !== "open" ? (
+            <Chip accent={VIBE_TINT[vibe] ?? undefined} selected>
+              {VIBE_LABEL_EN[vibe]}
+            </Chip>
+          ) : undefined
+        }
+      />
     </Link>
   );
 }

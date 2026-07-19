@@ -44,27 +44,16 @@ export function RoomCard({
       className={`${s.card} ${closed ? s.closed : ""}`}
       aria-label={title}
     >
-      <Banner
-        category={bannerCategory(title, slug)}
-        height={64}
-        radius="18px 18px 0 0"
-        corner={
-          vibe && vibe !== "open" ? (
-            <Chip accent={VIBE_TINT[vibe] ?? undefined} selected>
-              {VIBE_LABEL_EN[vibe]}
-            </Chip>
-          ) : undefined
-        }
-        topRight={
-          host ? (
+      {/* banner sits at the BOTTOM (decided 2026-07-19): title-first scanning */}
+      <div className={s.body}>
+        <div className={s.titleRow}>
+          <div className="t-h2">{title}</div>
+          {host ? (
             <span className={s.crown} aria-label="You host this">
               <IconCrown size={16} />
             </span>
-          ) : undefined
-        }
-      />
-      <div className={s.body}>
-        <div className="t-h2">{title}</div>
+          ) : null}
+        </div>
         {meta ? (
           <div className="t-body" style={{ color: "var(--subtext)" }}>
             {meta}
@@ -92,6 +81,19 @@ export function RoomCard({
           </div>
         </div>
       </div>
+      <Banner
+        category={bannerCategory(title, slug)}
+        height={64}
+        edge="bottom"
+        radius="0 0 18px 18px"
+        corner={
+          vibe && vibe !== "open" ? (
+            <Chip accent={VIBE_TINT[vibe] ?? undefined} selected>
+              {VIBE_LABEL_EN[vibe]}
+            </Chip>
+          ) : undefined
+        }
+      />
     </Link>
   );
 }

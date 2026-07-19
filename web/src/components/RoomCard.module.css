@@ -1,5 +1,6 @@
 .card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   background: var(--surface);
   border: var(--border-thick) solid var(--border);
   border-radius: var(--radius-lg);
@@ -23,10 +24,17 @@
 }
 
 .body {
+  flex: 1; /* pins the bottom banner so banners align across a grid row */
   padding: 12px 16px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .crown {

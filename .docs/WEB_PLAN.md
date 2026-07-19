@@ -178,9 +178,12 @@ lives in a **location pill**; the only mode chip left is **Online**.
    layout mid-pick. Pill goes sticky on scroll.
 3. **Featured carousel — "Happening":** 3–5 tall cards (~300px), horizontal
    scroll-snap with next-card peek on mobile; a 3-up row on desktop. Tall card
-   = **category banner band** on top (see below) + big title, time ·
-   place/distance, vibe chip + spots badge, avatar cluster + host.
-   Selection v1: soonest-starting / most-joined open rooms — no algorithm.
+   = big title + time · place/distance + avatar cluster/spots, with the
+   **category banner band at the BOTTOM** (decided 2026-07-19 after an A/B in
+   the design gallery: title-first is easier to scan; the vibe pill rides the
+   banner bottom-right). Same bottom-banner rule on browse RoomCards (host
+   crown sits beside the title). Selection v1: soonest-starting / most-joined
+   open rooms — no algorithm.
 
 **Category banners (2026-07-19).** Every event gets a visual banner so cards
 pop and read at a glance. The banner IS the activity **category** — the same
