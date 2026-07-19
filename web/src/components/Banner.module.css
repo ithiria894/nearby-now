@@ -6,6 +6,10 @@
   padding: 10px 12px;
   border-bottom: var(--border-thick) solid var(--border);
 }
+.edgeBottom {
+  border-bottom: none;
+  border-top: var(--border-thick) solid var(--border);
+}
 .watermark {
   position: absolute;
   right: -8px;

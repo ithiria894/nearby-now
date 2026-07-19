@@ -12,7 +12,8 @@ export function Banner({
   category,
   src,
   height = 84,
-  radius = "var(--radius-lg) var(--radius-lg) 0 0",
+  radius,
+  edge = "top",
   corner,
   topRight,
 }: {
@@ -20,6 +21,7 @@ export function Banner({
   src?: string;
   height?: number;
   radius?: string;
+  edge?: "top" | "bottom"; // which end of the card the banner sits on
   corner?: ReactNode;
   topRight?: ReactNode;
 }) {
@@ -27,12 +29,17 @@ export function Banner({
   const photo = src
     ? `url(${src})`
     : `url(/banners/${cat.key}.jpg), url(/banners/${cat.key}.png)`;
+  const resolvedRadius =
+    radius ??
+    (edge === "top"
+      ? "var(--radius-lg) var(--radius-lg) 0 0"
+      : "0 0 var(--radius-lg) var(--radius-lg)");
   return (
     <div
-      className={s.banner}
+      className={`${s.banner} ${edge === "bottom" ? s.edgeBottom : ""}`}
       style={{
         height,
-        borderRadius: radius,
+        borderRadius: resolvedRadius,
         background: `color-mix(in srgb, ${cat.tint} 34%, var(--surface))`,
       }}
     >

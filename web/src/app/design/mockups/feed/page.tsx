@@ -392,6 +392,140 @@ function Discover({
   );
 }
 
+// Experiment: banner-top (current) vs banner-bottom — same data, side by side.
+function BannerPositionExperiment() {
+  const r = FEATURED[0]; // hotpot / food — real photo is on disk
+  const body = (
+    <>
+      <div className="t-h1">{r.title}</div>
+      <div className="t-body" style={{ color: "var(--subtext)", marginTop: 6 }}>
+        {r.time} · {r.place}
+      </div>
+    </>
+  );
+  const bottomRow = (
+    <div className={f.fcardBottom}>
+      <AvatarCluster count={r.going} />
+      <span className="t-caption" style={{ color: "var(--subtext)" }}>
+        {r.going}/{r.cap} · by {r.host}
+      </span>
+    </div>
+  );
+  const vibeChip = (
+    <Chip accent={VIBE_TINT[r.vibe] ?? undefined} selected>
+      {VIBE_LABEL_EN[r.vibe]}
+    </Chip>
+  );
+  return (
+    <>
+      <h3 className={`t-title ${s.subTitle}`}>
+        Experiment: banner position — top (current) vs bottom
+      </h3>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 20 }}>
+        <div style={{ width: 280 }}>
+          <div
+            className="t-label"
+            style={{ color: "var(--subtext)", marginBottom: 6 }}
+          >
+            banner TOP (current)
+          </div>
+          <div className={f.fcard} style={{ width: "100%" }}>
+            <Banner
+              category={r.cat}
+              height={92}
+              radius="24px 24px 0 0"
+              corner={vibeChip}
+            />
+            <div className={f.fcardBody}>
+              <div>{body}</div>
+              {bottomRow}
+            </div>
+          </div>
+        </div>
+        <div style={{ width: 280 }}>
+          <div
+            className="t-label"
+            style={{ color: "var(--subtext)", marginBottom: 6 }}
+          >
+            banner BOTTOM
+          </div>
+          <div className={f.fcard} style={{ width: "100%" }}>
+            <div className={f.fcardBody}>
+              <div>{body}</div>
+              {bottomRow}
+            </div>
+            <Banner
+              category={r.cat}
+              height={92}
+              radius="0 0 24px 24px"
+              edge="bottom"
+              corner={vibeChip}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div
+        style={{ display: "flex", flexWrap: "wrap", gap: 20, marginTop: 20 }}
+      >
+        <div style={{ width: 280 }}>
+          <div
+            className="t-label"
+            style={{ color: "var(--subtext)", marginBottom: 6 }}
+          >
+            browse card · banner TOP (current)
+          </div>
+          <RoomCard
+            href="#"
+            title="Guitar jam, all levels"
+            vibe="chill"
+            timeText="Mon 1pm"
+            placeText="Central"
+            going={2}
+            capacity={5}
+          />
+        </div>
+        <div style={{ width: 280 }}>
+          <div
+            className="t-label"
+            style={{ color: "var(--subtext)", marginBottom: 6 }}
+          >
+            browse card · banner BOTTOM
+          </div>
+          <div
+            className={f.fcard}
+            style={{ width: "100%", minHeight: 0, borderRadius: 20 }}
+          >
+            <div className={f.fcardBody} style={{ padding: "12px 16px 14px" }}>
+              <div>
+                <div className="t-h2">Guitar jam, all levels</div>
+                <div className="t-body" style={{ color: "var(--subtext)" }}>
+                  Mon 1pm · Central
+                </div>
+              </div>
+              <div className={f.fcardBottom} style={{ marginTop: 8 }}>
+                <AvatarCluster count={2} />
+                <span className="t-body-strong">2 / 5 going</span>
+              </div>
+            </div>
+            <Banner
+              category="music"
+              height={64}
+              radius="0 0 18px 18px"
+              edge="bottom"
+              corner={
+                <Chip accent={VIBE_TINT.chill ?? undefined} selected>
+                  {VIBE_LABEL_EN.chill}
+                </Chip>
+              }
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function BannerPicker() {
   const [picked, setPicked] = useState<string>("food");
   const shown = CATEGORIES.slice(0, 6);
@@ -527,6 +661,8 @@ export default function DiscoverMockup() {
           onLoc={setLoc}
         />
       </DesktopFrame>
+
+      <BannerPositionExperiment />
 
       <BannerPicker />
     </section>
