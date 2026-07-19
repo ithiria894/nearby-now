@@ -1,0 +1,129 @@
+.head {
+  padding: 16px;
+  border-bottom: var(--border-base) solid var(--hairline);
+}
+.shareBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.shareLink {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface-alt);
+  border: var(--border-base) solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.rsvp {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 12px 16px;
+  border-bottom: var(--border-base) solid var(--hairline);
+}
+.rsvpMember {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  width: 56px;
+  text-align: center;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  min-height: 260px;
+}
+.system {
+  text-align: center;
+  color: var(--faint);
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+.bubbleRow {
+  display: flex;
+}
+.bubbleRow.me {
+  justify-content: flex-end;
+}
+.bubble {
+  max-width: 78%;
+  padding: 8px 12px;
+  border-radius: var(--radius-lg);
+  border: var(--border-base) solid var(--border);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 20px;
+}
+.them {
+  background: var(--surface);
+  color: var(--text);
+  border-bottom-left-radius: 6px;
+}
+.mine {
+  background: var(--brand);
+  color: var(--on-brand);
+  border-color: var(--border);
+  border-bottom-right-radius: 6px;
+}
+.who {
+  font-family: var(--font-body-strong);
+  font-size: 11px;
+  color: var(--subtext);
+  margin-bottom: 2px;
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px calc(env(safe-area-inset-bottom, 0px) + 16px);
+  border-top: var(--border-base) solid var(--hairline);
+}
+.composerInput {
+  flex: 1;
+  height: 44px;
+  padding: 0 14px;
+  border: var(--border-thick) solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+}
+.send {
+  height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  color: var(--on-brand);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  cursor: pointer;
+}
+.readonly {
+  padding: 16px;
+  text-align: center;
+  color: var(--subtext);
+  border-top: var(--border-base) solid var(--hairline);
+  font-family: var(--font-body);
+  font-size: 14px;
+}
