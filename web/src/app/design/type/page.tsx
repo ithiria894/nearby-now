@@ -81,7 +81,7 @@ export default function TypePage() {
       <div className={s.typeRow}>
         <div className={s.typeMeta}>accent · Caveat (use sparingly)</div>
         <div className="t-accent" style={{ color: "var(--brand)" }}>
-          see you tomorrow 🍄
+          see you tomorrow
         </div>
       </div>
     </section>

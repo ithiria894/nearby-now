@@ -37,7 +37,7 @@ export function MockFrame({
 }
 
 export const FAKE_ROOM = {
-  title: "Hotpot Friday, who's in? 🍲",
+  title: "Hotpot Friday, who's in?",
   vibe: "hype" as VibeKey,
   timeText: "Tonight · 8:00pm",
   placeName: "Causeway Bay",
@@ -66,7 +66,7 @@ export const FAKE_MESSAGES: Msg[] = [
     id: 2,
     kind: "them",
     who: "mimi",
-    text: "yo! thinking 8pm at the usual spot 🍲",
+    text: "yo! thinking 8pm at the usual spot",
     at: "7:03pm",
   },
   { id: 3, kind: "system", text: "kenji joined", at: "7:10pm" },
@@ -93,5 +93,5 @@ export const FAKE_MESSAGES: Msg[] = [
     text: "first time doing this haha, see you all there",
     at: "7:21pm",
   },
-  { id: 9, kind: "me", text: "welcome 🍄", at: "7:22pm" },
+  { id: 9, kind: "me", text: "welcome!", at: "7:22pm" },
 ];

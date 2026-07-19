@@ -5,7 +5,8 @@ import { TopBar } from "@/components/TopBar";
 import { Chip } from "@/components/Chip";
 import { Button } from "@/components/Button";
 import { Avatar } from "@/components/Avatar";
-import { VIBE_TINT, VIBE_LABEL_EN, VIBE_GLYPH } from "@/lib/vibes";
+import { VibeIcon, IconArrowUpRight, IconCrown } from "@/components/icons";
+import { VIBE_TINT, VIBE_LABEL_EN } from "@/lib/vibes";
 import s from "../../design.module.css";
 import { MockFrame, FAKE_ROOM, FAKE_MEMBERS, FAKE_MESSAGES } from "../parts";
 import c from "./member.module.css";
@@ -26,7 +27,7 @@ function Room({ view }: { view: View }) {
         <Chip
           accent={VIBE_TINT[r.vibe] ?? undefined}
           selected
-          leading={VIBE_GLYPH[r.vibe]}
+          leading={<VibeIcon vibe={r.vibe} />}
         >
           {VIBE_LABEL_EN[r.vibe]}
         </Chip>
@@ -46,7 +47,7 @@ function Room({ view }: { view: View }) {
               Copy
             </span>
           </span>
-          <Button tone="secondary" leading={<span aria-hidden>↗</span>}>
+          <Button tone="secondary" leading={<IconArrowUpRight size={16} />}>
             Share
           </Button>
         </div>
@@ -56,8 +57,11 @@ function Room({ view }: { view: View }) {
         {FAKE_MEMBERS.map((m, i) => (
           <div key={m.name} className={c.rsvpMember}>
             <Avatar size={40} seed={i} />
-            <span className="t-caption">
-              {m.host ? "👑 " : ""}
+            <span
+              className="t-caption"
+              style={{ display: "inline-flex", alignItems: "center", gap: 2 }}
+            >
+              {m.host ? <IconCrown size={12} /> : null}
               {m.name}
             </span>
           </div>

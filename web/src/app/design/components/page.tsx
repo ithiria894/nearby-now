@@ -14,7 +14,8 @@ import { Avatar, AvatarCluster } from "@/components/Avatar";
 import { Toast } from "@/components/Toast";
 import { Dialog } from "@/components/Dialog";
 import { ShareSheet } from "@/components/ShareSheet";
-import { VIBES, VIBE_TINT, VIBE_LABEL_EN, VIBE_GLYPH } from "@/lib/vibes";
+import { VibeIcon, IconFlame } from "@/components/icons";
+import { VIBES, VIBE_TINT, VIBE_LABEL_EN } from "@/lib/vibes";
 import s from "../design.module.css";
 
 // /design/components — Section 3.
@@ -46,7 +47,7 @@ export default function ComponentsPage() {
       <div className={s.row}>
         <Button disabled>Disabled</Button>
         <Button loading>Posting</Button>
-        <Button leading={<span aria-hidden>🍄</span>}>With glyph</Button>
+        <Button leading={<IconFlame size={16} />}>With icon</Button>
       </div>
       <div style={{ marginTop: 12, maxWidth: 320 }}>
         <Button tone="primary" full>
@@ -86,7 +87,7 @@ export default function ComponentsPage() {
             key={v}
             selected={vibe === v}
             accent={VIBE_TINT[v] ?? undefined}
-            leading={VIBE_GLYPH[v]}
+            leading={<VibeIcon vibe={v} />}
             onClick={() => setVibe(v)}
           >
             {VIBE_LABEL_EN[v]}
@@ -153,7 +154,7 @@ export default function ComponentsPage() {
         />
       </div>
 
-      <h3 className={`t-title ${s.subTitle}`}>Avatar (mascot 🍄) + cluster</h3>
+      <h3 className={`t-title ${s.subTitle}`}>Avatar (mascot) + cluster</h3>
       <div className={s.row} style={{ alignItems: "center" }}>
         <Avatar size={40} seed={0} />
         <Avatar size={40} seed={1} />
@@ -222,7 +223,7 @@ export default function ComponentsPage() {
       </div>
 
       <Toast open={toastOpen} onClose={() => setToastOpen(false)}>
-        Link copied 🍄
+        Link copied
       </Toast>
       <Dialog
         open={dialogOpen}

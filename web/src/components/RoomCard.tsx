@@ -2,12 +2,8 @@ import Link from "next/link";
 import { Chip } from "./Chip";
 import { Badge } from "./Badge";
 import { AvatarCluster } from "./Avatar";
-import {
-  VIBE_TINT,
-  VIBE_LABEL_EN,
-  VIBE_GLYPH,
-  type VibeKey,
-} from "@/lib/vibes";
+import { VibeIcon, IconCrown } from "./icons";
+import { VIBE_TINT, VIBE_LABEL_EN, type VibeKey } from "@/lib/vibes";
 import s from "./RoomCard.module.css";
 
 // RoomCard — compact list card for /rooms (BActivityRow). Whole card is the
@@ -46,7 +42,7 @@ export function RoomCard({
           <Chip
             accent={VIBE_TINT[vibe] ?? undefined}
             selected
-            leading={VIBE_GLYPH[vibe]}
+            leading={<VibeIcon vibe={vibe} />}
           >
             {VIBE_LABEL_EN[vibe]}
           </Chip>
@@ -55,7 +51,7 @@ export function RoomCard({
         )}
         {host ? (
           <span className={s.crown} aria-label="You host this">
-            👑
+            <IconCrown size={18} />
           </span>
         ) : null}
       </div>

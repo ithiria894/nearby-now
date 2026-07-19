@@ -6,8 +6,9 @@ import { Chip } from "@/components/Chip";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Badge } from "@/components/Badge";
-import { AvatarCluster } from "@/components/Avatar";
-import { VIBE_TINT, VIBE_LABEL_EN, VIBE_GLYPH } from "@/lib/vibes";
+import { Avatar, AvatarCluster } from "@/components/Avatar";
+import { VibeIcon } from "@/components/icons";
+import { VIBE_TINT, VIBE_LABEL_EN } from "@/lib/vibes";
 import s from "../../design.module.css";
 import { MockFrame, FAKE_ROOM } from "../parts";
 
@@ -35,7 +36,7 @@ function HowItWorks() {
       <ol style={{ margin: "10px 0 0 18px" }} className="t-body">
         <li>Tap in with a nickname</li>
         <li>Chat with the group</li>
-        <li>Show up 🍄</li>
+        <li>Show up</li>
       </ol>
     </div>
   );
@@ -54,7 +55,9 @@ function DeadEnd({ title, body }: { title: string; body: string }) {
           textAlign: "center",
         }}
       >
-        <div style={{ fontSize: 40 }}>🍄</div>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Avatar size={48} />
+        </div>
         <div className="t-h2" style={{ marginTop: 8 }}>
           {title}
         </div>
@@ -88,7 +91,7 @@ function OpenView({ race }: { race?: boolean }) {
         <Chip
           accent={VIBE_TINT[r.vibe] ?? undefined}
           selected
-          leading={VIBE_GLYPH[r.vibe]}
+          leading={<VibeIcon vibe={r.vibe} />}
         >
           {VIBE_LABEL_EN[r.vibe]}
         </Chip>
@@ -126,8 +129,8 @@ function OpenView({ race }: { race?: boolean }) {
 
         <Input label="Your nickname" placeholder="e.g. mimi" />
         <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-          <Chip onClick={() => {}}>♀</Chip>
-          <Chip onClick={() => {}}>♂</Chip>
+          <Chip onClick={() => {}}>Woman</Chip>
+          <Chip onClick={() => {}}>Man</Chip>
           <Chip selected onClick={() => {}}>
             Skip
           </Chip>

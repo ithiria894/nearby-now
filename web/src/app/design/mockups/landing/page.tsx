@@ -4,6 +4,8 @@ import { TopBar } from "@/components/TopBar";
 import { Button } from "@/components/Button";
 import { Chip } from "@/components/Chip";
 import { RoomCard } from "@/components/RoomCard";
+import { Avatar } from "@/components/Avatar";
+import { IconFlame } from "@/components/icons";
 import s from "../../design.module.css";
 import { MockFrame } from "../parts";
 
@@ -14,7 +16,9 @@ function Landing() {
     <div style={{ minHeight: 560 }}>
       <TopBar right={<Chip onClick={() => {}}>EN</Chip>} />
       <div style={{ padding: "40px 24px", textAlign: "center" }}>
-        <div style={{ fontSize: 56 }}>🍄</div>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <Avatar size={64} />
+        </div>
         <div
           className="t-wordmark"
           style={{ fontSize: 56, color: "var(--ink)", marginTop: 8 }}
@@ -71,7 +75,7 @@ function Rooms() {
         <div style={{ display: "grid", gap: 16 }}>
           <RoomCard
             href="#"
-            title="Hotpot Friday, who's in? 🍲"
+            title="Hotpot Friday, who's in?"
             vibe="hype"
             timeText="Tonight 8pm"
             placeText="Causeway Bay"
@@ -119,7 +123,9 @@ function OgCard() {
         <span
           className="t-label"
           style={{
-            display: "inline-block",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
             background: "var(--coral)",
             color: "var(--on-bright)",
             border: "var(--border-thick) solid var(--border)",
@@ -127,13 +133,13 @@ function OgCard() {
             padding: "4px 12px",
           }}
         >
-          🔥 Hype
+          <IconFlame size={14} /> Hype
         </span>
         <div
           className="t-display"
           style={{ fontSize: 34, marginTop: 12, lineHeight: 1.1 }}
         >
-          Hotpot Friday, who&apos;s in? 🍲
+          Hotpot Friday, who&apos;s in?
         </div>
         <div
           className="t-body"

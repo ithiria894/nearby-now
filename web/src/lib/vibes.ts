@@ -26,16 +26,8 @@ export const VIBE_LABEL_EN: Record<VibeKey, string> = {
   open: "Open",
 };
 
-// Temporary glyphs for the gallery. Mobile uses MaterialCommunityIcons (no
-// emoji); the web icon system is a later decision (WEB_PLAN parking lot). Until
-// then these emoji stand in so vibes are recognizable on /design.
-export const VIBE_GLYPH: Record<VibeKey, string> = {
-  chill: "😌",
-  hype: "🔥",
-  deep: "💬",
-  playful: "🎲",
-  open: "🧭",
-};
+// Icons live in components/icons.tsx (VibeIcon) — inline SVG, no emoji, mirroring
+// the mobile app's icon-not-emoji rule.
 
 export function normalizeVibe(v?: string | null): VibeKey {
   return v && (VIBES as string[]).includes(v) ? (v as VibeKey) : "open";
