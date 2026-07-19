@@ -4,27 +4,77 @@ import { useState } from "react";
 import { TopBar } from "@/components/TopBar";
 import { Chip } from "@/components/Chip";
 import { Button } from "@/components/Button";
+import { Input } from "@/components/Input";
+import { Badge } from "@/components/Badge";
 import { RoomCard } from "@/components/RoomCard";
-import { Avatar } from "@/components/Avatar";
+import { Banner } from "@/components/Banner";
+import { Avatar, AvatarCluster } from "@/components/Avatar";
+import {
+  VibeIcon,
+  IconPin,
+  IconChevronDown,
+  IconCrown,
+  IconShuffle,
+  IconImage,
+  CategoryIcon,
+} from "@/components/icons";
+import { VIBE_TINT, VIBE_LABEL_EN, type VibeKey } from "@/lib/vibes";
+import { CATEGORIES, type CategoryKey } from "@/lib/categories";
 import s from "../../design.module.css";
 import { MockFrame, DesktopFrame } from "../parts";
 import f from "./feed.module.css";
 
-// #65 — the front page as a FEED (WEB_PLAN §3.3 revised). Open hangouts +
-// "recently happened" (FOMO), All/Nearby/Online filters, floating + on mobile.
-// Static fake data.
+// #68 — Discover v2 (WEB_PLAN §3.3 v2 + §4 session-presence).
+// Two-tier feed: featured carousel of tall vibe-tinted cards + browse list.
+// Location pill + area sheet; Online chip; session-aware TopBar + profile
+// sheet. Static fake data — the design gate for the redesign.
 
-type Filter = "all" | "nearby" | "online";
+type Session = "none" | "guest";
+type Sheet = "none" | "area" | "profile";
 
-const OPEN = [
+const FEATURED: {
+  title: string;
+  vibe: VibeKey;
+  cat: CategoryKey;
+  time: string;
+  place: string;
+  going: number;
+  cap: number;
+  host: string;
+}[] = [
   {
     title: "Hotpot Friday, who's in?",
     vibe: "hype",
+    cat: "food",
     time: "Tonight 8pm",
     place: "1.2 km · Causeway Bay",
     going: 3,
     cap: 6,
+    host: "mimi",
   },
+  {
+    title: "Valorant stack, mics on",
+    vibe: "playful",
+    cat: "games",
+    time: "Tonight 10pm",
+    place: "Online",
+    going: 4,
+    cap: 5,
+    host: "kenji",
+  },
+  {
+    title: "Sunday hike + picnic",
+    vibe: "chill",
+    cat: "outdoors",
+    time: "Sun 9am",
+    place: "Sai Kung",
+    going: 2,
+    cap: 8,
+    host: "aya",
+  },
+];
+
+const BROWSE = [
   {
     title: "Quiet coffee + reading",
     vibe: "chill",
@@ -34,12 +84,12 @@ const OPEN = [
     cap: 3,
   },
   {
-    title: "Valorant stack, mics on",
-    vibe: "playful",
-    time: "Tonight 10pm",
-    place: "Online",
-    going: 4,
-    cap: 5,
+    title: "Badminton doubles, casual",
+    vibe: "open",
+    time: "Sat 2pm",
+    place: "5.1 km · Kowloon Park",
+    going: 3,
+    cap: 4,
   },
   {
     title: "Deep talk: quarter-life stuff",
@@ -49,98 +99,144 @@ const OPEN = [
     going: 2,
     cap: 6,
   },
+  {
+    title: "Street photography walk",
+    vibe: "chill",
+    time: "Sun 9am",
+    place: "2.2 km · Central",
+    going: 2,
+    cap: 6,
+  },
 ] as const;
 
 const PAST = [
-  {
-    title: "Board games night",
-    vibe: "playful",
-    time: "yesterday",
-    place: "Mong Kok",
-    going: 6,
-    cap: 6,
-  },
-  {
-    title: "Morning hike + brunch",
-    vibe: "chill",
-    time: "last Sat",
-    place: "Sai Kung",
-    going: 5,
-    cap: 8,
-  },
+  { title: "Board games night", when: "yesterday" },
+  { title: "Morning hike + brunch", when: "last Sat" },
+  { title: "Ramen crawl", when: "last week" },
 ] as const;
 
-function Feed({ wide, empty }: { wide?: boolean; empty?: boolean }) {
-  const [filter, setFilter] = useState<Filter>("all");
-  const open = empty
-    ? []
-    : OPEN.filter((r) =>
-        filter === "all"
-          ? true
-          : filter === "online"
-            ? r.place === "Online"
-            : r.place !== "Online"
-      );
+const AREAS = [
+  "Causeway Bay",
+  "Central",
+  "Mong Kok",
+  "Tsim Sha Tsui",
+  "Kwun Tong",
+];
+
+function FeaturedCard(r: (typeof FEATURED)[number]) {
+  return (
+    <div className={f.fcard}>
+      <Banner category={r.cat} height={92} radius="24px 24px 0 0" />
+      <div className={f.fcardBody}>
+        <div>
+          <div className="t-h1">{r.title}</div>
+          <div
+            className="t-body"
+            style={{ color: "var(--subtext)", marginTop: 6 }}
+          >
+            {r.time} · {r.place}
+          </div>
+          <div className={f.fcardTop} style={{ marginTop: 10 }}>
+            {r.vibe !== "open" ? (
+              <Chip
+                accent={VIBE_TINT[r.vibe] ?? undefined}
+                selected
+                leading={<VibeIcon vibe={r.vibe} />}
+              >
+                {VIBE_LABEL_EN[r.vibe]}
+              </Chip>
+            ) : (
+              <span />
+            )}
+            <Badge fill="var(--yellow)">{r.cap - r.going} left</Badge>
+          </div>
+        </div>
+        <div className={f.fcardBottom}>
+          <AvatarCluster count={r.going} />
+          <span className="t-caption" style={{ color: "var(--subtext)" }}>
+            {r.going}/{r.cap} · by {r.host}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Discover({
+  wide,
+  session,
+  sheet,
+  onSheet,
+  loc,
+  onLoc,
+}: {
+  wide?: boolean;
+  session: Session;
+  sheet: Sheet;
+  onSheet: (v: Sheet) => void;
+  loc: string;
+  onLoc: (v: string) => void;
+}) {
+  const [online, setOnline] = useState(false);
+  const browse = online ? BROWSE.filter((b) => b.place === "Online") : BROWSE;
+  const featured = online
+    ? FEATURED.filter((b) => b.place === "Online")
+    : FEATURED;
 
   return (
-    <div
-      style={{
-        minHeight: 620,
-        position: "relative",
-        paddingBottom: wide ? 0 : 72,
-      }}
-    >
+    <div className={f.frameRoot}>
       <TopBar
         right={
-          <>
-            <Chip onClick={() => {}}>My rooms</Chip>
-            <Chip onClick={() => {}}>EN</Chip>
-          </>
+          session === "guest" ? (
+            <button
+              className={f.profilePill}
+              onClick={() => onSheet("profile")}
+            >
+              <Avatar size={26} seed={0} />
+              mimi
+            </button>
+          ) : undefined
         }
       />
 
-      <div className={f.hero}>
-        <div className={f.heroText}>
-          <div className={`t-wordmark ${f.wordmark}`}>enoki</div>
-          <div className={`t-caption ${f.tagline}`}>
-            Spontaneous hangouts — tap in, no signup.
-          </div>
-        </div>
-        {wide ? <Button>Start a hangout</Button> : null}
+      <div className={f.locRow}>
+        <button className={f.locPill} onClick={() => onSheet("area")}>
+          <IconPin size={15} />
+          {loc}
+          <IconChevronDown size={14} />
+        </button>
+        <Chip selected={online} onClick={() => setOnline((v) => !v)}>
+          Online
+        </Chip>
       </div>
 
-      <div className={f.filters}>
-        {(["all", "nearby", "online"] as Filter[]).map((k) => (
-          <Chip key={k} selected={filter === k} onClick={() => setFilter(k)}>
-            {k === "all" ? "All" : k === "nearby" ? "Nearby" : "Online"}
-          </Chip>
+      <div className={f.greet}>
+        <div className="t-h1">What&apos;s happening</div>
+        <div className="t-caption" style={{ color: "var(--subtext)" }}>
+          Spontaneous hangouts — tap in, no signup.
+        </div>
+      </div>
+
+      {/* featured carousel */}
+      <div className={wide ? f.carouselWide : f.carousel}>
+        {featured.map((r) => (
+          <FeaturedCard key={r.title} {...r} />
         ))}
       </div>
 
+      {/* browse */}
       <div className={f.section}>
-        <div className={`t-label ${f.sectionLabel}`}>Happening</div>
-        {open.length === 0 ? (
+        <span className={`t-label ${f.sectionLabel}`}>More around</span>
+        {browse.length === 0 ? (
           <div className={f.empty}>
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <Avatar size={48} />
-            </div>
-            <div className="t-h2" style={{ marginTop: 8 }}>
-              Quiet right now
-            </div>
-            <div
-              className="t-body"
-              style={{ color: "var(--subtext)", marginTop: 4 }}
-            >
-              Nothing {filter === "online" ? "online" : "nearby"} at the moment
-              — be the first.
-            </div>
-            <div style={{ marginTop: 14, display: "inline-block" }}>
-              <Button>Start one</Button>
+            <Avatar size={44} />
+            <div className="t-title" style={{ marginTop: 6 }}>
+              Quiet right now — be the first
             </div>
           </div>
         ) : (
-          <div className={`${f.list} ${wide ? f.gridWide : ""}`}>
-            {open.map((r) => (
+          <div className={`${f.list} ${wide ? f.listWide : ""}`}>
+            {browse.map((r) => (
               <RoomCard
                 key={r.title}
                 href="#"
@@ -154,42 +250,26 @@ function Feed({ wide, empty }: { wide?: boolean; empty?: boolean }) {
             ))}
           </div>
         )}
-
-        <div className={`t-label ${f.sectionLabel}`}>Recently happened</div>
-        <div className={`${f.list} ${wide ? f.gridWide : ""}`}>
-          {PAST.map((r) => (
-            <RoomCard
-              key={r.title}
-              href="#"
-              title={r.title}
-              vibe={r.vibe}
-              timeText={r.time}
-              placeText={r.place}
-              going={r.going}
-              capacity={r.cap}
-              closed
-            />
-          ))}
-        </div>
-        <div
-          className="t-caption"
-          style={{ color: "var(--subtext)", marginTop: 8 }}
-        >
-          You missed these — start the next one.
-        </div>
       </div>
 
-      <div className={f.steps}>
-        {[
-          "Post what you feel like doing",
-          "Drop the link in your group chat",
-          "People tap in — no signup",
-        ].map((t, i) => (
-          <div key={i} className={f.step}>
-            <Chip tone="brand">{String(i + 1)}</Chip>
-            <span className="t-title">{t}</span>
+      {/* past strip */}
+      <div className={f.section}>
+        <span className={`t-label ${f.sectionLabel}`}>Recently happened</span>
+      </div>
+      <div className={f.pastStrip}>
+        {PAST.map((r) => (
+          <div key={r.title} className={f.pastCard}>
+            <div className="t-title">{r.title}</div>
+            <div className="t-caption" style={{ color: "var(--subtext)" }}>
+              {r.when}
+            </div>
           </div>
         ))}
+      </div>
+
+      <div className={f.newHere}>
+        New here? <span style={{ color: "var(--brand)" }}>How enoki works</span>{" "}
+        · Privacy · Terms
       </div>
 
       {!wide ? (
@@ -197,29 +277,225 @@ function Feed({ wide, empty }: { wide?: boolean; empty?: boolean }) {
           +
         </button>
       ) : null}
+
+      {/* --- area sheet --- */}
+      {sheet === "area" ? (
+        <div className={f.sheetOverlay} onClick={() => onSheet("none")}>
+          <div className={f.sheet} onClick={(e) => e.stopPropagation()}>
+            <div className={f.grabber} />
+            <div className="t-h2" style={{ marginBottom: 6 }}>
+              Where are you looking?
+            </div>
+            {["Near you", "Anywhere", ...AREAS].map((a) => (
+              <button
+                key={a}
+                className={`${f.sheetRow} ${loc === a ? f.sheetRowActive : ""}`}
+                onClick={() => {
+                  onLoc(a);
+                  onSheet("none");
+                }}
+              >
+                <IconPin size={16} />
+                {a}
+                {a === "Near you" ? (
+                  <span
+                    className="t-caption"
+                    style={{ color: "var(--faint)", marginLeft: "auto" }}
+                  >
+                    uses your location
+                  </span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* --- profile sheet --- */}
+      {sheet === "profile" ? (
+        <div className={f.sheetOverlay} onClick={() => onSheet("none")}>
+          <div className={f.sheet} onClick={(e) => e.stopPropagation()}>
+            <div className={f.grabber} />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                margin: "6px 0 12px",
+              }}
+            >
+              <Avatar size={44} seed={0} />
+              <div>
+                <div
+                  className="t-title"
+                  style={{ display: "flex", alignItems: "center", gap: 4 }}
+                >
+                  mimi <IconCrown size={14} />
+                </div>
+                <div className="t-caption" style={{ color: "var(--subtext)" }}>
+                  guest · anonymous to others
+                </div>
+              </div>
+            </div>
+            <Input label="Nickname" defaultValue="mimi" />
+            <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
+              <Button tone="secondary" full>
+                My rooms
+              </Button>
+              <Button tone="secondary" full>
+                Not you? Start fresh
+              </Button>
+            </div>
+            <div
+              className="t-caption"
+              style={{ color: "var(--faint)", marginTop: 10 }}
+            >
+              Later: add an email to keep your rooms on other devices.
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-export default function FeedMockup() {
-  const [empty, setEmpty] = useState(false);
+function BannerPicker() {
+  const [picked, setPicked] = useState<string>("food");
+  const shown = CATEGORIES.slice(0, 6);
+  return (
+    <>
+      <h3 className={`t-title ${s.subTitle}`}>
+        Banner picker (goes on /new) — pick · surprise me · upload (phase 2)
+      </h3>
+      <div className={f.pickerRow}>
+        {shown.map((c) => (
+          <button
+            key={c.key}
+            className={`${f.pickerSwatch} ${picked === c.key ? f.pickerSwatchActive : ""}`}
+            onClick={() => setPicked(c.key)}
+          >
+            <Banner category={c.key} height={52} radius="0" />
+            <span className={f.pickerMeta}>{c.label}</span>
+          </button>
+        ))}
+        <button
+          className={`${f.pickerSwatch} ${picked === "random" ? f.pickerSwatchActive : ""}`}
+          onClick={() => setPicked("random")}
+        >
+          <div
+            style={{
+              height: 52,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "var(--surface-alt)",
+              borderBottom: "var(--border-thick) solid var(--border)",
+            }}
+          >
+            <IconShuffle size={24} />
+          </div>
+          <span className={f.pickerMeta}>Surprise me</span>
+        </button>
+        <div className={`${f.pickerSwatch} ${f.pickerDisabled}`}>
+          <div
+            style={{
+              height: 52,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: "var(--surface-alt)",
+              borderBottom: "var(--border-thick) solid var(--border)",
+            }}
+          >
+            <IconImage size={24} />
+          </div>
+          <span className={f.pickerMeta}>Upload · soon</span>
+        </div>
+      </div>
+      <p
+        className="t-caption"
+        style={{ color: "var(--subtext)", marginTop: 8 }}
+      >
+        Default when nothing is picked: auto-detect from the title, random if no
+        match — LLM best-fit later. Uploads are phase 2 (moderation-gated).
+      </p>
+      <div
+        style={{ marginTop: 10, display: "flex", gap: 6, alignItems: "center" }}
+      >
+        <span className="t-caption" style={{ color: "var(--faint)" }}>
+          preview:
+        </span>
+        <CategoryIcon
+          category={picked === "random" ? "other" : picked}
+          size={16}
+        />
+        <span className="t-caption">{picked}</span>
+      </div>
+    </>
+  );
+}
+
+export default function DiscoverMockup() {
+  const [session, setSession] = useState<Session>("guest");
+  const [sheet, setSheet] = useState<Sheet>("none");
+  const [loc, setLoc] = useState("Anywhere");
+
   return (
     <section className={s.section}>
-      <h2 className={`t-h1 ${s.sectionTitle}`}>Mockup · / feed (#65)</h2>
+      <h2 className={`t-h1 ${s.sectionTitle}`}>Mockup · Discover v2 (#68)</h2>
       <div className={s.row} style={{ marginBottom: 12 }}>
-        <Chip selected={!empty} onClick={() => setEmpty(false)}>
-          with rooms
+        <Chip selected={session === "none"} onClick={() => setSession("none")}>
+          signed out
         </Chip>
-        <Chip selected={empty} onClick={() => setEmpty(true)}>
-          empty state
+        <Chip
+          selected={session === "guest"}
+          onClick={() => setSession("guest")}
+        >
+          guest session
+        </Chip>
+        <Chip
+          selected={sheet === "area"}
+          onClick={() => setSheet(sheet === "area" ? "none" : "area")}
+        >
+          area sheet
+        </Chip>
+        <Chip
+          selected={sheet === "profile"}
+          onClick={() => setSheet(sheet === "profile" ? "none" : "profile")}
+        >
+          profile sheet
         </Chip>
       </div>
-      <MockFrame label="mobile · feed (floating +)">
-        <Feed empty={empty} />
+      <p
+        className="t-caption"
+        style={{ color: "var(--subtext)", marginBottom: 12 }}
+      >
+        Signed out = no &ldquo;My rooms&rdquo;, no profile pill. Guest =
+        mushroom pill → profile sheet (nickname, My rooms, start fresh).
+      </p>
+      <MockFrame label={`mobile · discover · ${session}`}>
+        <Discover
+          session={session}
+          sheet={sheet}
+          onSheet={setSheet}
+          loc={loc}
+          onLoc={setLoc}
+        />
       </MockFrame>
-      <DesktopFrame label="desktop · feed (grid + header CTA)">
-        <Feed wide empty={empty} />
+      <DesktopFrame
+        label={`desktop · discover · ${session} — featured 3-up + browse grid`}
+      >
+        <Discover
+          wide
+          session={session}
+          sheet={sheet}
+          onSheet={setSheet}
+          loc={loc}
+          onLoc={setLoc}
+        />
       </DesktopFrame>
+
+      <BannerPicker />
     </section>
   );
 }

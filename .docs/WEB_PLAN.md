@@ -153,7 +153,70 @@ cousin of mobile `/compose`, not the full `/create` form.
 **Acceptance.** Stopwatch test: cold browser → link copied ≤ 20s typing only
 title + nickname. Errors (rate-limit, offline) leave the form intact.
 
-### 3.3 `/` — Feed (revised 2026-07-19; supersedes the static landing)
+### 3.3 `/` — Discover (v2 redesign, 2026-07-19 — supersedes the flat feed)
+
+**Why v2:** the flat feed gave every section equal weight (disorganized), had
+no location context, and no "wow" moment for a first visit. v2 is a two-tier
+discovery page: a **featured carousel of tall, vibe-tinted cards** up top (the
+attention moment), a **scannable browse list** below (the inventory). WHERE
+lives in a **location pill**; the only mode chip left is **Online**.
+
+**Structure (top → bottom):**
+
+1. **TopBar** (wordmark, My rooms) — the ONLY wordmark; no in-page hero.
+2. **Location row (sticky):** pin-icon **location pill** — "Anywhere ▾" →
+   "Near you" (geolocation) → or a picked district; tap opens an **area
+   sheet** (Use my location · Anywhere · district list). Beside it: an
+   **Online** toggle chip (place-less rooms; VISION §4.4). One-line greeting
+   under it ("What's happening" + tagline caption for first-timers).
+3. **Featured carousel — "Happening":** 3–5 tall cards (~300px), horizontal
+   scroll-snap with next-card peek on mobile; a 3-up row on desktop. Tall card
+   = **category banner band** on top (see below) + big title, time ·
+   place/distance, vibe chip + spots badge, avatar cluster + host.
+   Selection v1: soonest-starting / most-joined open rooms — no algorithm.
+
+**Category banners (2026-07-19).** Every event gets a visual banner so cards
+pop and read at a glance. The banner IS the activity **category** — the same
+taxonomy mobile already auto-derives from title keywords
+(`lib/ui/activityIcon.ts`: music/drinks/games/food/sports/fitness/movies/
+study/shopping/photo + tint + icon; type=WHAT, vibe=HOW stays orthogonal).
+Rules:
+
+- v1 banners are **asset-free**: category tint (color-mix into surface) + an
+  oversized line-icon watermark + the category label — brutal style, theme-
+  aware, zero images. Illustrated banners can replace them later without
+  changing the model.
+- **Three banner sources** (product decision 2026-07-19):
+  1. **Pick** — swatch row on `/new` (category banners).
+  2. **Platform-assigned** (the default when the creator doesn't pick):
+     recommendation = keyword auto-detect from the title (mobile's existing
+     `activityCategory()` logic, ported), falling back to **random** only when
+     no keyword matches; future upgrade = LLM picks the best fit. (User asked
+     for pure random v1 — auto-detect-then-random is the same zero effort with
+     fewer mismatches; final call is theirs.)
+  3. **Upload your own** — **phase 2, moderation-gated** (Supabase Storage
+     bucket + size/type limits + report path; anonymous users × public images
+     is a moderation-critical surface per VISION §6). Not in v1 UI beyond a
+     disabled "Upload — soon" tile.
+- Data model supports all three from day one: nullable `activities.banner`
+  text — `cat:<key>` (explicit pick) | `img:<storage-path>` (phase 2) |
+  null (platform-assigned at render time). Mobile adopts later (parking lot).
+- Add one new category for the user's ask: **outdoors/nature** (tree icon,
+  mint) — must be added to mobile's list too to stay mirrored.
+
+4. **Browse list — "More around":** compact RoomCards, list on mobile / grid
+   on desktop. Everything open that isn't featured.
+5. **Recently happened:** small horizontal strip of mini dimmed cards (FOMO
+   without the visual weight of full cards).
+6. Floating **"+"** (mobile) / header CTA (desktop). "New here? How it works"
+   collapsed line + footer.
+
+**Carousel rationale:** carousel ONLY for the featured tier (rich cards create
+interest; hidden inventory is fine for a curated 3–5). Browsing stays a list —
+scanning beats swiping for volume.
+
+_The v1 flat-feed spec below this point is superseded but kept for the data
+contract, which is unchanged:_
 
 **Purpose.** The front page is a **public feed** of hangouts — open ones first,
 then recently-finished ones — so a direct visitor never sees a dead town
@@ -281,6 +344,19 @@ mobile app is untouched.
   VISION §7 phone-verification gate for high-risk actions is the designed
   escalation path (out of v1 scope, nothing here blocks it).
 - Sign-out / "not you?" link lives next to the nickname wherever it's shown.
+
+**Session presence in the UI (v2, 2026-07-19).** Web has no login screen —
+identity IS the guest session. Three header states:
+
+| State                 | TopBar right slot                            | Notes                                                                                                                                                                        |
+| --------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No session            | _nothing_ (brand only)                       | **"My rooms" must not render** — there are no rooms and no account. Identity first appears when the user joins/creates.                                                      |
+| Guest session         | **profile pill**: mushroom avatar + nickname | Tap → **profile sheet**: edit nickname (updates `profiles.display_name` — own-profile RLS already allows it), link to My rooms, "Not you? Start fresh" (sign out + confirm). |
+| Linked account _(M5)_ | same pill                                    | + "add email to keep your rooms" nudge lives in the sheet.                                                                                                                   |
+
+Session check is client-side; the slot renders empty on SSR and hydrates in —
+it's a small pill, no layout shift. `/rooms` visited without a session
+redirects to `/` (already specified in §3.4).
 
 ---
 
