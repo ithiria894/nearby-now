@@ -1,0 +1,69 @@
+/*
+ * enoki web — type scale (issue #41). Mirrors typeScale in
+ * ../../../src/ui/theme/uikit.ts. Display/headings = Poppins; body = Inter;
+ * accent = Caveat (sparingly). Labels are UPPERCASE + tracked.
+ * Use as utility classes: <h1 className="t-display">…</h1>
+ */
+
+.t-display {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.t-h1 {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+}
+.t-h2 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 25px;
+  font-weight: 700;
+}
+.t-title {
+  font-family: var(--font-heading);
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.t-body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 400;
+}
+.t-body-strong {
+  font-family: var(--font-body-strong);
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 600;
+}
+.t-label {
+  font-family: var(--font-body-strong);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.t-caption {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+}
+.t-accent {
+  font-family: var(--font-accent);
+  font-size: 22px;
+  line-height: 26px;
+  font-weight: 700;
+}
+.t-wordmark {
+  font-family: var(--font-wordmark);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}

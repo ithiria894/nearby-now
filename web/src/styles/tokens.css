@@ -1,0 +1,186 @@
+/*
+ * enoki web — design tokens (issue #41)
+ * SOURCE OF TRUTH: ../../../src/ui/theme/uikit.ts (the mobile app). Mirror the
+ * values here; do NOT fork them. If uikit.ts changes, update this file.
+ *
+ * Direction: SOFT NEO-BRUTALISM — bold flat color on warm *paper* (subtle
+ * grain), medium ink borders, SMALL hard offset shadows, ROUNDED corners.
+ *
+ * Theming: light is the default (:root). Dark applies three ways, in this
+ * order so overrides win on equal specificity:
+ *   1. @media (prefers-color-scheme: dark)  — follow the OS
+ *   2. [data-theme="light"] / [data-theme="dark"] — forced (the /design toggle,
+ *      and the side-by-side palette swatches)
+ * The color tokens are re-declared per theme; the scales/motion/fonts below are
+ * theme-independent and live only in :root.
+ */
+
+:root {
+  /* ---- colors: LIGHT (default) ---- */
+  --bg: #f3ebd8; /* paper background */
+  --surface: #fffcf3; /* card paper */
+  --surface-alt: #ebe1c9;
+  --overlay: rgba(28, 24, 15, 0.45);
+  --ink: #1c180f; /* strongest text/icons */
+  --border: #1c180f;
+  --text: #241f14;
+  --subtext: #6e6450;
+  --faint: #9c927a; /* hairlines / disabled / large text ONLY — never body */
+  --hairline: #dbd0b4;
+  --brand: #5b4df0;
+  --on-brand: #ffffff;
+  --yellow: #ffc93c;
+  --coral: #ff6b4a;
+  --mint: #2fce8e;
+  --sky: #54c1ff;
+  --pink: #ff7ac6;
+  --grape: #b57bff;
+  --on-bright: #1c180f; /* text/icon on any bright accent fill */
+  --success: #12a66c;
+  --warn: #f5a300;
+  --danger: #ff5247;
+  --info: #3b82f6;
+  --shadow: #1c180f; /* hard shadow color */
+
+  /* ---- spacing ---- */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-xxl: 24px;
+  --space-xxxl: 32px;
+
+  /* ---- radii (rounded — friendlier than hard square) ---- */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+  --radius-pill: 999px;
+
+  /* ---- border widths (thinner than classic neobrutalism) ---- */
+  --border-hair: 1px;
+  --border-base: 1.5px;
+  --border-thick: 2px;
+
+  /* ---- hard offset shadows (no blur — the brutalist signature) ----
+     Composed with var(--shadow) so they re-resolve per theme at use time. */
+  --hard-shadow-sm: 2px 2px 0 var(--shadow);
+  --hard-shadow-md: 3px 3px 0 var(--shadow);
+  --hard-shadow-lg: 5px 5px 0 var(--shadow);
+  --press-shift: 3px; /* how far a control shifts when pressed (matches md) */
+
+  /* ---- motion (M3 — crisp, see .docs/M3_ADOPTION_GUIDE.md) ---- */
+  --dur-fast: 150ms;
+  --dur-base: 260ms;
+  --dur-slow: 420ms;
+  --ease-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1); /* entrances */
+  --ease-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15); /* exits */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1); /* symmetric move/resize */
+  --stagger: 45ms;
+
+  /* ---- layout ---- */
+  --max-content: 560px;
+
+  /* ---- fonts (families loaded via next/font in layout.tsx) ----
+     Poppins = display/heading; Inter = body; Caveat = accent; Madimi One =
+     wordmark only. CJK falls back to a Noto/system stack (Latin webfonts lack
+     CJK glyphs) — this is where zh-Hant line-height is judged on /design. */
+  --font-fallback: system-ui, -apple-system, "Segoe UI", Roboto,
+    "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-display: var(--font-poppins), var(--font-fallback);
+  --font-heading: var(--font-poppins), var(--font-fallback);
+  --font-body: var(--font-inter), var(--font-fallback);
+  --font-body-strong: var(--font-inter), var(--font-fallback);
+  --font-accent: var(--font-caveat), cursive;
+  --font-wordmark: var(--font-madimi), var(--font-display);
+}
+
+/* ---- colors: DARK via OS preference ---- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1710;
+    --surface: #26211a;
+    --surface-alt: #312b21;
+    --overlay: rgba(0, 0, 0, 0.6);
+    --ink: #f3ebd8; /* cream text/icons */
+    --border: #8a7c5e; /* muted warm border (not glaring cream) */
+    --text: #efe7d4;
+    --subtext: #b0a68c;
+    --faint: #7c7360;
+    --hairline: #3a3428;
+    --brand: #8e80ff;
+    --on-brand: #141019;
+    --yellow: #ffd65c;
+    --coral: #ff8a6e;
+    --mint: #4fdca0;
+    --sky: #79cfff;
+    --pink: #ff9ad3;
+    --grape: #c79bff;
+    --on-bright: #141019;
+    --success: #2fcf8e;
+    --warn: #ffc44d;
+    --danger: #ff6a61;
+    --info: #6fa8ff;
+    --shadow: #000000;
+    color-scheme: dark;
+  }
+}
+
+/* ---- forced themes (toggle + side-by-side swatches). Declared AFTER the
+   media query so they win on equal specificity. ---- */
+[data-theme="light"] {
+  --bg: #f3ebd8;
+  --surface: #fffcf3;
+  --surface-alt: #ebe1c9;
+  --overlay: rgba(28, 24, 15, 0.45);
+  --ink: #1c180f;
+  --border: #1c180f;
+  --text: #241f14;
+  --subtext: #6e6450;
+  --faint: #9c927a;
+  --hairline: #dbd0b4;
+  --brand: #5b4df0;
+  --on-brand: #ffffff;
+  --yellow: #ffc93c;
+  --coral: #ff6b4a;
+  --mint: #2fce8e;
+  --sky: #54c1ff;
+  --pink: #ff7ac6;
+  --grape: #b57bff;
+  --on-bright: #1c180f;
+  --success: #12a66c;
+  --warn: #f5a300;
+  --danger: #ff5247;
+  --info: #3b82f6;
+  --shadow: #1c180f;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #1b1710;
+  --surface: #26211a;
+  --surface-alt: #312b21;
+  --overlay: rgba(0, 0, 0, 0.6);
+  --ink: #f3ebd8;
+  --border: #8a7c5e;
+  --text: #efe7d4;
+  --subtext: #b0a68c;
+  --faint: #7c7360;
+  --hairline: #3a3428;
+  --brand: #8e80ff;
+  --on-brand: #141019;
+  --yellow: #ffd65c;
+  --coral: #ff8a6e;
+  --mint: #4fdca0;
+  --sky: #79cfff;
+  --pink: #ff9ad3;
+  --grape: #c79bff;
+  --on-bright: #141019;
+  --success: #2fcf8e;
+  --warn: #ffc44d;
+  --danger: #ff6a61;
+  --info: #6fa8ff;
+  --shadow: #000000;
+  color-scheme: dark;
+}

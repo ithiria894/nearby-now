@@ -1,29 +1,8 @@
 /*
- * Placeholder base styles for the scaffold only.
- * The real design system — full token set (both palettes), paper texture,
- * fonts, and the component kit — lands in issues #41–#43 (web/src/styles/tokens.css).
- * Source of truth for values: src/ui/theme/uikit.ts.
- * These few paper/ink colors are a taste of the direction, not the token system.
+ * Base reset + body defaults. Consumes tokens from ../styles/tokens.css
+ * (imported before this in layout.tsx). The real component kit lands in
+ * issues #42–#43; this file stays a thin reset.
  */
-
-:root {
-  --paper: #f3ebd8;
-  --ink: #1c180f;
-  --subtext: #6e6450;
-  --brand: #5b4df0;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #1b1710;
-    --ink: #f3ebd8;
-    --subtext: #b0a68c;
-    --brand: #8e80ff;
-  }
-  html {
-    color-scheme: dark;
-  }
-}
 
 * {
   box-sizing: border-box;
@@ -39,15 +18,11 @@ body {
 
 body {
   min-height: 100dvh;
-  color: var(--ink);
-  background: var(--paper);
-  font-family:
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    "Noto Sans",
-    sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 22px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
