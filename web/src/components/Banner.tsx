@@ -23,7 +23,11 @@ export function Banner({
   radius?: string;
 }) {
   const cat = categoryByKey(category);
-  const photo = src ?? `/banners/${cat.key}.jpg`;
+  // CSS multi-background = a free fallback chain: first existing layer wins
+  // (jpg preferred, then png), missing files fail silently to the tint/icon.
+  const photo = src
+    ? `url(${src})`
+    : `url(/banners/${cat.key}.jpg), url(/banners/${cat.key}.png)`;
   return (
     <div
       className={s.banner}
@@ -36,11 +40,7 @@ export function Banner({
       <span className={s.watermark} aria-hidden>
         <CategoryIcon category={cat.key} size={Math.round(height * 0.9)} />
       </span>
-      <div
-        className={s.photo}
-        style={{ backgroundImage: `url(${photo})` }}
-        aria-hidden
-      />
+      <div className={s.photo} style={{ backgroundImage: photo }} aria-hidden />
       <span className={`t-label ${s.label}`}>{cat.label}</span>
     </div>
   );
