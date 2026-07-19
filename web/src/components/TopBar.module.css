@@ -1,0 +1,22 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  min-height: 56px;
+  padding: 0 var(--space-lg);
+  background: var(--surface);
+  border-bottom: var(--border-thick) solid var(--border);
+}
+
+.wordmark {
+  font-size: 26px;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}

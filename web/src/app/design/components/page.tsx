@@ -6,6 +6,14 @@ import { Card } from "@/components/Card";
 import { Chip } from "@/components/Chip";
 import { Input } from "@/components/Input";
 import { Badge } from "@/components/Badge";
+import { TopBar } from "@/components/TopBar";
+import { Stepper } from "@/components/Stepper";
+import { Accordion } from "@/components/Accordion";
+import { RoomCard } from "@/components/RoomCard";
+import { Avatar, AvatarCluster } from "@/components/Avatar";
+import { Toast } from "@/components/Toast";
+import { Dialog } from "@/components/Dialog";
+import { ShareSheet } from "@/components/ShareSheet";
 import { VIBES, VIBE_TINT, VIBE_LABEL_EN, VIBE_GLYPH } from "@/lib/vibes";
 import s from "../design.module.css";
 
@@ -15,6 +23,10 @@ export default function ComponentsPage() {
   const [vibe, setVibe] = useState<string>("open");
   const [chipOn, setChipOn] = useState(true);
   const [text, setText] = useState("");
+  const [cap, setCap] = useState(4);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   return (
     <section className={s.section}>
@@ -121,6 +133,113 @@ export default function ComponentsPage() {
         />
         <Input label="Disabled" placeholder="can't type" disabled />
       </div>
+
+      {/* ---------------- kit B ---------------- */}
+      <h3 className={`t-title ${s.subTitle}`}>TopBar</h3>
+      <div
+        style={{
+          border: "var(--border-base) solid var(--hairline)",
+          borderRadius: 12,
+          overflow: "hidden",
+        }}
+      >
+        <TopBar
+          right={
+            <>
+              <Chip onClick={() => {}}>My rooms</Chip>
+              <Chip onClick={() => {}}>EN</Chip>
+            </>
+          }
+        />
+      </div>
+
+      <h3 className={`t-title ${s.subTitle}`}>Avatar (mascot 🍄) + cluster</h3>
+      <div className={s.row} style={{ alignItems: "center" }}>
+        <Avatar size={40} seed={0} />
+        <Avatar size={40} seed={1} />
+        <Avatar size={40} seed={2} />
+        <AvatarCluster count={5} />
+      </div>
+
+      <h3 className={`t-title ${s.subTitle}`}>Stepper (capacity)</h3>
+      <Stepper
+        value={cap}
+        onChange={setCap}
+        min={2}
+        max={12}
+        label="Capacity"
+      />
+
+      <h3 className={`t-title ${s.subTitle}`}>Accordion (More details)</h3>
+      <Accordion title="More details">
+        <div className="t-body" style={{ color: "var(--subtext)" }}>
+          Time, place, capacity, gender — all optional, kept out of the way so
+          the default create path stays two fields.
+        </div>
+      </Accordion>
+
+      <h3 className={`t-title ${s.subTitle}`}>RoomCard</h3>
+      <div style={{ display: "grid", gap: 16 }}>
+        <RoomCard
+          href="#"
+          title="Hotpot Friday"
+          vibe="hype"
+          timeText="Fri 8pm"
+          placeText="Causeway Bay"
+          going={4}
+          capacity={6}
+          host
+        />
+        <RoomCard
+          href="#"
+          title="Quiet coffee + reading"
+          vibe="chill"
+          timeText="Sat 10am"
+          placeText="Sheung Wan"
+          going={2}
+          capacity={3}
+        />
+        <RoomCard
+          href="#"
+          title="Board games night"
+          vibe="playful"
+          timeText="last week"
+          going={6}
+          capacity={6}
+          closed
+        />
+      </div>
+
+      <h3 className={`t-title ${s.subTitle}`}>Overlays</h3>
+      <div className={s.row}>
+        <Button tone="secondary" onClick={() => setToastOpen(true)}>
+          Show toast
+        </Button>
+        <Button tone="secondary" onClick={() => setDialogOpen(true)}>
+          Open dialog
+        </Button>
+        <Button onClick={() => setShareOpen(true)}>Share sheet</Button>
+      </div>
+
+      <Toast open={toastOpen} onClose={() => setToastOpen(false)}>
+        Link copied 🍄
+      </Toast>
+      <Dialog
+        open={dialogOpen}
+        title="Leave this hangout?"
+        danger
+        confirmLabel="Leave"
+        onConfirm={() => setDialogOpen(false)}
+        onClose={() => setDialogOpen(false)}
+      >
+        You can re-join while it&apos;s open.
+      </Dialog>
+      <ShareSheet
+        open={shareOpen}
+        url="https://enokiapp.com/r/hk8x2md4qp"
+        note="This link is your room — keep it."
+        onClose={() => setShareOpen(false)}
+      />
     </section>
   );
 }

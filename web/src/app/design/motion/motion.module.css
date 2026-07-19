@@ -1,0 +1,77 @@
+.easeTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.easeTable td {
+  padding: 6px 8px;
+  border-bottom: var(--border-hair) solid var(--hairline);
+  font-family: var(--font-body);
+}
+.easeName {
+  font-family: var(--font-body-strong);
+}
+
+.staggerList {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.staggerItem {
+  opacity: 0;
+  transform: translateY(12px);
+  background: var(--surface);
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--hard-shadow-sm);
+  padding: var(--space-md);
+  animation: stagger-in var(--dur-base) var(--ease-emphasized-decelerate) forwards;
+}
+@keyframes stagger-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* container transform — a "row" grows into a panel */
+.ct {
+  background: var(--surface);
+  border: var(--border-thick) solid var(--border);
+  box-shadow: var(--hard-shadow-md);
+  overflow: hidden;
+  cursor: pointer;
+  width: 220px;
+  height: 72px;
+  border-radius: var(--radius-lg);
+  transition:
+    width var(--dur-slow) var(--ease-emphasized-decelerate),
+    height var(--dur-slow) var(--ease-emphasized-decelerate),
+    border-radius var(--dur-slow) var(--ease-emphasized-decelerate);
+  padding: var(--space-md);
+}
+.ctOpen {
+  width: 100%;
+  height: 220px;
+  border-radius: var(--radius-xl);
+}
+
+.status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: var(--border-base) solid var(--border);
+  font-family: var(--font-body-strong);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .staggerItem {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .ct {
+    transition: none;
+  }
+}
