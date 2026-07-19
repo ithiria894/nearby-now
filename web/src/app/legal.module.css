@@ -1,0 +1,16 @@
+.main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+.main h2 {
+  margin-top: 24px;
+  margin-bottom: 6px;
+}
+.main p {
+  color: var(--text);
+}
+.main a {
+  color: var(--brand);
+  text-decoration: underline;
+}

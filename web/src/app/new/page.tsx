@@ -12,6 +12,7 @@ import { VibeIcon } from "@/components/icons";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { ensureGuestSession } from "@/lib/guest";
 import { createActivity, addSelfMembership } from "@/lib/backend";
+import { track } from "@/lib/track";
 import { VIBES, VIBE_TINT, VIBE_LABEL_EN, type VibeKey } from "@/lib/vibes";
 import s from "./new.module.css";
 
@@ -71,6 +72,7 @@ export default function NewPage() {
 
       const { id, share_slug } = await createActivity(db, payload);
       await addSelfMembership(db, id, uid, "creator");
+      track("create_done", share_slug);
       router.push(`/r/${share_slug}?just_created=1`);
     } catch {
       setError("Couldn't post. Try again.");

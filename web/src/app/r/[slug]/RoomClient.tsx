@@ -14,6 +14,7 @@ import { Toast } from "@/components/Toast";
 import { ShareSheet } from "@/components/ShareSheet";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { ensureGuestSession, currentUserId } from "@/lib/guest";
+import { track } from "@/lib/track";
 import {
   fetchMembers,
   getActivityCreatorId,
@@ -49,6 +50,7 @@ export function RoomClient({
   const [asMember, setAsMember] = useState(false);
 
   useEffect(() => {
+    track("link_open", slugFromPath());
     if (!room) return;
     let active = true;
     (async () => {
@@ -192,6 +194,7 @@ function Visitor({
         const m = uid
           ? await getMembershipState(createSupabaseBrowser(), room.id, uid)
           : null;
+        track("join_done", slugFromPath());
         onJoined(m ?? { state: "joined", role: "member", left_at: null });
         return;
       }
