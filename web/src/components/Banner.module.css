@@ -3,13 +3,8 @@
   overflow: hidden;
   display: flex;
   align-items: flex-end;
-  padding: 10px 14px;
+  padding: 10px 12px;
   border-bottom: var(--border-thick) solid var(--border);
-}
-.label {
-  position: relative;
-  z-index: 1;
-  color: var(--ink);
 }
 .watermark {
   position: absolute;
@@ -18,4 +13,19 @@
   opacity: 0.28;
   color: var(--ink);
   transform: rotate(-8deg);
+}
+.photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+.label {
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
+  border: var(--border-base) solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  color: var(--ink);
 }

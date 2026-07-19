@@ -189,10 +189,13 @@ taxonomy mobile already auto-derives from title keywords
 study/shopping/photo + tint + icon; type=WHAT, vibe=HOW stays orthogonal).
 Rules:
 
-- v1 banners are **asset-free**: category tint (color-mix into surface) + an
-  oversized line-icon watermark + the category label — brutal style, theme-
-  aware, zero images. Illustrated banners can replace them later without
-  changing the model.
+- Banner visuals (iterated 2026-07-19): a **curated AI-photo set** — one image
+  per category, golden-hour / warm / **no people** / no text (style guide +
+  generation prompts in `web/public/banners/README.md`), dropped at
+  `/banners/<key>.jpg`. Rendered as a CSS background layer over the
+  **asset-free fallback** (category tint + icon watermark), so a missing image
+  degrades silently; the label sits on a paper chip for readability on any
+  photo. Phase-2 uploads flow through the same layer.
 - **Three banner sources** (product decision 2026-07-19):
   1. **Pick** — swatch row on `/new` (category banners).
   2. **Platform-assigned** (the default when the creator doesn't pick):
