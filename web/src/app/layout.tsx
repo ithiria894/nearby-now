@@ -46,8 +46,14 @@ export default function RootLayout({
 }>) {
   const fontVars = `${poppins.variable} ${inter.variable} ${caveat.variable} ${madimi.variable}`;
   return (
-    <html lang="en" className={fontVars}>
+    <html lang="en" className={fontVars} suppressHydrationWarning>
       <body>
+        {/* apply the stored theme BEFORE paint so the toggle choice never flashes */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("enoki-theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`,
+          }}
+        />
         <PaperTexture />
         <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
       </body>
