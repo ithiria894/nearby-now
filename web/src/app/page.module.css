@@ -15,9 +15,57 @@
   gap: 12px;
   padding: 14px 0 6px;
 }
+/* tool cluster (top right): search + location — tools, not facets */
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
 .pillWrap {
   position: relative;
   flex: none;
+}
+.searchPill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  min-height: 40px;
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  box-shadow: var(--hard-shadow-sm);
+}
+.searchPill::after {
+  /* extended hit area to the 48px floor */
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+.searchPill:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+.searchOn {
+  background: color-mix(in srgb, var(--brand) 20%, var(--surface));
+}
+.searchWrap {
+  padding: 2px 2px 4px;
+  animation: search-in var(--dur-fast) var(--ease-emphasized-decelerate);
+}
+@keyframes search-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .locPill {
   display: inline-flex;
@@ -81,8 +129,22 @@
   background: var(--border);
   opacity: 0.3;
 }
-.searchWrap {
-  padding: 0 2px;
+
+/* staggered entrance when filters change (M3 emphasized-decelerate; the
+   results container is keyed by the facet state so chips replay it) */
+.cardIn {
+  animation: card-in var(--dur-base) var(--ease-emphasized-decelerate)
+    backwards;
+}
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* starting-soon cluster — full-width vertical cards, no carousel */
@@ -293,7 +355,9 @@
   .fcard {
     transition: none;
   }
-  .sheet {
+  .sheet,
+  .cardIn,
+  .searchWrap {
     animation: none;
   }
 }

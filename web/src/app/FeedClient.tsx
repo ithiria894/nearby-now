@@ -26,11 +26,11 @@ import { AREAS } from "@/lib/areas";
 import { track } from "@/lib/track";
 import s from "./page.module.css";
 
-// Discover v3 (approved mockup /design/mockups/feed3). One vertical scroll —
-// no carousel. Top cluster = "Starting soon · has room" (honest high-join-
-// success picks). Always-visible category + vibe chips, Has-room toggle,
-// search behind a labeled pill. Facet filtering is client-side over the open
-// set (small by nature); Joined tags via my-rooms ∩ feed slugs.
+// Discover v3 (approved mockup /design/mockups/feed3, iterated live). One
+// vertical scroll — no carousel. Top cluster = "Starting soon · has room".
+// Search is a TOOL (next to the location pill), not a facet chip. Category +
+// vibe chips MULTI-select: OR within a facet, AND across facets. Chip taps
+// replay a staggered M3 entrance on the lists; typing does not (too jumpy).
 
 type Scope =
   | { kind: "anywhere" }
@@ -72,6 +72,14 @@ function soonBadge(mins: number): string {
   if (mins <= 0) return "now";
   if (mins < 60) return `in ${Math.round(mins)} min`;
   return `in ${Math.round(mins / 60)} h`;
+}
+
+// toggle helper for multi-select facet sets
+function toggled<T>(prev: Set<T>, key: T): Set<T> {
+  const next = new Set(prev);
+  if (next.has(key)) next.delete(key);
+  else next.add(key);
+  return next;
 }
 
 function SoonCard({ r, joined }: { r: Enriched; joined: boolean }) {
@@ -175,9 +183,9 @@ export function FeedClient() {
   const [mySlugs, setMySlugs] = useState<Set<string>>(new Set());
   const [geoDenied, setGeoDenied] = useState(false);
 
-  // facet filters (client-side over the open set)
-  const [cat, setCat] = useState<"all" | CategoryKey>("all");
-  const [vibe, setVibe] = useState<"any" | VibeKey>("any");
+  // facet filters — multi-select sets; empty set = "all"/"any"
+  const [cats, setCats] = useState<Set<CategoryKey>>(new Set());
+  const [vibesSel, setVibesSel] = useState<Set<VibeKey>>(new Set());
   const [hasRoom, setHasRoom] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -269,12 +277,12 @@ export function FeedClient() {
     if (area) setScope({ kind: "area", key: area.key });
   };
 
-  // ---- facets ----
+  // ---- facets: OR within a set, AND across facets ----
   const all = open ?? [];
   const liveCats = CATEGORIES.filter((c) => all.some((i) => i.cat === c.key));
   const filtered = all.filter((i) => {
-    if (cat !== "all" && i.cat !== cat) return false;
-    if (vibe !== "any" && normalizeVibe(i.vibe) !== vibe) return false;
+    if (cats.size > 0 && !cats.has(i.cat)) return false;
+    if (vibesSel.size > 0 && !vibesSel.has(normalizeVibe(i.vibe))) return false;
     if (hasRoom && !i.hasSpots) return false;
     if (q) {
       const hay = `${i.title_text} ${i.place_name ?? ""}`.toLowerCase();
@@ -299,14 +307,28 @@ export function FeedClient() {
     .filter((r) => !soonSlugs.has(r.share_slug))
     .sort((a, b) => (a.minsUntil ?? Infinity) - (b.minsUntil ?? Infinity));
 
-  const anyFilter = cat !== "all" || vibe !== "any" || hasRoom || q.length > 0;
+  const anyFilter =
+    cats.size > 0 || vibesSel.size > 0 || hasRoom || q.length > 0;
   const clearAll = () => {
-    setCat("all");
-    setVibe("any");
+    setCats(new Set());
+    setVibesSel(new Set());
     setHasRoom(false);
     setQ("");
     setSearchOpen(false);
   };
+
+  // chip taps remount the results → staggered entrance replays. Typing (q)
+  // deliberately excluded — re-animating every keystroke is jumpy.
+  const filterKey = [
+    scopeLabel(scope),
+    [...cats].sort().join(","),
+    [...vibesSel].sort().join(","),
+    hasRoom ? "room" : "",
+  ].join("|");
+  let delayIdx = 0;
+  const entrance = () => ({
+    animationDelay: `${Math.min(delayIdx++, 10) * 35}ms`,
+  });
 
   return (
     <>
@@ -317,56 +339,69 @@ export function FeedClient() {
             Spontaneous hangouts — tap in, no signup.
           </div>
         </div>
-        <div className={s.pillWrap}>
+        <div className={s.tools}>
           <button
-            className={s.locPill}
-            onClick={() => setPickerOpen((v) => !v)}
-            aria-expanded={pickerOpen}
-          >
-            {scope.kind === "online" ? (
-              <IconGlobe size={15} />
-            ) : (
-              <IconPin size={15} />
-            )}
-            {scopeLabel(scope)}
-            <IconChevronDown size={14} />
-          </button>
-          {pickerOpen ? (
-            <div className={s.dropdown}>
-              <AreaOptions scope={scope} onPick={pick} />
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {/* ---- filter bar ---- */}
-      <div className={s.filters}>
-        <div className={s.filterRow}>
-          <Chip
-            selected={searchOpen}
-            leading={<IconSearch size={14} />}
+            className={`${s.searchPill} ${searchOpen ? s.searchOn : ""}`}
+            aria-label="Search hangouts"
+            aria-expanded={searchOpen}
             onClick={() => {
               if (searchOpen) setQ("");
               else track("feed_filter", undefined, "search");
               setSearchOpen((v) => !v);
             }}
           >
-            Search
-          </Chip>
-          <Chip selected={cat === "all"} onClick={() => setCat("all")}>
+            <IconSearch size={17} />
+          </button>
+          <div className={s.pillWrap}>
+            <button
+              className={s.locPill}
+              onClick={() => setPickerOpen((v) => !v)}
+              aria-expanded={pickerOpen}
+            >
+              {scope.kind === "online" ? (
+                <IconGlobe size={15} />
+              ) : (
+                <IconPin size={15} />
+              )}
+              {scopeLabel(scope)}
+              <IconChevronDown size={14} />
+            </button>
+            {pickerOpen ? (
+              <div className={s.dropdown}>
+                <AreaOptions scope={scope} onPick={pick} />
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {searchOpen ? (
+        <div className={s.searchWrap}>
+          <Input
+            placeholder="Search title or place…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            autoFocus
+          />
+        </div>
+      ) : null}
+
+      {/* ---- facet chips: categories, then vibes + has-room ---- */}
+      <div className={s.filters}>
+        <div className={s.filterRow}>
+          <Chip selected={cats.size === 0} onClick={() => setCats(new Set())}>
             All
           </Chip>
           {liveCats.map((c) => (
             <Chip
               key={c.key}
-              selected={cat === c.key}
+              selected={cats.has(c.key)}
               accent={c.tint}
               leading={<CategoryIcon category={c.key} size={14} />}
               onClick={() => {
-                const next = cat === c.key ? "all" : c.key;
-                if (next !== "all")
+                if (!cats.has(c.key))
                   track("feed_filter", undefined, `cat:${c.key}`);
-                setCat(next);
+                setCats((prev) => toggled(prev, c.key));
               }}
             >
               {c.label}
@@ -377,13 +412,12 @@ export function FeedClient() {
           {VIBES.filter((v) => v !== "open").map((v) => (
             <Chip
               key={v}
-              selected={vibe === v}
+              selected={vibesSel.has(v)}
               accent={VIBE_TINT[v] ?? undefined}
               onClick={() => {
-                const next = vibe === v ? "any" : v;
-                if (next !== "any")
+                if (!vibesSel.has(v))
                   track("feed_filter", undefined, `vibe:${v}`);
-                setVibe(next);
+                setVibesSel((prev) => toggled(prev, v));
               }}
             >
               {VIBE_LABEL_EN[v]}
@@ -401,16 +435,6 @@ export function FeedClient() {
             Has room
           </Chip>
         </div>
-        {searchOpen ? (
-          <div className={s.searchWrap}>
-            <Input
-              placeholder="Search title or place…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              autoFocus
-            />
-          </div>
-        ) : null}
       </div>
 
       {open === null ? (
@@ -440,7 +464,7 @@ export function FeedClient() {
           </Link>
         </div>
       ) : (
-        <>
+        <div key={filterKey}>
           {soon.length > 0 ? (
             <>
               <span className={`t-label ${s.sectionLabel}`}>
@@ -448,11 +472,13 @@ export function FeedClient() {
               </span>
               <div className={s.soonList}>
                 {soon.map((r) => (
-                  <SoonCard
+                  <div
                     key={r.share_slug}
-                    r={r}
-                    joined={mySlugs.has(r.share_slug)}
-                  />
+                    className={s.cardIn}
+                    style={entrance()}
+                  >
+                    <SoonCard r={r} joined={mySlugs.has(r.share_slug)} />
+                  </div>
                 ))}
               </div>
             </>
@@ -465,25 +491,30 @@ export function FeedClient() {
               </span>
               <div className={s.grid}>
                 {browse.map((r) => (
-                  <RoomCard
+                  <div
                     key={r.share_slug}
-                    href={`/r/${r.share_slug}`}
-                    title={r.title_text}
-                    vibe={normalizeVibe(r.vibe)}
-                    banner={r.banner}
-                    timeText={timeLabel(r.start_time) ?? undefined}
-                    placeText={placeLabel(r)}
-                    going={r.joined_count}
-                    capacity={r.capacity ?? undefined}
-                    joined={mySlugs.has(r.share_slug)}
-                  />
+                    className={s.cardIn}
+                    style={entrance()}
+                  >
+                    <RoomCard
+                      href={`/r/${r.share_slug}`}
+                      title={r.title_text}
+                      vibe={normalizeVibe(r.vibe)}
+                      banner={r.banner}
+                      timeText={timeLabel(r.start_time) ?? undefined}
+                      placeText={placeLabel(r)}
+                      going={r.joined_count}
+                      capacity={r.capacity ?? undefined}
+                      joined={mySlugs.has(r.share_slug)}
+                    />
+                  </div>
                 ))}
               </div>
             </>
           ) : null}
 
           {filtered.length === 0 ? (
-            <div className={s.noMatch}>
+            <div className={`${s.noMatch} ${s.cardIn}`}>
               <div className="t-title">Nothing matches</div>
               <div
                 className="t-body"
@@ -507,7 +538,7 @@ export function FeedClient() {
               Clear filters
             </button>
           ) : null}
-        </>
+        </div>
       )}
 
       {past.length > 0 ? (
