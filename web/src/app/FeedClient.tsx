@@ -9,14 +9,8 @@ import { RoomCard } from "@/components/RoomCard";
 import { Banner } from "@/components/Banner";
 import { Avatar, AvatarCluster } from "@/components/Avatar";
 import { Toast } from "@/components/Toast";
-import {
-  IconPin,
-  IconGlobe,
-  IconChevronDown,
-  IconSearch,
-  IconX,
-  CategoryIcon,
-} from "@/components/icons";
+import { LocationPicker } from "@/components/LocationPicker";
+import { IconSearch, IconX, CategoryIcon } from "@/components/icons";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { getFeedPublic, fetchMyRooms, type FeedItem } from "@/lib/backend";
 import { normalizeVibe, VIBE_TINT, VIBE_LABEL_EN, VIBES } from "@/lib/vibes";
@@ -134,50 +128,8 @@ function SoonCard({ r, joined }: { r: Enriched; joined: boolean }) {
   );
 }
 
-function AreaOptions({
-  scope,
-  onPick,
-}: {
-  scope: Scope;
-  onPick: (label: string) => void;
-}) {
-  const current = scopeLabel(scope);
-  return (
-    <>
-      {["Near you", "Anywhere", "Online", ...AREAS.map((a) => a.label)].map(
-        (a) => (
-          <button
-            key={a}
-            className={`${s.sheetRow} ${current === a ? s.sheetRowActive : ""}`}
-            onClick={() => onPick(a)}
-          >
-            {a === "Online" ? <IconGlobe size={16} /> : <IconPin size={16} />}
-            {a}
-            {a === "Near you" ? (
-              <span
-                className="t-caption"
-                style={{ color: "var(--faint)", marginLeft: "auto" }}
-              >
-                uses your location
-              </span>
-            ) : a === "Online" ? (
-              <span
-                className="t-caption"
-                style={{ color: "var(--faint)", marginLeft: "auto" }}
-              >
-                no place needed
-              </span>
-            ) : null}
-          </button>
-        )
-      )}
-    </>
-  );
-}
-
 export function FeedClient() {
   const [scope, setScope] = useState<Scope>({ kind: "anywhere" });
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [open, setOpen] = useState<Enriched[] | null>(null);
   const [past, setPast] = useState<FeedItem[]>([]);
   const [mySlugs, setMySlugs] = useState<Set<string>>(new Set());
@@ -255,7 +207,6 @@ export function FeedClient() {
   }, []);
 
   const pick = (label: string) => {
-    setPickerOpen(false);
     track("feed_filter", undefined, label);
     if (label === "Anywhere") return setScope({ kind: "anywhere" });
     if (label === "Online") return setScope({ kind: "online" });
@@ -384,26 +335,7 @@ export function FeedClient() {
               <IconSearch size={17} />
             </button>
           )}
-          <div className={s.pillWrap}>
-            <button
-              className={s.locPill}
-              onClick={() => setPickerOpen((v) => !v)}
-              aria-expanded={pickerOpen}
-            >
-              {scope.kind === "online" ? (
-                <IconGlobe size={15} />
-              ) : (
-                <IconPin size={15} />
-              )}
-              {scopeLabel(scope)}
-              <IconChevronDown size={14} />
-            </button>
-            {pickerOpen ? (
-              <div className={s.dropdown}>
-                <AreaOptions scope={scope} onPick={pick} />
-              </div>
-            ) : null}
-          </div>
+          <LocationPicker value={scopeLabel(scope)} onPick={pick} />
         </div>
       </div>
 
@@ -589,19 +521,6 @@ export function FeedClient() {
       <Link href="/new" className={s.fab} aria-label="Start a hangout">
         +
       </Link>
-
-      {/* mobile: bottom-sheet presentation of the same options */}
-      {pickerOpen ? (
-        <div className={s.sheetOverlay} onClick={() => setPickerOpen(false)}>
-          <div className={s.sheet} onClick={(e) => e.stopPropagation()}>
-            <div className={s.grabber} />
-            <div className="t-h2" style={{ marginBottom: 6 }}>
-              Where are you looking?
-            </div>
-            <AreaOptions scope={scope} onPick={pick} />
-          </div>
-        </div>
-      ) : null}
 
       <Toast open={geoDenied} tone="danger" onClose={() => setGeoDenied(false)}>
         Location unavailable — showing all hangouts

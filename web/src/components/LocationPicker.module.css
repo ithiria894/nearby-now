@@ -1,0 +1,179 @@
+/* Location scope picker — pill + animated dropdown (desktop) / sheet (mobile).
+   Motion follows M3 emphasized-decelerate for entrances (see M3_ADOPTION). */
+
+.wrap {
+  position: relative;
+  flex: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  min-height: 40px;
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body-strong);
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: var(--hard-shadow-sm);
+}
+.pill:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+/* chevron flips when open */
+.chev {
+  display: inline-flex;
+  transition: transform var(--dur-base) var(--ease-emphasized-decelerate);
+}
+.chevOpen {
+  transform: rotate(180deg);
+}
+
+/* invisible layer so a click outside the desktop dropdown closes it */
+.clickAway {
+  display: none;
+}
+
+/* --- desktop dropdown --- */
+.dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: var(--surface);
+  border: var(--border-thick) solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--hard-shadow-lg);
+  padding: 6px 14px;
+  z-index: 30;
+  transform-origin: top right;
+  animation: drop-in var(--dur-base) var(--ease-emphasized-decelerate);
+}
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* --- rows (shared by dropdown + sheet) --- */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 4px;
+  min-height: 48px;
+  border: none;
+  border-bottom: var(--border-hair) solid var(--hairline);
+  background: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+  animation: row-in var(--dur-base) var(--ease-emphasized-decelerate) backwards;
+}
+.row:last-child {
+  border-bottom: none;
+}
+.rowActive {
+  font-family: var(--font-body-strong);
+  color: var(--brand);
+}
+.hint {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 12px;
+  line-height: 16px;
+}
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- mobile bottom sheet --- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  animation: scrim-in var(--dur-fast) var(--ease-standard);
+}
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.sheet {
+  width: 100%;
+  background: var(--surface);
+  border: var(--border-thick) solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  animation: sheet-up var(--dur-base) var(--ease-emphasized-decelerate);
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.grabber {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--hairline);
+  margin: 0 auto 10px;
+}
+
+@media (min-width: 860px) {
+  .dropdown {
+    display: block;
+  }
+  .clickAway {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 29;
+  }
+  .overlay {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chev,
+  .dropdown,
+  .row,
+  .overlay,
+  .sheet {
+    animation: none;
+    transition: none;
+  }
+}

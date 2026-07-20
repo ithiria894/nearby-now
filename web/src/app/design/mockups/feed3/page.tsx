@@ -9,13 +9,8 @@ import { Badge } from "@/components/Badge";
 import { RoomCard } from "@/components/RoomCard";
 import { Banner } from "@/components/Banner";
 import { Avatar, AvatarCluster } from "@/components/Avatar";
-import {
-  IconPin,
-  IconChevronDown,
-  IconGlobe,
-  IconSearch,
-  CategoryIcon,
-} from "@/components/icons";
+import { IconSearch, CategoryIcon } from "@/components/icons";
+import { LocationPicker } from "@/components/LocationPicker";
 import { VIBE_TINT, VIBE_LABEL_EN, VIBES, type VibeKey } from "@/lib/vibes";
 import { CATEGORIES, type CategoryKey } from "@/lib/categories";
 import s from "../../design.module.css";
@@ -292,16 +287,7 @@ function Discover({ wide }: { wide?: boolean }) {
             Spontaneous hangouts — tap in, no signup.
           </div>
         </div>
-        <div className={f.pillWrap}>
-          <button
-            className={f.locPill}
-            onClick={() => setLoc(online ? "Anywhere" : "Online")}
-          >
-            {online ? <IconGlobe size={15} /> : <IconPin size={15} />}
-            {loc}
-            <IconChevronDown size={14} />
-          </button>
-        </div>
+        <LocationPicker value={loc} onPick={setLoc} />
       </div>
 
       {/* ---- filter bar: always visible ---- */}

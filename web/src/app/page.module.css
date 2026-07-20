@@ -36,10 +36,6 @@
     display: none;
   }
 }
-.pillWrap {
-  position: relative;
-  flex: none;
-}
 .searchPill {
   position: relative;
   display: inline-flex;
@@ -129,41 +125,6 @@
     opacity: 1;
   }
 }
-.locPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  min-height: 40px;
-  border: var(--border-thick) solid var(--border);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  color: var(--text);
-  font-family: var(--font-body-strong);
-  font-size: 13px;
-  cursor: pointer;
-  box-shadow: var(--hard-shadow-sm);
-}
-.locPill:active {
-  transform: translate(2px, 2px);
-  box-shadow: none;
-}
-
-/* desktop dropdown (mobile uses the bottom sheet) */
-.dropdown {
-  display: none;
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 280px;
-  background: var(--surface);
-  border: var(--border-thick) solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--hard-shadow-lg);
-  padding: 6px 14px;
-  z-index: 30;
-}
-
 /* filter bar — always visible; two slim scrollable chip rows */
 .filters {
   display: grid;
@@ -344,72 +305,12 @@
   font-size: 13px;
 }
 
-/* mobile bottom sheet for the area picker */
-.sheetOverlay {
-  position: fixed;
-  inset: 0;
-  background: var(--overlay);
-  z-index: 40;
-  display: flex;
-  align-items: flex-end;
-}
-.sheet {
-  width: 100%;
-  background: var(--surface);
-  border: var(--border-thick) solid var(--border);
-  border-bottom: none;
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  padding: 10px 20px calc(env(safe-area-inset-bottom, 0px) + 20px);
-  animation: area-up var(--dur-base) var(--ease-emphasized-decelerate);
-}
-@keyframes area-up {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-.grabber {
-  width: 44px;
-  height: 5px;
-  border-radius: 999px;
-  background: var(--hairline);
-  margin: 0 auto 10px;
-}
-.sheetRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 4px;
-  min-height: 48px;
-  border: none;
-  border-bottom: var(--border-hair) solid var(--hairline);
-  background: none;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 15px;
-  text-align: left;
-  cursor: pointer;
-}
-.sheetRowActive {
-  font-family: var(--font-body-strong);
-  color: var(--brand);
-}
-
 @media (min-width: 860px) {
   .soonList {
     grid-template-columns: repeat(3, 1fr);
   }
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  }
-  .dropdown {
-    display: block;
-  }
-  .sheetOverlay {
-    display: none;
   }
   /* wide screens: the field doesn't need the whole header space */
   .searchField {
@@ -421,7 +322,6 @@
   .fcard {
     transition: none;
   }
-  .sheet,
   .cardIn,
   .searchField,
   .searchInput {
