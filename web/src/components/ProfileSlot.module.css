@@ -56,6 +56,12 @@
   display: grid;
   gap: 8px;
 }
+.emailBox {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: var(--border-hair) solid var(--hairline);
+}
 
 .sheet[open] {
   animation: profile-up var(--dur-base) var(--ease-emphasized-decelerate);

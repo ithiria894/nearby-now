@@ -16,6 +16,10 @@ import s from "./ProfileSlot.module.css";
 export function ProfileSlot() {
   const [uid, setUid] = useState<string | null>(null);
   const [name, setName] = useState<string>("");
+  const [email, setEmail] = useState<string | null>(null);
+  const [emailDraft, setEmailDraft] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
@@ -31,6 +35,7 @@ export function ProfileSlot() {
       const id = session?.user?.id ?? null;
       if (!active) return;
       setUid(id);
+      setEmail(session?.user?.email ?? null);
       if (!id) return;
       const { data } = await db
         .from("profiles")
@@ -66,6 +71,26 @@ export function ProfileSlot() {
       setOpen(false);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const addEmail = async () => {
+    const e = emailDraft.trim();
+    if (!e || emailBusy) return;
+    setEmailBusy(true);
+    try {
+      const db = createSupabaseBrowser();
+      const { data, error } = await db.auth.updateUser(
+        { email: e },
+        { emailRedirectTo: `${location.origin}/auth/confirm` }
+      );
+      if (error) throw error;
+      if (data.user?.email) setEmail(data.user.email);
+      else setEmailSent(true); // confirmation required (prod)
+    } catch {
+      setEmailSent(false);
+    } finally {
+      setEmailBusy(false);
     }
   };
 
@@ -133,9 +158,36 @@ export function ProfileSlot() {
               Not you? Start fresh
             </Button>
           </div>
-          <div className="t-caption" style={{ color: "var(--faint)" }}>
-            Later: add an email to keep your rooms on other devices.
-          </div>
+          {email ? (
+            <div className="t-caption" style={{ color: "var(--subtext)" }}>
+              Saved to {email} — your rooms are safe on any device.
+            </div>
+          ) : emailSent ? (
+            <div className="t-caption" style={{ color: "var(--subtext)" }}>
+              Check your inbox to confirm, then your rooms are kept.
+            </div>
+          ) : (
+            <div className={s.emailBox}>
+              <div className="t-caption" style={{ color: "var(--subtext)" }}>
+                Add an email to keep your rooms if you clear your browser.
+              </div>
+              <Input
+                placeholder="you@example.com"
+                type="email"
+                value={emailDraft}
+                onChange={(e) => setEmailDraft(e.target.value)}
+              />
+              <Button
+                tone="secondary"
+                full
+                onClick={addEmail}
+                loading={emailBusy}
+                disabled={!emailDraft.trim()}
+              >
+                Keep my rooms
+              </Button>
+            </div>
+          )}
         </div>
       </dialog>
     </>
