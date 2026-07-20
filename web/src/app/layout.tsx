@@ -33,7 +33,13 @@ const madimi = Madimi_One({
   display: "swap",
 });
 
+// Base for resolving relative OG/twitter image URLs to ABSOLUTE (scrapers
+// require absolute). Set NEXT_PUBLIC_SITE_URL to the deployed origin in prod
+// (e.g. https://enoki.vercel.app); falls back to localhost for dev.
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "enoki",
   description:
     "get people together — without being the host. spontaneous hangouts nearby.",
