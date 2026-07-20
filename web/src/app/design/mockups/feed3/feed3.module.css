@@ -1,0 +1,80 @@
+/* Discover v3 mockup — filter bar + single-scroll layout. Shared visuals
+   (fcard, greet, pill, sheets…) come from ../feed/feed.module.css; this file
+   only adds what v3 introduces. */
+
+.filters {
+  display: grid;
+  gap: 8px;
+  padding: 4px 16px 6px;
+}
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+  scrollbar-width: none;
+}
+.filterRow::-webkit-scrollbar {
+  display: none;
+}
+/* chips inside a scroll row must not shrink or wrap */
+.filterRow > * {
+  flex: none;
+}
+
+.searchBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: var(--border-thick) solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--hard-shadow-sm);
+  cursor: pointer;
+}
+.searchBtn:active {
+  transform: translate(var(--press-shift), var(--press-shift));
+  box-shadow: none;
+}
+.searchBtnActive {
+  background: var(--yellow);
+}
+
+.vibeDivider {
+  width: 2px;
+  height: 22px;
+  border-radius: 2px;
+  background: var(--border);
+  opacity: 0.3;
+}
+
+.searchWrap {
+  padding: 0 2px;
+}
+
+/* Starting-soon card: the v2 featured card, but full-width + compact (no
+   carousel, no 300px min-height — it lives in the vertical scroll). */
+.scard {
+  width: 100%;
+  min-height: 0;
+}
+.soonList {
+  display: grid;
+  gap: 12px;
+  padding: 0 16px;
+}
+.soonListWide {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.noMatch {
+  margin: 8px 16px;
+  padding: 22px 16px;
+  text-align: center;
+  border: var(--border-thick) dashed var(--border);
+  border-radius: var(--radius-lg);
+}

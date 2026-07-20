@@ -6,6 +6,11 @@ import s from "../design.module.css";
 
 const MOCKUPS = [
   {
+    href: "/design/mockups/feed3",
+    title: "/ feed · Discover v3 — filters + starting soon",
+    desc: "One scroll (no carousel), honest 'Starting soon · has room' cluster, always-visible category/vibe chips, Has-room toggle, search behind an icon. Live filters — tap around.",
+  },
+  {
     href: "/design/mockups/feed",
     title: "/ feed (#65)",
     desc: "Front page: open + recently-happened hangouts, All/Nearby/Online, floating +.",
