@@ -9,11 +9,14 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Stepper } from "@/components/Stepper";
 import { Accordion } from "@/components/Accordion";
+import { Banner } from "@/components/Banner";
+import { IconShuffle } from "@/components/icons";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { ensureGuestSession } from "@/lib/guest";
 import { createActivity, addSelfMembership } from "@/lib/backend";
 import { track } from "@/lib/track";
 import { VIBES, VIBE_TINT, VIBE_LABEL_EN, type VibeKey } from "@/lib/vibes";
+import { CATEGORIES, detectCategory, categoryByKey } from "@/lib/categories";
 import s from "./new.module.css";
 
 // /new (#55) — the ≤20s create flow. Default path = title + nickname. Details
@@ -41,6 +44,8 @@ export default function NewPage() {
   const [place, setPlace] = useState("");
   const [cap, setCap] = useState(6);
   const [gender, setGender] = useState("any");
+  const [banner, setBanner] = useState<string | null>(null); // null = auto
+  const [online, setOnline] = useState(false);
   const [nickname, setNickname] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,8 +72,9 @@ export default function NewPage() {
         capacity: cap,
         status: "open",
       };
-      if (place.trim()) payload.place_name = place.trim();
+      if (!online && place.trim()) payload.place_name = place.trim();
       if (startTime) payload.start_time = startTime;
+      if (banner) payload.banner = banner;
 
       const { id, share_slug } = await createActivity(db, payload);
       await addSelfMembership(db, id, uid, "creator");
@@ -117,6 +123,46 @@ export default function NewPage() {
         <Accordion title="More details">
           <div style={{ display: "grid", gap: 16 }}>
             <div>
+              <div className={s.fieldLabel}>Banner</div>
+              <div className={s.bannerRow}>
+                <button
+                  type="button"
+                  className={`${s.bannerSwatch} ${banner === null ? s.bannerSwatchActive : ""}`}
+                  onClick={() => setBanner(null)}
+                >
+                  <div className={s.bannerAuto}>
+                    <IconShuffle size={18} />
+                  </div>
+                  <span className={s.bannerSwatchLabel}>Auto</span>
+                </button>
+                {CATEGORIES.filter((c) => c.key !== "other").map((c) => (
+                  <button
+                    type="button"
+                    key={c.key}
+                    className={`${s.bannerSwatch} ${banner === `cat:${c.key}` ? s.bannerSwatchActive : ""}`}
+                    onClick={() => setBanner(`cat:${c.key}`)}
+                  >
+                    <Banner
+                      category={c.key}
+                      height={44}
+                      radius="10px 10px 0 0"
+                    />
+                    <span className={s.bannerSwatchLabel}>{c.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div
+                className="t-caption"
+                style={{ color: "var(--faint)", marginTop: 6 }}
+              >
+                Auto = we pick from your title
+                {detectCategory(title)
+                  ? ` (looks like ${categoryByKey(detectCategory(title)).label})`
+                  : ""}
+                .
+              </div>
+            </div>
+            <div>
               <div className={s.fieldLabel}>When</div>
               <div className={s.row}>
                 {TIMES.map((t) => (
@@ -130,12 +176,25 @@ export default function NewPage() {
                 ))}
               </div>
             </div>
-            <Input
-              label="Where (optional)"
-              placeholder="Causeway Bay"
-              value={place}
-              onChange={(e) => setPlace(e.target.value)}
-            />
+            <div>
+              <div className={s.fieldLabel}>Where</div>
+              <div className={s.row} style={{ marginBottom: 8 }}>
+                <Chip selected={online} onClick={() => setOnline((v) => !v)}>
+                  Online event
+                </Chip>
+              </div>
+              {online ? (
+                <div className="t-caption" style={{ color: "var(--subtext)" }}>
+                  No place — people join from anywhere.
+                </div>
+              ) : (
+                <Input
+                  placeholder="Causeway Bay (optional)"
+                  value={place}
+                  onChange={(e) => setPlace(e.target.value)}
+                />
+              )}
+            </div>
             <div>
               <div className={s.fieldLabel}>Capacity</div>
               <Stepper value={cap} onChange={setCap} min={2} max={20} />

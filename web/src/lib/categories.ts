@@ -45,6 +45,21 @@ export function categoryByKey(key?: string | null): Category {
 // Keyword auto-detect — ported subset of mobile's activityCategory(). Default
 // banner when the creator doesn't pick: detect first, RANDOM fallback when
 // nothing matches (LLM best-fit is the future upgrade).
+// Resolve the banner CATEGORY for a card: an explicit `cat:<key>` pick wins;
+// otherwise platform-assigned. (`img:` uploads render a photo via Banner src in
+// phase 2; here we still derive a category for the tint fallback.)
+export function resolveBanner(
+  banner: string | null | undefined,
+  title: string,
+  slug: string
+): CategoryKey {
+  if (banner && banner.startsWith("cat:")) {
+    const key = banner.slice(4);
+    if (CATEGORIES.some((c) => c.key === key)) return key as CategoryKey;
+  }
+  return bannerCategory(title, slug);
+}
+
 // Platform-assigned banner: keyword detect first; deterministic slug-hash
 // fallback so a card never flickers between loads. LLM best-fit later.
 export function bannerCategory(title: string, slug: string): CategoryKey {

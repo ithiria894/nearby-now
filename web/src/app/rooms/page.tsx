@@ -82,6 +82,7 @@ export default function RoomsPage() {
                 href={`/r/${r.share_slug}`}
                 title={r.title_text}
                 vibe={normalizeVibe(r.vibe)}
+                banner={r.banner}
                 placeText={r.place_name ?? undefined}
                 capacity={r.capacity ?? undefined}
                 host={r.role === "creator"}

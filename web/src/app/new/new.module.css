@@ -20,3 +20,47 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+.bannerRow {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.bannerRow::-webkit-scrollbar {
+  display: none;
+}
+.bannerSwatch {
+  flex: none;
+  width: 96px;
+  border: var(--border-base) solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface);
+  padding: 0;
+  cursor: pointer;
+}
+.bannerSwatchActive {
+  outline: var(--border-thick) solid var(--brand);
+  outline-offset: 2px;
+  box-shadow: var(--hard-shadow-sm);
+}
+.bannerAuto {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-alt);
+  color: var(--ink);
+  border-bottom: var(--border-thick) solid var(--border);
+}
+.bannerSwatchLabel {
+  display: block;
+  min-height: 32px;
+  padding: 6px;
+  color: var(--text);
+  font-family: var(--font-body-strong);
+  font-size: 12px;
+  text-align: center;
+}

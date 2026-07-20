@@ -5,7 +5,7 @@ import { Banner } from "./Banner";
 import { AvatarCluster } from "./Avatar";
 import { IconCrown } from "./icons";
 import { VIBE_TINT, VIBE_LABEL_EN, type VibeKey } from "@/lib/vibes";
-import { bannerCategory } from "@/lib/categories";
+import { resolveBanner } from "@/lib/categories";
 import s from "./RoomCard.module.css";
 
 // RoomCard — compact list card. Every event carries a category banner; the
@@ -15,6 +15,7 @@ export function RoomCard({
   href,
   title,
   vibe,
+  banner,
   timeText,
   placeText,
   going,
@@ -25,6 +26,7 @@ export function RoomCard({
   href: string;
   title: string;
   vibe?: VibeKey;
+  banner?: string | null;
   timeText?: string;
   placeText?: string;
   going?: number;
@@ -82,7 +84,7 @@ export function RoomCard({
         </div>
       </div>
       <Banner
-        category={bannerCategory(title, slug)}
+        category={resolveBanner(banner, title, slug)}
         height={64}
         edge="bottom"
         radius="0 0 18px 18px"

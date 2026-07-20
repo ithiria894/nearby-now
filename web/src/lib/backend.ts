@@ -213,6 +213,7 @@ export type FeedItem = {
   share_slug: string;
   title_text: string;
   vibe: string | null;
+  banner: string | null;
   start_time: string | null;
   place_name: string | null;
   capacity: number | null;
@@ -249,6 +250,7 @@ export type MyRoom = {
   share_slug: string;
   title_text: string;
   vibe: string | null;
+  banner: string | null;
   start_time: string | null;
   place_name: string | null;
   capacity: number | null;
@@ -261,7 +263,7 @@ export async function fetchMyRooms(db: DB, userId: string): Promise<MyRoom[]> {
   const { data, error } = await db
     .from("activity_members")
     .select(
-      "role, activities(id, share_slug, title_text, vibe, start_time, place_name, capacity, status, expires_at, created_at)"
+      "role, activities(id, share_slug, title_text, vibe, banner, start_time, place_name, capacity, status, expires_at, created_at)"
     )
     .eq("user_id", userId)
     .neq("state", "left")

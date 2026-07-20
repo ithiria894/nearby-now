@@ -13,7 +13,7 @@ import { IconPin, IconGlobe, IconChevronDown } from "@/components/icons";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { getFeedPublic, type FeedItem } from "@/lib/backend";
 import { normalizeVibe, VIBE_TINT, VIBE_LABEL_EN } from "@/lib/vibes";
-import { bannerCategory } from "@/lib/categories";
+import { resolveBanner } from "@/lib/categories";
 import { AREAS } from "@/lib/areas";
 import { track } from "@/lib/track";
 import s from "./page.module.css";
@@ -91,7 +91,7 @@ function FeaturedCard({ r }: { r: FeedItem }) {
         </div>
       </div>
       <Banner
-        category={bannerCategory(r.title_text, r.share_slug)}
+        category={resolveBanner(r.banner, r.title_text, r.share_slug)}
         height={92}
         edge="bottom"
         radius="0 0 24px 24px"
@@ -302,6 +302,7 @@ export function FeedClient() {
                     href={`/r/${r.share_slug}`}
                     title={r.title_text}
                     vibe={normalizeVibe(r.vibe)}
+                    banner={r.banner}
                     timeText={timeLabel(r.start_time) ?? undefined}
                     placeText={placeLabel(r)}
                     going={r.joined_count}
