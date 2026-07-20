@@ -49,6 +49,15 @@ export async function GET(
     // fall back to the generic card
   }
 
+  // Brand type in the unfurl (#77): Poppins Bold, fetched + cached. If the
+  // fetch fails (offline build/CI), fonts stays undefined → default sans.
+  const poppins = await fetch(
+    "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/poppins/Poppins-Bold.ttf",
+    { cache: "force-cache" }
+  )
+    .then((r) => (r.ok ? r.arrayBuffer() : null))
+    .catch(() => null);
+
   return new ImageResponse(
     <div
       style={{
@@ -60,6 +69,7 @@ export async function GET(
         justifyContent: "space-between",
         padding: 84,
         border: "12px solid #1C180F",
+        fontFamily: poppins ? "Poppins" : undefined,
       }}
     >
       <div style={{ display: "flex", flexDirection: "column" }}>
@@ -125,6 +135,12 @@ export async function GET(
         </div>
       </div>
     </div>,
-    { width: 1200, height: 630 }
+    {
+      width: 1200,
+      height: 630,
+      fonts: poppins
+        ? [{ name: "Poppins", data: poppins, weight: 700, style: "normal" }]
+        : undefined,
+    }
   );
 }
