@@ -117,7 +117,9 @@ export async function insertRoomEvent(
   activityId: string,
   userId: string,
   content: string,
-  type = "message"
+  // room_events.type CHECK allows only 'chat' | 'quick' | 'system' (mirrors
+  // mobile). Chat messages are 'chat'.
+  type = "chat"
 ) {
   const { error } = await db.from("room_events").insert({
     activity_id: activityId,

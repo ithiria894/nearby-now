@@ -405,8 +405,9 @@ function MemberRoom({
     setText("");
     try {
       await insertRoomEvent(createSupabaseBrowser(), room.id, uid, body);
+      load(); // show it immediately, don't wait on the realtime round-trip
     } catch {
-      setText(body);
+      setText(body); // restore on failure
     }
   };
 
@@ -498,7 +499,7 @@ function MemberRoom({
 
         <div className={s.chat}>
           {events.map((e) =>
-            e.type !== "message" ? (
+            e.type === "system" ? (
               <div key={e.id} className={s.system}>
                 {e.content}
               </div>

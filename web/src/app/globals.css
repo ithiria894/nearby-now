@@ -10,6 +10,13 @@
   margin: 0;
 }
 
+/* The reset above kills the UA `dialog { margin: auto }` that centers modal
+   dialogs — restore it so <dialog> (report, confirm) sits centered. Bottom
+   sheets override with their own margin (higher specificity) and stay docked. */
+dialog {
+  margin: auto;
+}
+
 html,
 body {
   max-width: 100vw;
