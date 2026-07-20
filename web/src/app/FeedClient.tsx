@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Chip } from "@/components/Chip";
 import { Button } from "@/components/Button";
 import { Badge } from "@/components/Badge";
-import { Input } from "@/components/Input";
 import { RoomCard } from "@/components/RoomCard";
 import { Banner } from "@/components/Banner";
 import { Avatar, AvatarCluster } from "@/components/Avatar";
@@ -341,13 +340,12 @@ export function FeedClient() {
         </div>
         <div className={s.tools}>
           <button
-            className={`${s.searchPill} ${searchOpen ? s.searchOn : ""}`}
+            className={s.searchPill}
             aria-label="Search hangouts"
             aria-expanded={searchOpen}
             onClick={() => {
-              if (searchOpen) setQ("");
-              else track("feed_filter", undefined, "search");
-              setSearchOpen((v) => !v);
+              track("feed_filter", undefined, "search");
+              setSearchOpen(true);
             }}
           >
             <IconSearch size={17} />
@@ -373,18 +371,37 @@ export function FeedClient() {
             ) : null}
           </div>
         </div>
-      </div>
 
-      {searchOpen ? (
-        <div className={s.searchWrap}>
-          <Input
-            placeholder="Search title or place…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            autoFocus
-          />
-        </div>
-      ) : null}
+        {/* the search pill morphs into this field (grows leftward over the
+            row); icon tap or Escape collapses it back */}
+        {searchOpen ? (
+          <div className={s.searchOverlay}>
+            <button
+              className={s.searchCollapse}
+              aria-label="Close search"
+              onClick={() => {
+                setQ("");
+                setSearchOpen(false);
+              }}
+            >
+              <IconSearch size={17} />
+            </button>
+            <input
+              className={s.searchInput}
+              placeholder="Search title or place…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setQ("");
+                  setSearchOpen(false);
+                }
+              }}
+              autoFocus
+            />
+          </div>
+        ) : null}
+      </div>
 
       {/* ---- facet chips: categories, then vibes + has-room ---- */}
       <div className={s.filters}>
