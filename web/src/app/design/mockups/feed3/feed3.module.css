@@ -23,27 +23,6 @@
   flex: none;
 }
 
-.searchBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  border: var(--border-thick) solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: var(--hard-shadow-sm);
-  cursor: pointer;
-}
-.searchBtn:active {
-  transform: translate(var(--press-shift), var(--press-shift));
-  box-shadow: none;
-}
-.searchBtnActive {
-  background: var(--yellow);
-}
-
 .vibeDivider {
   width: 2px;
   height: 22px;

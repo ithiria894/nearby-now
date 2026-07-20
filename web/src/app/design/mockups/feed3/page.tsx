@@ -225,16 +225,10 @@ function SoonCard({ r }: { r: Item }) {
       </div>
       <Banner
         category={r.cat}
+        vibe={r.vibe}
         height={84}
         edge="bottom"
         radius="0 0 24px 24px"
-        corner={
-          r.vibe !== "open" ? (
-            <Chip accent={VIBE_TINT[r.vibe] ?? undefined} selected>
-              {VIBE_LABEL_EN[r.vibe]}
-            </Chip>
-          ) : undefined
-        }
       />
     </div>
   );
@@ -313,17 +307,16 @@ function Discover({ wide }: { wide?: boolean }) {
       {/* ---- filter bar: always visible ---- */}
       <div className={g.filters}>
         <div className={g.filterRow}>
-          <button
-            className={`${g.searchBtn} ${searchOpen ? g.searchBtnActive : ""}`}
-            aria-label="Search"
-            aria-expanded={searchOpen}
+          <Chip
+            selected={searchOpen}
+            leading={<IconSearch size={14} />}
             onClick={() => {
               if (searchOpen) setQ("");
               setSearchOpen((v) => !v);
             }}
           >
-            <IconSearch size={18} />
-          </button>
+            Search
+          </Chip>
           <Chip selected={cat === "all"} onClick={() => setCat("all")}>
             All
           </Chip>

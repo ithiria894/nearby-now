@@ -1,4 +1,5 @@
-/* / — Discover v2 (approved mockup /design/mockups/feed). */
+/* / — Discover v3 (approved mockup /design/mockups/feed3): one vertical
+   scroll, filter bar, "Starting soon · has room" cluster. */
 
 .main {
   max-width: 960px;
@@ -53,23 +54,45 @@
   z-index: 30;
 }
 
-/* featured carousel */
-.carousel {
+/* filter bar — always visible; two slim scrollable chip rows */
+.filters {
+  display: grid;
+  gap: 8px;
+  padding: 4px 0 6px;
+}
+.filterRow {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 12px 0 16px;
+  padding: 2px 2px 4px;
   scrollbar-width: none;
 }
-.carousel::-webkit-scrollbar {
+.filterRow::-webkit-scrollbar {
   display: none;
 }
-.fcard {
+.filterRow > * {
   flex: none;
-  width: min(280px, 82%);
-  min-height: 300px;
-  scroll-snap-align: start;
+}
+.vibeDivider {
+  width: 2px;
+  height: 22px;
+  border-radius: 2px;
+  background: var(--border);
+  opacity: 0.3;
+}
+.searchWrap {
+  padding: 0 2px;
+}
+
+/* starting-soon cluster — full-width vertical cards, no carousel */
+.soonList {
+  display: grid;
+  gap: 12px;
+  padding: 2px 0 4px;
+}
+.fcard {
+  width: 100%;
   display: flex;
   flex-direction: column;
   border: var(--border-thick) solid var(--border);
@@ -142,6 +165,22 @@
 .empty {
   text-align: center;
   padding: 32px 16px;
+}
+
+/* filters matched nothing — clear or create */
+.noMatch {
+  margin: 10px 0;
+  padding: 22px 16px;
+  text-align: center;
+  border: var(--border-thick) dashed var(--border);
+  border-radius: var(--radius-lg);
+}
+.clearBtn {
+  color: var(--brand);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 0;
 }
 
 /* floating create */
@@ -236,13 +275,8 @@
 }
 
 @media (min-width: 860px) {
-  .carousel {
-    display: grid;
+  .soonList {
     grid-template-columns: repeat(3, 1fr);
-    overflow: visible;
-  }
-  .fcard {
-    width: auto;
   }
   .grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

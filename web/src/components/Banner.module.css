@@ -33,6 +33,14 @@
   padding: 3px 8px;
   color: var(--ink);
 }
+/* vibe tag — the category label's twin, pinned bottom-right. Same padding,
+   border, radius and type via .label; only the tinted background differs. */
+.vibeTag {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+}
+
 .corner {
   position: absolute;
   right: 8px;

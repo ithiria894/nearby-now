@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { Chip } from "./Chip";
 import { Badge } from "./Badge";
 import { Banner } from "./Banner";
 import { AvatarCluster } from "./Avatar";
 import { IconCrown } from "./icons";
-import { VIBE_TINT, VIBE_LABEL_EN, type VibeKey } from "@/lib/vibes";
+import type { VibeKey } from "@/lib/vibes";
 import { resolveBanner } from "@/lib/categories";
 import s from "./RoomCard.module.css";
 
@@ -89,16 +88,10 @@ export function RoomCard({
       </div>
       <Banner
         category={resolveBanner(banner, title, slug)}
+        vibe={vibe}
         height={64}
         edge="bottom"
         radius="0 0 18px 18px"
-        corner={
-          vibe && vibe !== "open" ? (
-            <Chip accent={VIBE_TINT[vibe] ?? undefined} selected>
-              {VIBE_LABEL_EN[vibe]}
-            </Chip>
-          ) : undefined
-        }
       />
     </Link>
   );
