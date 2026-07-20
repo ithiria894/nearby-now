@@ -44,6 +44,7 @@ type Item = {
   going: number;
   cap: number;
   host: string;
+  joined?: boolean; // viewer already in — real impl: fetchMyRooms ∩ feed slugs
 };
 
 const ITEMS: Item[] = [
@@ -57,6 +58,7 @@ const ITEMS: Item[] = [
     going: 3,
     cap: 6,
     host: "mimi",
+    joined: true, // demo: viewer already tapped in
   },
   {
     title: "Valorant stack, mics on",
@@ -113,6 +115,7 @@ const ITEMS: Item[] = [
     going: 3,
     cap: 4,
     host: "sam",
+    joined: true, // demo: joined tag on a browse card
   },
   {
     title: "Deep talk: quarter-life stuff",
@@ -186,7 +189,17 @@ function SoonCard({ r }: { r: Item }) {
     <div className={`${f.fcard} ${g.scard}`}>
       <div className={f.fcardBody}>
         <div>
-          <div className="t-h2">{r.title}</div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              justifyContent: "space-between",
+            }}
+          >
+            <div className="t-h2">{r.title}</div>
+            {r.joined ? <Badge fill="var(--mint)">Joined</Badge> : null}
+          </div>
           <div
             className="t-body"
             style={{ color: "var(--subtext)", marginTop: 4 }}
@@ -392,6 +405,7 @@ function Discover({ wide }: { wide?: boolean }) {
                 placeText={r.place}
                 going={r.going}
                 capacity={r.cap}
+                joined={r.joined}
               />
             ))}
           </div>

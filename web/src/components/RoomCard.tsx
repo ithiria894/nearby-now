@@ -21,6 +21,7 @@ export function RoomCard({
   going,
   capacity,
   host,
+  joined,
   closed,
 }: {
   href: string;
@@ -32,6 +33,7 @@ export function RoomCard({
   going?: number;
   capacity?: number;
   host?: boolean;
+  joined?: boolean; // viewer is already in — "Joined" tag (host crown wins)
   closed?: boolean;
 }) {
   const spotsLeft =
@@ -54,6 +56,8 @@ export function RoomCard({
             <span className={s.crown} aria-label="You host this">
               <IconCrown size={16} />
             </span>
+          ) : joined ? (
+            <Badge fill="var(--mint)">Joined</Badge>
           ) : null}
         </div>
         {meta ? (
