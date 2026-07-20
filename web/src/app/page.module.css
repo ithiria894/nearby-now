@@ -16,12 +16,25 @@
   gap: 12px;
   padding: 14px 0 6px;
 }
-/* tool cluster (top right): search + location — tools, not facets */
+/* tool cluster (top right): search + location — tools, not facets. flex:1
+   so the morphed search field can grow into the header space while the
+   location pill stays put (and tappable) on its right. */
 .tools {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.titleBlock {
   flex: none;
+}
+/* mobile: while searching, the title yields the row to the field */
+@media (max-width: 859px) {
+  .greetSearching .titleBlock {
+    display: none;
+  }
 }
 .pillWrap {
   position: relative;
@@ -52,34 +65,36 @@
   box-shadow: none;
 }
 
-/* the pill, expanded — an overlay pill that grows leftward across the greet
-   row (clip-path keeps contents unsquashed while the container morphs) */
-.searchOverlay {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 46px;
+/* the pill, morphed — an in-flow field that grows leftward from the pill's
+   spot (clip-path keeps contents unsquashed while the container sweeps) */
+.searchField {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
   display: flex;
   align-items: center;
   gap: 4px;
+  padding-left: 12px;
   background: var(--surface);
   border: var(--border-thick) solid var(--border);
   border-radius: var(--radius-pill);
   box-shadow: var(--hard-shadow-sm);
-  z-index: 25;
   animation: search-grow var(--dur-base) var(--ease-emphasized-decelerate);
 }
 @keyframes search-grow {
   from {
-    clip-path: inset(0 0 0 calc(100% - 46px) round 999px);
+    clip-path: inset(0 0 0 calc(100% - 44px) round 999px);
   }
   to {
     clip-path: inset(0 round 999px);
   }
 }
-.searchCollapse {
+.searchLead {
+  flex: none;
+  display: inline-flex;
+  color: var(--subtext);
+}
+.searchX {
   flex: none;
   width: 42px;
   height: 42px;
@@ -396,10 +411,9 @@
   .sheetOverlay {
     display: none;
   }
-  /* wide screens: the field doesn't need the whole header row */
-  .searchOverlay {
-    left: auto;
-    width: 400px;
+  /* wide screens: the field doesn't need the whole header space */
+  .searchField {
+    max-width: 400px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -409,7 +423,7 @@
   }
   .sheet,
   .cardIn,
-  .searchOverlay,
+  .searchField,
   .searchInput {
     animation: none;
   }

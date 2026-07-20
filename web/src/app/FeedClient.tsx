@@ -14,6 +14,7 @@ import {
   IconGlobe,
   IconChevronDown,
   IconSearch,
+  IconX,
   CategoryIcon,
 } from "@/components/icons";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
@@ -331,25 +332,58 @@ export function FeedClient() {
 
   return (
     <>
-      <div className={s.greet}>
-        <div>
+      <div className={`${s.greet} ${searchOpen ? s.greetSearching : ""}`}>
+        <div className={s.titleBlock}>
           <h1 className="t-h1">What&apos;s happening</h1>
           <div className="t-caption" style={{ color: "var(--subtext)" }}>
             Spontaneous hangouts — tap in, no signup.
           </div>
         </div>
         <div className={s.tools}>
-          <button
-            className={s.searchPill}
-            aria-label="Search hangouts"
-            aria-expanded={searchOpen}
-            onClick={() => {
-              track("feed_filter", undefined, "search");
-              setSearchOpen(true);
-            }}
-          >
-            <IconSearch size={17} />
-          </button>
+          {searchOpen ? (
+            /* the pill, morphed: in-flow field left of the (still tappable)
+               location pill; X or Escape collapses */
+            <div className={s.searchField}>
+              <span className={s.searchLead} aria-hidden>
+                <IconSearch size={16} />
+              </span>
+              <input
+                className={s.searchInput}
+                placeholder="Search title or place…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setQ("");
+                    setSearchOpen(false);
+                  }
+                }}
+                autoFocus
+              />
+              <button
+                className={s.searchX}
+                aria-label="Close search"
+                onClick={() => {
+                  setQ("");
+                  setSearchOpen(false);
+                }}
+              >
+                <IconX size={16} />
+              </button>
+            </div>
+          ) : (
+            <button
+              className={s.searchPill}
+              aria-label="Search hangouts"
+              aria-expanded={searchOpen}
+              onClick={() => {
+                track("feed_filter", undefined, "search");
+                setSearchOpen(true);
+              }}
+            >
+              <IconSearch size={17} />
+            </button>
+          )}
           <div className={s.pillWrap}>
             <button
               className={s.locPill}
@@ -371,36 +405,6 @@ export function FeedClient() {
             ) : null}
           </div>
         </div>
-
-        {/* the search pill morphs into this field (grows leftward over the
-            row); icon tap or Escape collapses it back */}
-        {searchOpen ? (
-          <div className={s.searchOverlay}>
-            <button
-              className={s.searchCollapse}
-              aria-label="Close search"
-              onClick={() => {
-                setQ("");
-                setSearchOpen(false);
-              }}
-            >
-              <IconSearch size={17} />
-            </button>
-            <input
-              className={s.searchInput}
-              placeholder="Search title or place…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setQ("");
-                  setSearchOpen(false);
-                }
-              }}
-              autoFocus
-            />
-          </div>
-        ) : null}
       </div>
 
       {/* ---- facet chips: categories, then vibes + has-room ---- */}
