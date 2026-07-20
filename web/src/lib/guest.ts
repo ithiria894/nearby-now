@@ -27,6 +27,19 @@ export async function ensureGuestSession(
   return userId;
 }
 
+// Ensure SOME session exists (for actions that need auth but no nickname, e.g.
+// reporting). Signs in anonymously if there's no session; no profile upsert.
+export async function ensureAnonSession(): Promise<string | null> {
+  const db = createSupabaseBrowser();
+  const {
+    data: { session },
+  } = await db.auth.getSession();
+  if (session?.user?.id) return session.user.id;
+  const { data, error } = await db.auth.signInAnonymously();
+  if (error) return null;
+  return data.user?.id ?? null;
+}
+
 export async function currentUserId(): Promise<string | null> {
   const db = createSupabaseBrowser();
   const {

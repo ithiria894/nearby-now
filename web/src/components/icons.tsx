@@ -156,6 +156,12 @@ export const IconChevronDown = (p: IconProps) => (
   </Svg>
 );
 
+export const IconFlag = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M5 21V4M5 4h11l-1.5 3.5L16 11H5" />
+  </Svg>
+);
+
 export const IconSun = (p: IconProps) => (
   <Svg {...p}>
     <circle cx="12" cy="12" r="4.5" />

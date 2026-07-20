@@ -156,6 +156,26 @@ export async function createActivity(
   return data as { id: string; share_slug: string };
 }
 
+export async function reportActivity(
+  db: DB,
+  activityId: string,
+  reason: string
+) {
+  const { error } = await db.rpc("report_activity", {
+    p_activity_id: activityId,
+    p_reason: reason,
+  });
+  if (error) throw error;
+}
+
+export async function reportMessage(db: DB, eventId: string, reason: string) {
+  const { error } = await db.rpc("report_message", {
+    p_event_id: eventId,
+    p_reason: reason,
+  });
+  if (error) throw error;
+}
+
 export async function addSelfMembership(
   db: DB,
   activityId: string,

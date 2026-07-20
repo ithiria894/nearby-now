@@ -8,10 +8,11 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { Badge } from "@/components/Badge";
 import { Avatar, AvatarCluster } from "@/components/Avatar";
-import { IconArrowUpRight, IconCrown } from "@/components/icons";
+import { IconArrowUpRight, IconCrown, IconFlag } from "@/components/icons";
 import { Dialog } from "@/components/Dialog";
 import { Toast } from "@/components/Toast";
 import { ShareSheet } from "@/components/ShareSheet";
+import { ReportDialog } from "@/components/ReportDialog";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { ensureGuestSession, currentUserId } from "@/lib/guest";
 import { track } from "@/lib/track";
@@ -175,6 +176,7 @@ function Visitor({
   const [nickname, setNickname] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reporting, setReporting] = useState(false);
 
   if (state !== "open") return <DeadEnd state={state} />;
 
@@ -263,6 +265,15 @@ function Visitor({
         {card}
         <Explain />
       </div>
+      <div className={s.reportRow}>
+        <button className={s.reportLink} onClick={() => setReporting(true)}>
+          <IconFlag size={13} /> Report this hangout
+        </button>
+      </div>
+      <ReportDialog
+        target={reporting ? { kind: "activity", id: room.id } : null}
+        onClose={() => setReporting(false)}
+      />
     </Shell>
   );
 }
@@ -307,6 +318,10 @@ function MemberRoom({
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [report, setReport] = useState<{
+    kind: "activity" | "message";
+    id: string;
+  } | null>(null);
   const readonly = membership.state === "left";
   const isHost = creatorId != null && creatorId === uid;
   const chatEnd = useRef<HTMLDivElement>(null);
@@ -455,6 +470,15 @@ function MemberRoom({
               Share
             </Button>
           </div>
+          {!isHost ? (
+            <button
+              className={s.reportLink}
+              style={{ marginTop: 10 }}
+              onClick={() => setReport({ kind: "activity", id: room.id })}
+            >
+              <IconFlag size={13} /> Report this hangout
+            </button>
+          ) : null}
         </div>
 
         <div className={s.rsvp}>
@@ -491,6 +515,15 @@ function MemberRoom({
                   ) : null}
                   {e.content}
                 </div>
+                {e.user_id && e.user_id !== uid ? (
+                  <button
+                    className={s.msgReport}
+                    aria-label="Report message"
+                    onClick={() => setReport({ kind: "message", id: e.id })}
+                  >
+                    <IconFlag size={13} />
+                  </button>
+                ) : null}
               </div>
             )
           )}
@@ -570,6 +603,7 @@ function MemberRoom({
       <Toast open={copied} onClose={() => setCopied(false)}>
         Link copied
       </Toast>
+      <ReportDialog target={report} onClose={() => setReport(null)} />
     </>
   );
 }
